@@ -26,6 +26,7 @@ export function scoresFromFinalJudges<T extends { judgeId: string }>(
 export type RankingRow = {
   companyId: string;
   companyName: string;
+  companyPresenter: string;
   finalScore: number;
   judgeCount: number;
   rank: number;
@@ -38,7 +39,7 @@ export type RankingRow = {
 };
 
 export function buildRankings(
-  companies: Array<{ id: string; name: string;}>,
+  companies: Array<{ id: string; name: string; presenter?: string | null }>,
   judges: JudgeRef[],
   categories: CategoryRef[],
   scores: StoredScore[],
@@ -75,6 +76,7 @@ export function buildRankings(
       return {
         companyId: company.id,
         companyName: company.name,
+        companyPresenter: company.presenter?.trim() ?? "",
         finalScore,
         judgeCount: judgeTotals.size,
         byJudge: judges.map((judge) => ({
