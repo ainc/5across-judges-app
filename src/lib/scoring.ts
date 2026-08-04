@@ -30,7 +30,7 @@ export function getWeightedTotalForCompany(
 }
 
 export function roundScore(value: number): number {
-  return Math.round(value * 100) / 100;
+  return Math.round(value * 10) / 10;
 }
 
 export function normalizeScore(value: number): number {

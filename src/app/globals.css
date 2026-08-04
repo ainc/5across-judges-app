@@ -2,7 +2,7 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #111827;
 }
 
 @theme inline {
@@ -12,15 +12,310 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+.fiveacross-banner {
+  display: block;
+  height: auto;
+  width: 400px;
+}
+
+.company-results-table {
+  table-layout: fixed;
+}
+
+.company-results-table th:first-child,
+.company-results-table td:first-child {
+  width: 55%;
+}
+
+.goldmedal {
+  height: 25px;
+  width: 25px;
+}
+
+.event-date-calendar-trigger:focus-visible {
+  outline: 2px solid #111827;
+  outline-offset: 2px;
+}
+
+.event-date-calendar-popover {
+  min-width: min(100%, 320px);
+}
+
+.event-date-calendar .rdp-root {
+  --rdp-accent-color: #111827;
+  --rdp-accent-background-color: #f3f4f6;
+  --rdp-day-height: 36px;
+  --rdp-day-width: 36px;
+  --rdp-day_button-height: 34px;
+  --rdp-day_button-width: 34px;
+  --rdp-day_button-border-radius: 6px;
+  --rdp-selected-border: 2px solid #111827;
+  --rdp-today-color: #111827;
+}
+
+.event-date-calendar .rdp-months {
+  justify-content: center;
+}
+
+.event-date-calendar .rdp-month {
+  width: 100%;
+}
+
+.event-date-calendar .rdp-month_caption {
+  font-weight: 600;
+}
+
+.event-date-calendar .rdp-dropdown_root select {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.875rem;
+  background-color: #fff;
+}
+
+@layer components {
+  #toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+  }
+
+  .toast {
+    background: #333;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 4px;
+    margin-top: 10px;
+    animation: toast-fade-in 0.3s, toast-fade-out 0.3s 2.7s forwards;
+  }
+}
+
+@keyframes toast-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.closebutton {
+  height: 20px;
+  width: 20px;
+}
+
+.newcompetitionbutton {
+  height: 30px;
+  width: 30px;
+}
+
+.newcompetition-container {
+  position: relative;
+  display: inline-block;
+  height: 30px;
+  width: 30px;
+}
+
+.newcompetition-container .newcompetitionbutton,
+.newcompetition-container .graynewcompetitionbutton {
+  position: absolute;
+  inset: 0;
+  height: 30px !important;
+  width: 30px !important;
+  font-size: 30px !important;
+}
+
+.graynewcompetitionbutton {
+  color: #6b7280;
+  opacity: 0;
+}
+
+.newcompetition-container:hover svg:first-child {
+  opacity: 0;
+}
+
+.newcompetition-container:hover svg:last-child {
+  opacity: 1;
+}
+
+.makelivebutton {
+  height: 30px;
+  width: 30px;
+}
+
+.graylivebutton {
+  height: 30px;
+  width: 30px;
+  display: none;
+}
+
+.live-container {
+  height: 30px;
+  width: 30px;
+}
+
+.live-container:hover img:first-child {
+  display: none;
+}
+
+.live-container:hover img:last-child {
+  display: block;
+}
+
+.viewbutton {
+  height: 30px;
+  width: 32px;
+}
+
+.grayviewbutton {
+  height: 30px;
+  width: 32px;
+  display: none;
+}
+
+.view-container {
+  height: 30px;
+  width: 32px;
+}
+
+.view-container:hover img:first-child {
+  display: none;
+}
+
+.view-container:hover img:last-child {
+  display: block;
+}
+
+.closebutton {
+  height: 20px;
+  width: 20px;
+}
+
+.close-container {
+  position: relative;
+  display: inline-block;
+  height: 20px;
+  width: 20px;
+}
+
+.close-container .closebutton,
+.close-container .grayclosebutton {
+  position: absolute;
+  inset: 0;
+  height: 20px !important;
+  width: 20px !important;
+  font-size: 20px !important;
+}
+
+.grayclosebutton {
+  color: #6b7280;
+  opacity: 0;
+}
+
+.close-container:hover svg:first-child {
+  opacity: 0;
+}
+
+.close-container:hover svg:last-child {
+  opacity: 1;
+}
+
+.deletebutton {
+  height: 30px;
+  width: 25px;
+}
+
+.graydeletebutton {
+  height: 30px;
+  width: 25px;
+  display: none;
+}
+
+.delete-container {
+  height: 30px;
+  width: 25px;
+}
+
+button.deletebutton:disabled {
+  cursor: not-allowed;
+  pointer-events: none !important;
+}
+
+button.deletebutton:disabled .delete-container > img:first-child {
+  display: none;
+}
+
+button.deletebutton:disabled .graydeletebutton {
+  display: block;
+}
+
+button.deletebutton:not(:disabled) .delete-container:hover > img:first-child {
+  display: none;
+}
+
+button.deletebutton:not(:disabled) .delete-container:hover .graydeletebutton {
+  display: block;
+}
+
+.dark-button:not(:disabled):hover {
+  background-color: #30303a;
+}
+
+.white-button:not(:disabled):hover {
+  background-color: #d3d3d3;
+}
+
+.red-button:not(:disabled):hover {
+  background-color: #d75151;
+}
+
+.dark-button:disabled,
+.dark-button:disabled:hover {
+  background-color: #111827 !important;
+  pointer-events: none !important;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.white-button:disabled,
+.white-button:disabled:hover {
+  background-color: #ffffff !important;
+  pointer-events: none !important;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.red-button:disabled,
+.red-button:disabled:hover {
+  background-color: #ee2524 !important;
+  pointer-events: none !important;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.signoutbutton {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }

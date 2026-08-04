@@ -1,15 +1,14 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum SubmissionStatus {
@@ -17,13 +16,20 @@ enum SubmissionStatus {
   FINAL
 }
 
+enum UserRole {
+  ADMIN
+  JUDGE
+}
+
 model Competition {
-  id          String              @id @default(cuid())
-  name        String
-  eventDate   DateTime
-  isActive    Boolean             @default(false)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  id              String              @id @default(cuid())
+  name            String
+  eventDate       DateTime
+  isActive        Boolean             @default(false)
+  judgeMessage    String?
+  resultsSummary  String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
   judges      Judge[]
   companies   Company[]
   categories  Category[]
@@ -36,6 +42,7 @@ model Judge {
   competitionId String
   name          String
   code          String?
+  message       String?
   createdAt     DateTime            @default(now())
   competition   Competition         @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   sessions      SubmissionSession[]
@@ -48,6 +55,7 @@ model Company {
   id            String      @id @default(cuid())
   competitionId String
   name          String
+  presenter     String?
   createdAt     DateTime    @default(now())
   competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   scores        Score[]
@@ -81,6 +89,16 @@ model SubmissionSession {
   scores        Score[]
 
   @@unique([competitionId, judgeId])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  role         UserRole @default(JUDGE)
+  judgeCode    String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Score {

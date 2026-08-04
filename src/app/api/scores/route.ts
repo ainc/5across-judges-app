@@ -1,8 +1,61 @@
 import { Prisma } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { requireScorer } from "@/lib/require-auth";
 import { getMissingCells, getWeightedTotalForCompany, isScoreInRange, normalizeScore, roundScore } from "@/lib/scoring";
+
+function canAccessJudge(
+  session: { user: { role?: string; judgeId?: string | null } } | null,
+  judgeId: string,
+) {
+  if (session?.user.role === "ADMIN") return true;
+  return judgeId === session?.user.judgeId;
+}
+
+export async function GET(request: NextRequest) {
+  const authResult = await requireScorer();
+  if (authResult.response) {
+    return authResult.response;
+  }
+
+  const competitionId = request.nextUrl.searchParams.get("competitionId");
+  const judgeId = request.nextUrl.searchParams.get("judgeId");
+
+  if (!competitionId || !judgeId) {
+    return NextResponse.json({ error: "competitionId and judgeId are required." }, { status: 400 });
+  }
+
+  if (!canAccessJudge(authResult.session, judgeId)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const judge = await prisma.judge.findUnique({ where: { id: judgeId } });
+  if (!judge || judge.competitionId !== competitionId) {
+    return NextResponse.json({ error: "Judge not found for competition." }, { status: 404 });
+  }
+
+  const [session, scores] = await Promise.all([
+    prisma.submissionSession.findUnique({
+      where: { competitionId_judgeId: { competitionId, judgeId } },
+    }),
+    prisma.score.findMany({
+      where: { competitionId, judgeId },
+      select: { companyId: true, categoryId: true, score: true },
+    }),
+  ]);
+
+  return NextResponse.json({
+    status: session?.status ?? null,
+    submittedAt: session?.submittedAt ?? null,
+    updatedAt: session?.updatedAt ?? null,
+    entries: scores.map((entry) => ({
+      companyId: entry.companyId,
+      categoryId: entry.categoryId,
+      score: entry.score,
+    })),
+  });
+}
 
 const scorePayloadSchema = z.object({
   competitionId: z.string().min(1),
@@ -14,19 +67,28 @@ const scorePayloadSchema = z.object({
       categoryId: z.string().min(1),
       score: z
         .number()
-        .refine(isScoreInRange, { message: "Score must be between 1 and 5." })
+        .refine(isScoreInRange, { message: "Score must be between 0 and 5." })
         .transform(normalizeScore),
     }),
   ),
 });
 
 export async function POST(request: Request) {
+  const authResult = await requireScorer();
+  if (authResult.response) {
+    return authResult.response;
+  }
+
   const payload = scorePayloadSchema.safeParse(await request.json());
   if (!payload.success) {
     return NextResponse.json({ error: payload.error.flatten() }, { status: 400 });
   }
 
   const { competitionId, judgeId, isFinal, entries } = payload.data;
+
+  if (!canAccessJudge(authResult.session, judgeId)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const [competition, judge] = await Promise.all([
     prisma.competition.findUnique({
@@ -135,6 +197,8 @@ export async function POST(request: Request) {
   return NextResponse.json({
     sessionId: session.id,
     status: session.status,
+    submittedAt: session.submittedAt,
+    updatedAt: session.updatedAt,
     totalsByCompany,
   });
 }

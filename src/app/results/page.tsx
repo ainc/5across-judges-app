@@ -1,41 +1,43 @@
-type ResultPayload = {
-  competition: {
-    id: string;
-    name: string;
-    eventDate: string;
-    winner: string | null;
-  };
-  rankings: Array<{
-    companyId: string;
-    companyName: string;
-    finalScore: number;
-    judgeCount: number;
-    rank: number;
-    byJudge: Array<{
-      judgeId: string;
-      judgeName: string;
-      categories: Record<string, number>;
-    }>;
-  }>;
-};
-
-async function getResults() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const response = await fetch(`${baseUrl}/api/results`, { cache: "no-store" });
-  if (!response.ok) {
-    throw new Error("Failed to fetch results");
-  }
-  return (await response.json()) as ResultPayload;
-}
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { CompanyResultsTables } from "@/components/CompanyResultsTables";
+import { SignOutButton } from "@/components/SignOutButton";
+import { getResults } from "@/lib/results-client";
 
 export default async function ResultsPage() {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   const data = await getResults();
+  const isAdmin = session.user.role === "ADMIN";
+
   return (
     <main className="p-6 space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold">Current Competition Results</h1>
-        <p>{data.competition.name}</p>
-        <p className="text-sm">Winner: {data.competition.winner ?? "TBD"}</p>
+      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+        <div className="text-left space-y-1">
+          <h1 className="text-2xl font-semibold">{data.competition.name} Results</h1>
+          <div className="flex flex-wrap gap-4 text-sm">
+              <Link href="/" className="underline">
+                Back to Home
+              </Link>
+            {isAdmin ? (
+              <Link href="/admin" className="underline">
+                Admin Dashboard
+              </Link>
+            ) : null}
+            <SignOutButton />
+          </div>
+        </div>
+        <img
+          src="/images/5acrossbanner.png"
+          alt="5 Across Banner"
+          className="fiveacross-banner justify-self-center"
+        />
+        <div className="w-48 justify-self-end" aria-hidden="true" />
       </header>
 
       <table className="min-w-full border-collapse border">
@@ -51,34 +53,22 @@ export default async function ResultsPage() {
           {data.rankings.map((row) => (
             <tr key={row.companyId}>
               <td className="border p-2">{row.rank}</td>
-              <td className="border p-2">{row.companyName}</td>
-              <td className="border p-2">{row.finalScore.toFixed(2)}</td>
+              <td className="border p-2">
+                <div className="flex items-center gap-2">
+                  <span>{row.companyName}</span>
+                  {row.rank === 1 && (
+                    <img src="/images/goldmedal.png" alt="First Place Medal" className="goldmedal" />
+                  )}
+                </div>
+              </td>
+              <td className="border p-2">{row.finalScore.toFixed(1)}</td>
               <td className="border p-2">{row.judgeCount}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Judge / Category Drill-down</h2>
-        {data.rankings.map((row) => (
-          <div key={row.companyId} className="border rounded p-3">
-            <p className="font-semibold">{row.companyName}</p>
-            {row.byJudge.map((judge) => (
-              <div key={judge.judgeId} className="mt-2">
-                <p className="text-sm font-medium">{judge.judgeName}</p>
-                <ul className="list-disc pl-5 text-sm">
-                  {Object.entries(judge.categories).map(([category, score]) => (
-                    <li key={`${judge.judgeId}:${category}`}>
-                      {category}: {typeof score === "number" ? score.toFixed(2) : score}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        ))}
-      </section>
+      <CompanyResultsTables rankings={data.rankings} categories={data.categories} />
     </main>
   );
 }
