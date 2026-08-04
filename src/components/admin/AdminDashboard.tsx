@@ -2,6 +2,8 @@
 
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined";
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import Link from "next/link";
 import { useState } from "react";
 import { AdminConfirmDialogs } from "@/components/admin/AdminConfirmDialogs";
@@ -185,8 +187,8 @@ export function AdminDashboard() {
                       className="viewbutton"
                     >
                       <div className="view-container">
-                        <img src="/images/viewbutton.png" alt="View Competition Details" className="viewbutton" />
-                        <img src="/images/grayviewbutton.png" alt="Hovered View Button" className="grayviewbutton" />
+                        <VisibilityIcon className="viewbutton" fontSize="inherit" />
+                        <VisibilityOutlinedIcon className="grayviewbutton" fontSize="inherit" />
                       </div>
                     </button>
                     <button

@@ -27,8 +27,14 @@ async function seedUser(
 
 async function main() {
   const adminUsername = process.env.ADMIN_USERNAME ?? "admin";
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "Awesome22!";
-  const judgePassword = process.env.JUDGE_PASSWORD ?? "awesomestuff";
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  const judgePassword = process.env.JUDGE_PASSWORD;
+
+  if (!adminPassword || !judgePassword) {
+    throw new Error(
+      "Set ADMIN_PASSWORD and JUDGE_PASSWORD in .env before running db:seed.",
+    );
+  }
 
   await seedUser(adminUsername, adminPassword, "ADMIN");
   await seedUser(process.env.JUDGE1_USERNAME ?? "judge1", judgePassword, "JUDGE", "JA");

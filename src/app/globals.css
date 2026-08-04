@@ -120,8 +120,8 @@ body {
 }
 
 .newcompetitionbutton {
-  height: 30px;
-  width: 30px;
+  height: 24px;
+  width: 24px;
 }
 
 .newcompetition-container {
@@ -178,27 +178,38 @@ body {
 }
 
 .viewbutton {
-  height: 30px;
-  width: 32px;
-}
-
-.grayviewbutton {
-  height: 30px;
-  width: 32px;
-  display: none;
+  /* Match archived row: two text-sm lines (1.25rem line-height each) */
+  height: 2.5rem;
+  width: 2.5rem;
 }
 
 .view-container {
-  height: 30px;
-  width: 32px;
+  position: relative;
+  display: inline-block;
+  height: 2.5rem;
+  width: 2.5rem;
 }
 
-.view-container:hover img:first-child {
-  display: none;
+.view-container .viewbutton,
+.view-container .grayviewbutton {
+  position: absolute;
+  inset: 0;
+  height: 2.5rem !important;
+  width: 2.5rem !important;
+  font-size: 2.5rem !important;
 }
 
-.view-container:hover img:last-child {
-  display: block;
+.grayviewbutton {
+  color: #6b7280;
+  opacity: 0;
+}
+
+.view-container:hover svg:first-child {
+  opacity: 0;
+}
+
+.view-container:hover svg:last-child {
+  opacity: 1;
 }
 
 .closebutton {

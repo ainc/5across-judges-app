@@ -81,7 +81,7 @@ To bootstrap a first competition locally, run `npm run db:seed`.
    - `npm run dev`
 8. Open `http://localhost:3000` (redirects to `/login` if not signed in)
 
-Default logins: `admin` / `Awesome22!`, `judge1`/`judge2`/`judge3` / `awesomestuff`. Sessions expire after 8 hours. Admin can access `/admin`; judges score at `/`.
+Set `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `JUDGE_PASSWORD` (and optional `JUDGE*_USERNAME`) in `.env` **before** seeding so accounts are not created with placeholder credentials. Sessions expire after 8 hours. Admin can access `/admin`; judges score at `/`.
 
 ## Security (Supabase RLS)
 
