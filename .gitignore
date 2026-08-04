@@ -25,6 +25,8 @@
 *.pem
 *.db
 *.db-journal
+tmp-out.css
+.cursor/
 
 # debug
 npm-debug.log*
