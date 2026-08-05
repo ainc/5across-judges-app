@@ -114,30 +114,37 @@ body {
   }
 }
 
-.closebutton {
-  height: 20px;
-  width: 20px;
-}
-
 .newcompetitionbutton {
-  height: 24px;
-  width: 24px;
+  display: block;
+  height: 1.75rem;
+  width: 1.75rem;
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  background: transparent;
+  line-height: 0;
+  color: inherit;
 }
 
 .newcompetition-container {
   position: relative;
-  display: inline-block;
-  height: 30px;
-  width: 30px;
+  display: block;
+  height: 100%;
+  width: 100%;
+  overflow: visible;
 }
 
 .newcompetition-container .newcompetitionbutton,
 .newcompetition-container .graynewcompetitionbutton {
   position: absolute;
-  inset: 0;
-  height: 30px !important;
-  width: 30px !important;
-  font-size: 30px !important;
+  top: 50%;
+  left: 50%;
+  display: block;
+  aspect-ratio: 1;
+  height: calc(100% * 24 / 20) !important;
+  width: auto !important;
+  font-size: inherit !important;
+  transform: translate(-50%, -50%);
 }
 
 .graynewcompetitionbutton {
@@ -153,62 +160,91 @@ body {
   opacity: 1;
 }
 
-.makelivebutton {
-  height: 30px;
-  width: 30px;
-}
-
-.graylivebutton {
-  height: 30px;
-  width: 30px;
-  display: none;
-}
-
-.live-container {
-  height: 30px;
-  width: 30px;
-}
-
-.live-container:hover img:first-child {
-  display: none;
-}
-
-.live-container:hover img:last-child {
+.archived-row-actions > .makelivebutton,
+.archived-row-actions > .viewbutton,
+.archived-row-actions > .deletebutton {
   display: block;
+  height: 100%;
+  width: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  line-height: 0;
+  color: inherit;
 }
 
-.viewbutton {
-  /* Match archived row: two text-sm lines (1.25rem line-height each) */
-  height: 2.5rem;
-  width: 2.5rem;
+.archived-row-actions > .makelivebutton {
+  aspect-ratio: 1;
 }
 
-.view-container {
+.archived-row-actions > .viewbutton {
+  aspect-ratio: 20 / 15;
+}
+
+.archived-row-actions > .deletebutton {
+  aspect-ratio: 14 / 17;
+}
+
+.archived-row-actions .live-container,
+.archived-row-actions .view-container,
+.archived-row-actions .delete-container {
   position: relative;
-  display: inline-block;
-  height: 2.5rem;
-  width: 2.5rem;
+  display: block;
+  height: 100%;
+  width: 100%;
+  overflow: visible;
 }
 
-.view-container .viewbutton,
-.view-container .grayviewbutton {
+.archived-row-actions .live-container .makelivebutton,
+.archived-row-actions .live-container .graylivebutton,
+.archived-row-actions .view-container .viewbutton,
+.archived-row-actions .view-container .grayviewbutton,
+.archived-row-actions .delete-container .deletebutton,
+.archived-row-actions .delete-container .graydeletebutton {
   position: absolute;
-  inset: 0;
-  height: 2.5rem !important;
-  width: 2.5rem !important;
-  font-size: 2.5rem !important;
+  top: 50%;
+  left: 50%;
+  display: block;
+  aspect-ratio: 1;
+  width: auto !important;
+  transform: translate(-50%, -50%);
 }
 
-.grayviewbutton {
+.archived-row-actions .live-container .makelivebutton,
+.archived-row-actions .live-container .graylivebutton {
+  height: calc(100% * 24 / 20) !important;
+  font-size: inherit !important;
+}
+
+.archived-row-actions .view-container .viewbutton,
+.archived-row-actions .view-container .grayviewbutton {
+  height: calc(100% * 24 / 15) !important;
+  font-size: inherit !important;
+}
+
+.archived-row-actions .delete-container .deletebutton,
+.archived-row-actions .delete-container .graydeletebutton {
+  height: calc(100% * 24 / 17) !important;
+  font-size: inherit !important;
+}
+
+.archived-row-actions .graylivebutton,
+.archived-row-actions .grayviewbutton,
+.archived-row-actions .graydeletebutton {
+  display: block;
   color: #6b7280;
   opacity: 0;
 }
 
-.view-container:hover svg:first-child {
+.archived-row-actions .live-container:hover svg:first-child,
+.archived-row-actions .view-container:hover svg:first-child,
+.archived-row-actions .delete-container:hover svg:first-child {
   opacity: 0;
 }
 
-.view-container:hover svg:last-child {
+.archived-row-actions .live-container:hover svg:last-child,
+.archived-row-actions .view-container:hover svg:last-child,
+.archived-row-actions .delete-container:hover svg:last-child {
   opacity: 1;
 }
 
@@ -281,6 +317,60 @@ button.deletebutton:not(:disabled) .delete-container:hover > img:first-child {
 
 button.deletebutton:not(:disabled) .delete-container:hover .graydeletebutton {
   display: block;
+}
+
+button.messagedelete {
+  display: block;
+  align-self: stretch;
+  height: auto;
+  width: auto;
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  background: transparent;
+  line-height: 0;
+  color: inherit;
+}
+
+button.messagedelete:disabled {
+  cursor: not-allowed;
+  pointer-events: none !important;
+  opacity: 0.4;
+}
+
+.messagedelete-container {
+  position: relative;
+  display: block;
+  height: 100%;
+  width: 100%;
+  overflow: visible;
+}
+
+/* DeleteForever glyph ≈ 18/24 of viewBox — scale so ink hits button edges */
+.messagedelete-container .messagedelete,
+.messagedelete-container .graymessagedelete {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  aspect-ratio: 1;
+  height: calc(100% * 24 / 18) !important;
+  width: auto !important;
+  font-size: inherit !important;
+  transform: translate(-50%, -50%);
+}
+
+.graymessagedelete {
+  color: #6b7280;
+  opacity: 0;
+}
+
+button.messagedelete:not(:disabled) .messagedelete-container:hover svg:first-child {
+  opacity: 0;
+}
+
+button.messagedelete:not(:disabled) .messagedelete-container:hover svg:last-child {
+  opacity: 1;
 }
 
 .dark-button:not(:disabled):hover {

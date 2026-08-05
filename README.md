@@ -72,7 +72,8 @@ To bootstrap a first competition locally, run `npm run db:seed`.
    - `DATABASE_URL`
    - `DIRECT_URL`
    - `AUTH_SECRET` (generate with `openssl rand -base64 32`)
-   - Optional: `ADMIN_USERNAME`/`ADMIN_PASSWORD`, `JUDGE_PASSWORD`, `JUDGE1_USERNAME`, etc.
+   - `ADMIN_PASSWORD` and `JUDGE_PASSWORD` (**required** for seeding)
+   - Optional: `ADMIN_USERNAME`, `JUDGE1_USERNAME`, `JUDGE2_USERNAME`, `JUDGE3_USERNAME`
 5. Apply migrations to Supabase:
    - `npm run db:deploy`
 6. Seed baseline competition data and users:
@@ -81,7 +82,7 @@ To bootstrap a first competition locally, run `npm run db:seed`.
    - `npm run dev`
 8. Open `http://localhost:3000` (redirects to `/login` if not signed in)
 
-Set `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `JUDGE_PASSWORD` (and optional `JUDGE*_USERNAME`) in `.env` **before** seeding so accounts are not created with placeholder credentials. Sessions expire after 8 hours. Admin can access `/admin`; judges score at `/`.
+Sessions expire after 8 hours. Admin can access `/admin`; judges score at `/`.
 
 ## Security (Supabase RLS)
 

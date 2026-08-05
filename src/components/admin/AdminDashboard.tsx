@@ -4,6 +4,10 @@ import AddCircleIcon from "@mui/icons-material/AddCircle";
 import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined";
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import PlayCircleFilledWhiteIcon from '@mui/icons-material/PlayCircleFilledWhite';
+import PlayCircleFilledWhiteOutlinedIcon from '@mui/icons-material/PlayCircleFilledWhiteOutlined';
 import Link from "next/link";
 import { useState } from "react";
 import { AdminConfirmDialogs } from "@/components/admin/AdminConfirmDialogs";
@@ -128,26 +132,24 @@ export function AdminDashboard() {
           </div>
         </section>
 
-        <section className="flex-1 rounded border p-4 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-xl font-semibold">Archived Competitions</h2>
-            <button
-              type="button"
-              aria-label="Create competition"
-              onClick={() => createArchivedCompetition(data.competition.id, data.competition.name)}
-              disabled={
-                isCreatingArchived !== null ||
-                isActivatingArchived !== null ||
-                isDeletingArchived !== null
-              }
-              className="newcompetitionbutton"
-            >
-              <div className="newcompetition-container" aria-hidden>
-                <AddCircleIcon className="newcompetitionbutton" fontSize="inherit" />
-                <AddCircleOutlineOutlinedIcon className="graynewcompetitionbutton" fontSize="inherit" />
-              </div>
-            </button>
-          </div>
+        <section className="relative flex-1 rounded border p-4 space-y-3">
+          <button
+            type="button"
+            aria-label="Create competition"
+            onClick={() => createArchivedCompetition(data.competition.id, data.competition.name)}
+            disabled={
+              isCreatingArchived !== null ||
+              isActivatingArchived !== null ||
+              isDeletingArchived !== null
+            }
+            className="newcompetitionbutton absolute top-2.5 right-2.5 z-10"
+          >
+            <div className="newcompetition-container" aria-hidden>
+              <AddCircleIcon className="newcompetitionbutton" fontSize="inherit" />
+              <AddCircleOutlineOutlinedIcon className="graynewcompetitionbutton" fontSize="inherit" />
+            </div>
+          </button>
+          <h2 className="text-xl font-semibold leading-none pr-12">Archived Competitions</h2>
           {archived.length === 0 ? (
             <p className="text-sm text-gray-600">No competitions in archive.</p>
           ) : (
@@ -155,18 +157,20 @@ export function AdminDashboard() {
               {archived.map((item) => (
                 <li
                   key={item.id}
-                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 rounded bg-white p-3"
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-stretch gap-x-2 rounded bg-white p-3"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium">{item.name}</p>
-                    <p className="text-gray-600">
+                    <p className="font-medium leading-none">{item.name}</p>
+                    <p className="mt-1 text-gray-600 leading-none">
                       {formatEventDate(item.eventDate)} · Winner: {item.winner ?? "TBD"} ·{" "}
-                      {item.finalSubmissionCount} final submission{item.finalSubmissionCount === 1 ? "" : "s"}
+                      {item.finalSubmissionCount} final submission
+                      {item.finalSubmissionCount === 1 ? "" : "s"}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="archived-row-actions flex h-full shrink-0 items-stretch gap-4">
                     <button
                       type="button"
+                      aria-label={`Make ${item.name} live`}
                       onClick={() => void makeArchivedCompetitionLive(item.id, item.name)}
                       disabled={
                         isActivatingArchived === item.id ||
@@ -175,31 +179,33 @@ export function AdminDashboard() {
                       }
                       className="makelivebutton"
                     >
-                      <div className="live-container">
-                        <img src="/images/playbutton.png" alt="Make Live Button" className="makelivebutton" />
-                        <img src="/images/grayplaybutton.png" alt="Hovered Make Live Button" className="graylivebutton" />
+                      <div className="live-container" aria-hidden>
+                        <PlayCircleFilledWhiteIcon className="makelivebutton" fontSize="inherit" />
+                        <PlayCircleFilledWhiteOutlinedIcon className="graylivebutton" fontSize="inherit" />
                       </div>
                     </button>
                     <button
                       type="button"
+                      aria-label={`View ${item.name} details`}
                       onClick={() => void openArchivedDetails(item.id)}
                       disabled={isLoadingArchivedDetails}
                       className="viewbutton"
                     >
-                      <div className="view-container">
+                      <div className="view-container" aria-hidden>
                         <VisibilityIcon className="viewbutton" fontSize="inherit" />
                         <VisibilityOutlinedIcon className="grayviewbutton" fontSize="inherit" />
                       </div>
                     </button>
                     <button
                       type="button"
+                      aria-label={`Delete ${item.name}`}
                       onClick={() => void deletePastCompetition(item.id, item.name)}
                       disabled={isDeletingArchived === item.id}
                       className="deletebutton"
                     >
-                      <div className="delete-container">
-                        <img src="/images/deletebutton.png" alt="Delete Button" className="deletebutton" />
-                        <img src="/images/graydeletebutton.png" alt="Hovered Delete Button" className="graydeletebutton" />
+                      <div className="delete-container" aria-hidden>
+                        <DeleteForeverIcon className="deletebutton" fontSize="inherit" />
+                        <DeleteForeverOutlinedIcon className="graydeletebutton" fontSize="inherit" />
                       </div>
                     </button>
                   </div>
@@ -328,7 +334,7 @@ export function AdminDashboard() {
                   ) : null}
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 items-stretch gap-2">
                 <button
                   type="button"
                   onClick={() => setMessageJudgeId(judge.id)}
@@ -342,16 +348,12 @@ export function AdminDashboard() {
                   type="button"
                   onClick={() => requestDeleteJudgeMessage(judge.id, judge.name)}
                   disabled={!judge.message?.trim()}
-                  className="deletebutton"
+                  className="messagedelete"
                   title={judge.message?.trim() ? "Delete message" : "No message sent"}
                 >
-                  <div className="delete-container">
-                    <img src="/images/deletebutton.png" alt="Delete Message" className="deletebutton" />
-                    <img
-                      src="/images/graydeletebutton.png"
-                      alt="Hovered Delete Message"
-                      className="graydeletebutton"
-                    />
+                  <div className="messagedelete-container pr-6" aria-hidden>
+                    <DeleteForeverIcon className="messagedelete" fontSize="inherit" />
+                    <DeleteForeverOutlinedIcon className="graymessagedelete" fontSize="inherit" />
                   </div>
                 </button>
               </div>
@@ -396,7 +398,9 @@ export function AdminDashboard() {
           {data.categories.map((category) => (
             <div key={category.id} className="flex flex-wrap items-center gap-2 rounded bg-white px-1 py-3 font-medium text-base text-black">
               <span className="font-medium">{category.name.trim() || "Unnamed category"}</span>
-              <span className="text-sm text-gray-600">({category.weight}%)</span>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="text-sm text-gray-600">({category.weight}%)</span>
+              </div>
             </div>
           ))}
         </section>
