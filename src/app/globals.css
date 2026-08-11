@@ -162,7 +162,7 @@ body {
 
 .archived-row-actions > .makelivebutton,
 .archived-row-actions > .viewbutton,
-.archived-row-actions > .deletebutton {
+.archived-row-actions > .archivedeletebutton {
   display: block;
   height: 100%;
   width: auto;
@@ -181,13 +181,13 @@ body {
   aspect-ratio: 20 / 15;
 }
 
-.archived-row-actions > .deletebutton {
+.archived-row-actions > .archivedeletebutton {
   aspect-ratio: 14 / 17;
 }
 
 .archived-row-actions .live-container,
 .archived-row-actions .view-container,
-.archived-row-actions .delete-container {
+.archived-row-actions .archivedelete-container {
   position: relative;
   display: block;
   height: 100%;
@@ -199,8 +199,8 @@ body {
 .archived-row-actions .live-container .graylivebutton,
 .archived-row-actions .view-container .viewbutton,
 .archived-row-actions .view-container .grayviewbutton,
-.archived-row-actions .delete-container .deletebutton,
-.archived-row-actions .delete-container .graydeletebutton {
+.archived-row-actions .archivedelete-container .archivedeletebutton,
+.archived-row-actions .archivedelete-container .grayarchivedeletebutton {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -222,15 +222,15 @@ body {
   font-size: inherit !important;
 }
 
-.archived-row-actions .delete-container .deletebutton,
-.archived-row-actions .delete-container .graydeletebutton {
+.archived-row-actions .archivedelete-container .archivedeletebutton,
+.archived-row-actions .archivedelete-container .grayarchivedeletebutton {
   height: calc(100% * 24 / 17) !important;
   font-size: inherit !important;
 }
 
 .archived-row-actions .graylivebutton,
 .archived-row-actions .grayviewbutton,
-.archived-row-actions .graydeletebutton {
+.archived-row-actions .grayarchivedeletebutton {
   display: block;
   color: #6b7280;
   opacity: 0;
@@ -238,13 +238,13 @@ body {
 
 .archived-row-actions .live-container:hover svg:first-child,
 .archived-row-actions .view-container:hover svg:first-child,
-.archived-row-actions .delete-container:hover svg:first-child {
+.archived-row-actions .archivedelete-container:hover svg:first-child {
   opacity: 0;
 }
 
 .archived-row-actions .live-container:hover svg:last-child,
 .archived-row-actions .view-container:hover svg:last-child,
-.archived-row-actions .delete-container:hover svg:last-child {
+.archived-row-actions .archivedelete-container:hover svg:last-child {
   opacity: 1;
 }
 

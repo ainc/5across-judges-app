@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -27,7 +28,12 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {/* Puts MUI/Emotion in @layer mui so existing globals.css icon rules win in production */}
+        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
+          {children}
+        </AppRouterCacheProvider>
+      </body>
     </html>
   );
 }

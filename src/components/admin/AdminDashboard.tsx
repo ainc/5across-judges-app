@@ -201,11 +201,11 @@ export function AdminDashboard() {
                       aria-label={`Delete ${item.name}`}
                       onClick={() => void deletePastCompetition(item.id, item.name)}
                       disabled={isDeletingArchived === item.id}
-                      className="deletebutton"
+                      className="archivedeletebutton"
                     >
-                      <div className="delete-container" aria-hidden>
-                        <DeleteForeverIcon className="deletebutton" fontSize="inherit" />
-                        <DeleteForeverOutlinedIcon className="graydeletebutton" fontSize="inherit" />
+                      <div className="archivedelete-container" aria-hidden>
+                        <DeleteForeverIcon className="archivedeletebutton" fontSize="inherit" />
+                        <DeleteForeverOutlinedIcon className="grayarchivedeletebutton" fontSize="inherit" />
                       </div>
                     </button>
                   </div>
