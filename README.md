@@ -1,108 +1,273 @@
-# Pitch Judging Web App
+# 5 Across Judge Scoring App
 
-Fast, judge-friendly scoring web app for pitch competitions with draft save, final submission validation, live weighted totals, current rankings, and historical competition results.
+Web app for Awesome Inc’s **5 Across** pitch competitions. Judges score companies during the event; admins configure the round, message judges, save results, and archive history.
 
-## Stack
+Built for a live event night: fast scoring, draft saves, validated final submissions, weighted totals, live rankings, and past competition look-up.
 
-- Next.js (App Router) + TypeScript
-- Prisma ORM
-- Supabase Postgres (`DATABASE_URL` + `DIRECT_URL`)
+Website will be configured for judges by Awesome Inc prior to event, ask Kyle for login info.
 
-## Data Model
+---
 
-Core entities:
+## Day-one setup (new intern)
 
-- `Competition`: competition run metadata (`name`, `eventDate`, `isActive`)
-- `Judge`, `Company`, `Category`: competition-scoped configuration
-- `SubmissionSession`: per-judge submission status (`DRAFT` or `FINAL`)
-- `Score`: judge/company/category score entries scoped to one competition
+1. Get access to the GitHub repo (`ainc/5across-judges-app`), the Supabase project, and Netlify (ask Kyle).
+2. Copy env values into a local `.env` (see [Environment variables](#environment-variables)).
+3. Install and run:
 
-All score writes and reads are scoped by `competitionId`, so new competitions do not overwrite prior competition data.
+```bash
+npm install
+npm run db:deploy    # apply Prisma migrations to Supabase
+npm run db:seed      # WARNING: wipes competition/score data; creates users + sample rounds
+npm run dev          # http://localhost:3000 → redirects to /login
+```
 
-## Scoring Logic
+4. Sign in (defaults after seed):
+   - Admin: `admin` + `ADMIN_PASSWORD`
+   - Judges: `judge1` / `judge2` / `judge3` + `JUDGE_PASSWORD`
+5. Walk the product once: score as a judge on `/` → submit final → check `/results` → explore `/admin`.
 
-- Categories use configurable integer weights (percent)
-- Weight conversion: `decimalWeight = weight / 100`
-- Judge per-company weighted score: `sum(score * decimalWeight)` over scored categories
-- Final company score: average of all judges' weighted totals for that company
-- Displayed final scores rounded to 2 decimals
-- Winner: highest final company score
+**Do not run `db:seed` against production** unless you intend to wipe all competitions and scores.
 
-## Configuration
+---
 
-Competition config lives in DB and is seeded by `prisma/seed.ts`:
+## Who uses what
 
-- Judges list
-- Companies list
-- Categories and weights
-- Score scale max (`maxScore`, currently 5)
+| Role | Routes | What they do |
+|------|--------|--------------|
+| **JUDGE** | `/`, `/results` | Score companies for the active competition; view rankings |
+| **ADMIN** | `/`, `/results`, `/admin` | Everything judges can do, plus pick any judge’s score sheet, edit config, message judges, snapshot/archive rounds |
 
-Use the **Admin Dashboard** (`/admin`) to manage the active competition without touching seed data:
+Judges will be signed in by Awesome Inc prior to the event. Admins run the competition from `/admin`.
 
-- Edit judge and company names
-- Edit scoring criteria names, weights, and max scores (weights must total 100%)
-- Post a message to judges (shown on the scoring page)
-- Save a text results snapshot from current final submissions
-- Archive the current round and start a fresh competition (clears judge inputs on the main page)
+---
 
-To bootstrap a first competition locally, run `npm run db:seed`.
+## Tech stack
 
-## API Endpoints
+| Layer | Choice |
+|-------|--------|
+| App | Next.js 16 (App Router), React 19, TypeScript |
+| UI | Tailwind CSS 4, MUI 9 icons/components, Emotion (`@mui/material-nextjs`) |
+| Auth | NextAuth v5 (Credentials + JWT, 8-hour sessions) |
+| DB | Supabase Postgres via Prisma 6 (`DATABASE_URL` pooler + `DIRECT_URL` for migrations) |
+| Validation | Zod |
+| Deploy | Netlify (frontend) + Supabase (database) |
 
-- `GET /api/competitions/active`: active competition config (judges, companies, categories)
-- `GET /api/scores?competitionId=&judgeId=`: load a judge's saved scores and submission status (`DRAFT`, `FINAL`, or none)
-- `POST /api/scores`: bulk score upsert by judge; allows draft incomplete, rejects incomplete final submissions
-- `GET /api/results`: ranking, winner, score, rank, judge count, drill-down for active (or provided) competition; **final submissions only**
-- `GET /api/competitions`: list past competitions with metadata and winner
-- `GET /api/competitions/:competitionId/results`: selected competition rankings and score details
-- `GET /api/admin/competition`: active competition admin config
-- `PUT /api/admin/competition`: update judges, companies, categories, judge message, and stored results summary
-- `POST /api/admin/competition/save-results`: compute rankings and store a results text snapshot on the active competition
-- `POST /api/admin/competition/next`: archive active competition and create a fresh active round with the same setup
+This is **not** classic Next.js 13/14 knowledge. Before changing framework APIs, skim `node_modules/next/dist/docs/` and `AGENTS.md`. Auth edge gating lives in `src/proxy.ts` (Next 16 “proxy”), not a `middleware.ts` file.
 
-## Local Setup
+---
 
-1. Create a free [Supabase](https://supabase.com) project.
-2. In **Project Settings → Database**, copy:
-   - **Transaction pooler** URI → `DATABASE_URL` (port `6543`, append `?pgbouncer=true`)
-   - **Direct connection** URI → `DIRECT_URL` (port `5432`)
-3. Install dependencies:
-   - `npm install`
-4. Copy `.env.example` to `.env` and fill in:
-   - `DATABASE_URL`
-   - `DIRECT_URL`
-   - `AUTH_SECRET` (generate with `openssl rand -base64 32`)
-   - `ADMIN_PASSWORD` and `JUDGE_PASSWORD` (**required** for seeding)
-   - Optional: `ADMIN_USERNAME`, `JUDGE1_USERNAME`, `JUDGE2_USERNAME`, `JUDGE3_USERNAME`
-5. Apply migrations to Supabase:
-   - `npm run db:deploy`
-6. Seed baseline competition data and users:
-   - `npm run db:seed`
-7. Start app:
-   - `npm run dev`
-8. Open `http://localhost:3000` (redirects to `/login` if not signed in)
+## How the app is organized
 
-Sessions expire after 8 hours. Admin can access `/admin`; judges score at `/`.
+```
+src/
+  app/                      # Routes (App Router)
+    page.tsx                # `/` judging UI
+    login/page.tsx          # `/login`
+    admin/page.tsx          # `/admin` (ADMIN only)
+    results/page.tsx        # `/results`
+    api/                    # REST route handlers (most mutations)
+  auth.ts / auth.config.ts  # NextAuth setup + route authorization rules
+  proxy.ts                  # Auth gate for matched routes
+  components/
+    JudgingPage.tsx         # Main scoring screen
+    admin/                  # AdminDashboard + modals
+  hooks/
+    useJudgingSession.ts    # Judge page data/load/save
+    useAdminDashboard.ts    # Admin page state + API calls
+  lib/
+    prisma.ts               # Prisma client singleton
+    require-auth.ts         # requireAuth / requireAdmin / requireScorer
+    auth-users.ts           # Login + judgeCode → Judge.id mapping
+    scoring.ts              # Weights, range checks, rounding
+    competition-results.ts  # Rankings from FINAL submissions
+    competition-snapshot.ts # Archive / copy competitions
+    admin-api.ts            # Browser helpers for admin fetches
+prisma/
+  schema.prisma             # Data model
+  seed.ts                   # Users + sample competitions
+  migrations/               # Including Supabase RLS policies
+```
 
-## Security (Supabase RLS)
+**Mental model:** pages/hooks are UI; business rules live in `src/lib/*`; persistence goes through Prisma in API routes. There are only a couple of server actions (`login`, admin `signOut`); almost everything else is `/api/...`.
 
-This app authenticates with **NextAuth** and reads/writes Postgres through **Prisma** (`DATABASE_URL`). It does **not** use Supabase Auth JWTs, so policies based on `auth.uid()` are not applicable.
+---
 
-Migrations enable **Row Level Security** on all app tables and add explicit **deny** policies for `anon` / `authenticated`. That blocks the Supabase Data API (project URL + anon key) while Prisma keeps working via the privileged DB connection. Do **not** add `auth.uid()` policies unless you later switch these tables to Supabase Auth + PostgREST. Authorization for judges/admins is enforced in Next.js route handlers (`requireAuth` / `requireAdmin` / `requireScorer`).
+## Product flows
 
-After pulling RLS migrations, run `npm run db:deploy` so Supabase picks them up and the dashboard warnings clear.
+### Scoring (event night)
 
-## Deploy (Netlify)
+1. Load active config: `GET /api/competitions/active` (judging page also polls ~every 5s for config changes).
+2. Load that judge’s grid: `GET /api/scores?competitionId=&judgeId=`.
+3. Save: `POST /api/scores` with `{ competitionId, judgeId, isFinal, entries[] }`.
+   - **Draft:** incomplete grids allowed.
+   - **Final:** every company × category cell required; scores must be **1–5**.
+4. Per-company weighted total: `sum(score × weight/100)`. Display rounding is **1 decimal** (`roundScore` in `src/lib/scoring.ts`).
+5. Company final score on results: average of judges who have a **FINAL** session for that competition. Winner = highest average.
 
-Set the same env vars on Netlify (`DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, and any auth overrides). Run `npm run db:deploy` against Supabase before or as part of deploy so the schema exists. Local SQLite (`prisma/dev.db`) is no longer used.
+Judges are locked to their own `judgeId`. Admins can switch between judges on `/`.
 
-## Build
+### Admin: configure the active round
 
-- Production build: `npm run build`
-- Lint: `npm run lint`
+From `/admin` (via `useAdminDashboard` → `PUT /api/admin/competition`):
 
-## Notes on History Retention
+- Competition name + event date
+- Judges (names/codes), companies/presenters, categories (weights must total **100%**)
+- Broadcast message to all judges (`judgeMessage`) and optional per-judge messages
+- Results preview (polls ~every 15s)
 
-- Each competition has its own judges/companies/categories and score rows.
-- Historical competition records remain queryable through history endpoints/pages.
-- Final rankings are recomputed from stored underlying scores, preserving transparency and drill-down capability.
+### Admin: save results / next round / history
+
+| Action | API | Effect |
+|--------|-----|--------|
+| Save results snapshot | `POST /api/admin/competition/save-results` | Stores `resultsSummary` and deep-copies the competition into an archived copy (active round stays active) |
+| Start next competition | `POST /api/admin/competition/next` | Marks current inactive, creates a fresh active round with default judges/companies and copied categories |
+| List / view archived | `GET /api/admin/competitions/archived` (+ `/[id]`) | Past rounds |
+| Make archived live | `POST .../archived/[id]` | Swaps which competition is active (fails if names collide) |
+| Delete archived | `DELETE .../archived/[id]` | Cannot delete the active competition |
+
+Historical rankings are recomputed from stored scores (FINAL sessions only), not from a frozen number alone.
+
+---
+
+## Auth (how login actually works)
+
+```
+/login form
+  → loginAction (server)
+  → NextAuth Credentials → getUserFromDb()  [src/lib/auth-users.ts]
+  → bcrypt check against User.passwordHash
+  → JUDGE: resolveJudgeIdForCode(judgeCode) against the *active* competition’s judges
+  → JWT session (8 hours) with { role, judgeId }
+```
+
+Gates (all of these matter):
+
+1. `src/proxy.ts` + `authorized` in `src/auth.config.ts` (page/API path rules)
+2. `requireAuth` / `requireAdmin` / `requireScorer` inside route handlers
+3. Page-level redirects (e.g. non-admins hitting `/admin`)
+
+**Judge linking gotcha:** login users have `User.judgeCode` (`JA` / `JB` / `JC`). Those map to `Judge` rows on the active competition by code, or by creation order slot if codes don’t match (`JUDGE_LOGIN_SLOTS` in `auth-users.ts`). Renaming judges is fine; reordering/deleting/adding judges without codes can break who lands on which score sheet.
+
+This app does **not** use Supabase Auth. NextAuth + Prisma own authentication/authorization.
+
+---
+
+## Data model (Prisma)
+
+Core idea: **every score row is scoped by `competitionId`**, so new rounds never overwrite old ones.
+
+```
+Competition (name, eventDate, isActive, judgeMessage?, resultsSummary?)
+  ├── Judge[]                 (unique name per competition; optional code/message)
+  ├── Company[]               (unique name; optional presenter)
+  ├── Category[]              (weight %, maxScore default 5)
+  ├── SubmissionSession[]     (per judge; DRAFT | FINAL)
+  └── Score[]                 (judge × company × category; unique combo)
+
+User (username, passwordHash, role ADMIN|JUDGE, judgeCode?)
+  └── not a FK to Judge — linked at login time via judgeCode / slot
+```
+
+Schema: `prisma/schema.prisma`. Deleting a competition cascades to its judges, companies, categories, sessions, and scores.
+
+---
+
+## API reference
+
+| Method | Path | Who | Purpose |
+|--------|------|-----|---------|
+| * | `/api/auth/[...nextauth]` | Public | NextAuth |
+| GET | `/api/competitions/active` | Logged in | Active config + `configRevision` |
+| GET | `/api/competitions` | Logged in | Competitions + winners |
+| GET | `/api/competitions/:id/results` | Logged in | Rankings for one competition |
+| GET/POST | `/api/scores` | Judge or Admin | Load / upsert scores |
+| GET | `/api/results` | Logged in | Rankings for active (or `?competitionId=`) |
+| GET/PUT | `/api/admin/competition` | Admin | Read/update active config |
+| POST | `/api/admin/competition/save-results` | Admin | Snapshot + archive copy |
+| POST | `/api/admin/competition/next` | Admin | Archive current, start new active |
+| GET/POST | `/api/admin/competitions/archived` | Admin | List / create inactive |
+| GET/POST/DELETE | `/api/admin/competitions/archived/:id` | Admin | Details / make live / delete |
+| PUT | `/api/admin/judges/:id/message` | Admin | Per-judge message |
+
+---
+
+## Environment variables
+
+Create a `.env` in the repo root (see `.env.example`).
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `DATABASE_URL` | Yes | Supabase **transaction pooler** URI (port `6543`, append `?pgbouncer=true`) |
+| `DIRECT_URL` | Yes | Supabase **direct** URI (port `5432`) — used by Prisma migrations |
+| `AUTH_SECRET` | Yes in prod | `openssl rand -base64 32`. Dev has a hardcoded fallback in `auth.config.ts` |
+| `ADMIN_PASSWORD` | Yes for seed | Password for the admin user |
+| `JUDGE_PASSWORD` | Yes for seed | Shared password for judge1/2/3 |
+| `ADMIN_USERNAME` | Optional | Default `admin` |
+| `JUDGE1_USERNAME` / `JUDGE2_USERNAME` / `JUDGE3_USERNAME` | Optional | Defaults `judge1` / `judge2` / `judge3` |
+
+Supabase: **Project Settings → Database** for the two connection strings.
+
+---
+
+## Scripts
+
+| Script | What it does |
+|--------|----------------|
+| `npm run dev` | Local Next.js server |
+| `npm run build` / `start` | Production build / run |
+| `npm run lint` | ESLint |
+| `npm run db:deploy` | `prisma migrate deploy` (use against Supabase) |
+| `npm run db:migrate` | `prisma migrate dev` (create/apply migrations locally) |
+| `npm run db:seed` | Seed users + sample competitions (**destructive** to competition data) |
+| `npm run db:generate` | Regenerate Prisma client |
+
+---
+
+## Deploy (Netlify + Supabase)
+
+1. Set the same env vars on the Netlify site (`DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, passwords/usernames as needed).
+2. Run `npm run db:deploy` against Supabase whenever migrations change (including after pull), so schema + RLS stay in sync.
+3. Push to the connected GitHub branch; Netlify builds with `npm run build`.
+
+There is no `netlify.toml` in the repo today — build settings live in the Netlify UI.
+
+### Supabase RLS (important)
+
+Migrations turn on Row Level Security and **deny** `anon` / `authenticated` access through the Supabase Data API. That is intentional: the app talks to Postgres with Prisma’s DB URL (privileged), not with the anon key. Do **not** add `auth.uid()` policies unless you migrate this app to Supabase Auth + PostgREST. App authorization stays in Next.js (`requireAuth` / `requireAdmin` / `requireScorer`).
+
+---
+
+## Gotchas you’ll hit
+
+1. **MUI icon hover overlays in production** — Filled + outline icons are stacked and toggled with CSS. Emotion styles can fight `globals.css` on Netlify. Fix already in place:
+   - `AppRouterCacheProvider` with `enableCssLayer: true` in `src/app/layout.tsx`
+   - `!important` overlay rules in `src/app/globals.css`
+   - Prefer unique class names when two buttons share similar icon CSS (e.g. archived delete vs message delete).
+2. **`db:seed` deletes all competitions and scores.** Safe for a fresh local DB; dangerous on shared/prod.
+3. **Score range is 1–5** in `isScoreInRange`. Some older error strings may say “0 and 5” — trust the code.
+4. **Rounding is 1 decimal**, not 2.
+5. **Judge login mapping is fragile across structural judge edits.** Prefer renaming over reordering/deleting the JA/JB/JC slots mid-event.
+6. **Admin unique-name renames** sometimes use a two-phase `__tmp_` update to avoid Postgres unique constraint collisions — don’t “simplify” that without understanding why.
+7. **Local SQLite is gone.** Everything expects Supabase Postgres.
+8. **Next.js 16 differs** from older docs; check `AGENTS.md` / local Next docs before inventing middleware or App Router patterns.
+
+---
+
+## Suggested first debugging path
+
+When something breaks on scoring or results:
+
+1. Reproduce as `judge1` and as `admin`.
+2. Trace UI → hook → API:
+   - Judging: `JudgingPage` → `useJudgingSession` → `/api/scores` → `scoring.ts`
+   - Results: `/results` or admin preview → `competition-results.ts` (FINAL sessions only)
+   - Admin save/next: `useAdminDashboard` → `/api/admin/competition/*` → `competition-snapshot.ts`
+3. Confirm which competition is `isActive: true` in Supabase (Table Editor) if the UI looks “stuck” on an old round.
+
+---
+
+## Contact / ownership
+
+Product owner: Awesome Inc staff running 5 Across.  
+Repo: `https://github.com/ainc/5across-judges-app`  
+When you leave, update this README with anything that surprised you — especially env access, Netlify project name, and event-night runbooks.
