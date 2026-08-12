@@ -9,33 +9,33 @@ type HoverDeleteButtonProps = {
   disabled?: boolean;
   "aria-label": string;
   title?: string;
-  className?: string;
-  /** Extra class on the inner overlay container (e.g. pr-6). */
-  containerClassName?: string;
 };
+
+/** Original modal delete hit box (same as prior PNG buttons). */
+const BUTTON_WIDTH = 25;
+const BUTTON_HEIGHT = 30;
 
 const iconStyle: CSSProperties = {
   position: "absolute",
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: "100%",
-  height: "100%",
+  width: BUTTON_HEIGHT,
+  height: BUTTON_HEIGHT,
+  fontSize: BUTTON_HEIGHT,
   display: "block",
 };
 
 /**
- * Filled → outlined delete icon on hover.
- * Uses inline position/opacity so Emotion cannot leave both layers visible
- * in production (Netlify), which was breaking stacked-SVG CSS overlays.
+ * Modal row delete (judges / categories).
+ * Keeps the original 25×30 size. Inline position/opacity so Netlify/Emotion
+ * cannot show both filled + outline icons at once.
  */
 export function HoverDeleteButton({
   onClick,
   disabled = false,
   "aria-label": ariaLabel,
   title,
-  className = "modaldelete",
-  containerClassName = "modaldelete-container",
 }: HoverDeleteButtonProps) {
   const [hovered, setHovered] = useState(false);
   const showOutline = hovered && !disabled;
@@ -43,21 +43,40 @@ export function HoverDeleteButton({
   return (
     <button
       type="button"
-      className={className}
+      className="deletebutton shrink-0 self-center"
       aria-label={ariaLabel}
       title={title}
       disabled={disabled}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "block",
+        width: BUTTON_WIDTH,
+        height: BUTTON_HEIGHT,
+        padding: 0,
+        border: "none",
+        background: "transparent",
+        lineHeight: 0,
+        color: "inherit",
+        flexShrink: 0,
+        alignSelf: "center",
+        opacity: disabled ? 0.4 : 1,
+        cursor: disabled ? "not-allowed" : "pointer",
+        pointerEvents: disabled ? "none" : "auto",
+      }}
     >
-      <span className={containerClassName} aria-hidden style={{ position: "relative", display: "block", height: "100%", width: "100%" }}>
-        <DeleteForeverIcon
-          fontSize="inherit"
-          style={{ ...iconStyle, opacity: showOutline ? 0 : 1 }}
-        />
+      <span
+        aria-hidden
+        style={{
+          position: "relative",
+          display: "block",
+          width: "100%",
+          height: "100%",
+        }}
+      >
+        <DeleteForeverIcon style={{ ...iconStyle, opacity: showOutline ? 0 : 1 }} />
         <DeleteForeverOutlinedIcon
-          fontSize="inherit"
           style={{ ...iconStyle, opacity: showOutline ? 1 : 0, color: "#6b7280" }}
         />
       </span>
