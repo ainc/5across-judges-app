@@ -1,4 +1,5 @@
 import { FormDialog } from "@/components/FormDialog";
+import { ModalDeleteButton } from "@/components/admin/ModalDeleteButton";
 import type { Category } from "@/components/admin/types";
 
 type CategoriesModalProps = {
@@ -71,17 +72,11 @@ export function CategoriesModal({
               placeholder="Criterion name"
               onChange={(event) => onCategoryNameChange(category.id, event.target.value)}
             />
-            <button
-              type="button"
+            <ModalDeleteButton
               onClick={() => onRequestRemoveCategory(category.id, category.name)}
               disabled={categories.length <= 1}
-              className="deletebutton"
-            >
-              <div className="delete-container">
-                <img src="/images/deletebutton.png" alt="Delete Button" className="deletebutton" />
-                <img src="/images/graydeletebutton.png" alt="Hovered Delete Button" className="graydeletebutton" />
-              </div>
-            </button>
+              aria-label={`Remove ${category.name || "category"}`}
+            />
           </div>
           <label className="block text-sm">
             Weight (%)

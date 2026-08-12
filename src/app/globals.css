@@ -203,8 +203,7 @@ button.newcompetitionbutton {
 .archived-row-actions .live-container .graylivebutton,
 .archived-row-actions .view-container .viewbutton,
 .archived-row-actions .view-container .grayviewbutton,
-.archived-row-actions .archivedelete-container .archivedeletebutton,
-.archived-row-actions .archivedelete-container .grayarchivedeletebutton {
+.archived-row-actions .archivedelete-container .archivedeletebutton {
   position: absolute !important;
   top: 50% !important;
   left: 50% !important;
@@ -226,29 +225,27 @@ button.newcompetitionbutton {
   font-size: inherit !important;
 }
 
-.archived-row-actions .archivedelete-container .archivedeletebutton,
-.archived-row-actions .archivedelete-container .grayarchivedeletebutton {
+.archived-row-actions .archivedelete-container .archivedeletebutton {
   height: calc(100% * 24 / 17) !important;
   font-size: inherit !important;
+  /* Single-icon React swap — always visible (no stacked opacity) */
+  opacity: 1 !important;
 }
 
 .archived-row-actions .graylivebutton,
-.archived-row-actions .grayviewbutton,
-.archived-row-actions .grayarchivedeletebutton {
+.archived-row-actions .grayviewbutton {
   display: block !important;
   color: #6b7280;
   opacity: 0 !important;
 }
 
 .archived-row-actions .live-container:hover svg:first-child,
-.archived-row-actions .view-container:hover svg:first-child,
-.archived-row-actions .archivedelete-container:hover svg:first-child {
+.archived-row-actions .view-container:hover svg:first-child {
   opacity: 0 !important;
 }
 
 .archived-row-actions .live-container:hover svg:last-child,
-.archived-row-actions .view-container:hover svg:last-child,
-.archived-row-actions .archivedelete-container:hover svg:last-child {
+.archived-row-actions .view-container:hover svg:last-child {
   opacity: 1 !important;
 }
 
@@ -292,8 +289,6 @@ button.closebutton {
   opacity: 1 !important;
 }
 
-/* Modal delete size is set inline in HoverDeleteButton (original 25×30). */
-
 button.messagedelete {
   display: block;
   align-self: stretch;
@@ -321,9 +316,8 @@ button.messagedelete:disabled {
   overflow: visible;
 }
 
-/* DeleteForever glyph ≈ 18/24 of viewBox — scale so ink hits button edges */
-.messagedelete-container .messagedelete,
-.messagedelete-container .graymessagedelete {
+/* Same size as before — one icon via React swap (DashboardDeleteButton) */
+.messagedelete-container .messagedelete {
   position: absolute !important;
   top: 50% !important;
   left: 50% !important;
@@ -333,18 +327,6 @@ button.messagedelete:disabled {
   width: auto !important;
   font-size: inherit !important;
   transform: translate(-50%, -50%) !important;
-}
-
-.graymessagedelete {
-  color: #6b7280;
-  opacity: 0 !important;
-}
-
-button.messagedelete:not(:disabled) .messagedelete-container:hover svg:first-child {
-  opacity: 0 !important;
-}
-
-button.messagedelete:not(:disabled) .messagedelete-container:hover svg:last-child {
   opacity: 1 !important;
 }
 

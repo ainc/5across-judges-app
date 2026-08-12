@@ -1,4 +1,5 @@
 import { FormDialog } from "@/components/FormDialog";
+import { ModalDeleteButton } from "@/components/admin/ModalDeleteButton";
 import type { Judge } from "@/components/admin/types";
 
 type JudgesModalProps = {
@@ -44,24 +45,18 @@ export function JudgesModal({
       </button>
       {judges.map((judge) => (
         <div key={judge.id} className="space-y-2 rounded bg-white p-3">
-          <div className="flex flex-wrap items-start gap-2">
+          <div className="flex items-center gap-2">
             <input
               className="min-w-0 flex-1 rounded border p-2"
               value={judge.name}
               placeholder="Judge name"
               onChange={(event) => onJudgeNameChange(judge.id, event.target.value)}
             />
-            <button
-              type="button"
+            <ModalDeleteButton
               onClick={() => onRequestRemoveJudge(judge.id, judge.name)}
               disabled={judges.length <= 1}
-              className="deletebutton"
-            >
-              <div className="delete-container">
-                <img src="/images/deletebutton.png" alt="Delete Button" className="deletebutton" />
-                <img src="/images/graydeletebutton.png" alt="Hovered Delete Button" className="graydeletebutton" />
-              </div>
-            </button>
+              aria-label={`Remove ${judge.name || "judge"}`}
+            />
           </div>
           <input
             className="min-w-0 flex-1 rounded border p-2"
