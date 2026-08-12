@@ -1,7 +1,6 @@
 import { FormDialog } from "@/components/FormDialog";
+import { HoverDeleteButton } from "@/components/HoverDeleteButton";
 import type { Judge } from "@/components/admin/types";
-import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
-import DeleteForeverOutlinedIcon from "@mui/icons-material/DeleteForeverOutlined";
 
 type JudgesModalProps = {
   open: boolean;
@@ -20,15 +19,11 @@ type JudgesModalProps = {
 export function JudgesModal({
   open,
   judges,
-  messageStatus,
   onClose,
   onAddJudge,
   onJudgeNameChange,
   onJudgeCodeChange,
-  onJudgeMessageChange,
   onRequestRemoveJudge,
-  onSendMessage,
-  onRequestDeleteMessage,
 }: JudgesModalProps) {
   return (
     <FormDialog
@@ -53,18 +48,11 @@ export function JudgesModal({
               placeholder="Judge name"
               onChange={(event) => onJudgeNameChange(judge.id, event.target.value)}
             />
-            <button
-              type="button"
+            <HoverDeleteButton
               onClick={() => onRequestRemoveJudge(judge.id, judge.name)}
               disabled={judges.length <= 1}
-              className="modaldelete h-9 w-9 shrink-0 self-center"
               aria-label={`Remove ${judge.name || "judge"}`}
-            >
-              <div className="modaldelete-container" aria-hidden>
-                <DeleteForeverIcon className="modaldelete-icon" fontSize="inherit" />
-                <DeleteForeverOutlinedIcon className="graymodaldelete" fontSize="inherit" />
-              </div>
-            </button>
+            />
           </div>
           <input
             className="min-w-0 flex-1 rounded border p-2"

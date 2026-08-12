@@ -4,8 +4,6 @@ import AddCircleIcon from "@mui/icons-material/AddCircle";
 import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined";
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import PlayCircleFilledWhiteIcon from '@mui/icons-material/PlayCircleFilledWhite';
 import PlayCircleFilledWhiteOutlinedIcon from '@mui/icons-material/PlayCircleFilledWhiteOutlined';
 import Link from "next/link";
@@ -18,6 +16,7 @@ import { CompaniesModal } from "@/components/admin/CompaniesModal";
 import { JudgesModal } from "@/components/admin/JudgesModal";
 import { SendJudgeMessageModal } from "@/components/admin/SendJudgeMessageModal";
 import { EventDateCalendar } from "@/components/EventDateCalendar";
+import { HoverDeleteButton } from "@/components/HoverDeleteButton";
 import { SignOutButton } from "@/components/SignOutButton";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { formatEventDate } from "@/lib/competition-results";
@@ -196,18 +195,13 @@ export function AdminDashboard() {
                         <VisibilityOutlinedIcon className="grayviewbutton" fontSize="inherit" />
                       </div>
                     </button>
-                    <button
-                      type="button"
+                    <HoverDeleteButton
                       aria-label={`Delete ${item.name}`}
                       onClick={() => void deletePastCompetition(item.id, item.name)}
                       disabled={isDeletingArchived === item.id}
                       className="archivedeletebutton"
-                    >
-                      <div className="archivedelete-container" aria-hidden>
-                        <DeleteForeverIcon className="archivedeletebutton" fontSize="inherit" />
-                        <DeleteForeverOutlinedIcon className="grayarchivedeletebutton" fontSize="inherit" />
-                      </div>
-                    </button>
+                      containerClassName="archivedelete-container"
+                    />
                   </div>
                 </li>
               ))}
@@ -344,18 +338,14 @@ export function AdminDashboard() {
                 >
                   Message {judge.name}
                 </button>
-                <button
-                  type="button"
+                <HoverDeleteButton
                   onClick={() => requestDeleteJudgeMessage(judge.id, judge.name)}
                   disabled={!judge.message?.trim()}
                   className="messagedelete"
+                  containerClassName="messagedelete-container pr-6"
+                  aria-label={judge.message?.trim() ? "Delete message" : "No message sent"}
                   title={judge.message?.trim() ? "Delete message" : "No message sent"}
-                >
-                  <div className="messagedelete-container pr-6" aria-hidden>
-                    <DeleteForeverIcon className="messagedelete" fontSize="inherit" />
-                    <DeleteForeverOutlinedIcon className="graymessagedelete" fontSize="inherit" />
-                  </div>
-                </button>
+                />
               </div>
             </div>
           ))}
