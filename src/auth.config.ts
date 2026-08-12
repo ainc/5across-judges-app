@@ -51,21 +51,32 @@ export const authConfig = {
       const pathname = nextUrl.pathname;
       const role = auth?.user?.role;
       const isLoggedIn = !!auth?.user;
+      const isApiRoute = pathname.startsWith("/api/");
 
       if (isPublicPath(pathname)) {
         return true;
       }
 
+      // API clients expect JSON. Redirecting them to /login returns HTML and
+      // breaks fetch(...).json() (and admin/results polling).
       if (!isLoggedIn) {
+        if (isApiRoute) {
+          return Response.json({ error: "Unauthorized" }, { status: 401 });
+        }
         return false;
       }
 
       if (isAdminPath(pathname)) {
-        return role === "ADMIN";
+        if (role === "ADMIN") return true;
+        if (isApiRoute) {
+          return Response.json({ error: "Forbidden" }, { status: 403 });
+        }
+        return false;
       }
 
       if (pathname.startsWith("/api/scores")) {
-        return role === "JUDGE" || role === "ADMIN";
+        if (role === "JUDGE" || role === "ADMIN") return true;
+        return Response.json({ error: "Forbidden" }, { status: 403 });
       }
 
       return true;

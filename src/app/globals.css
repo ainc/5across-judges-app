@@ -292,41 +292,58 @@ button.closebutton {
   opacity: 1 !important;
 }
 
-.deletebutton {
-  height: 30px;
-  width: 25px;
+/*
+ * Modal row delete (judges/categories).
+ * Button size is set in the component (h-9 w-9 ≈ 36px) so it stays slightly
+ * under the p-2 input height (~42px). CSS here only handles the hover swap.
+ */
+button.modaldelete {
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  line-height: 0 !important;
+  color: inherit !important;
 }
 
-.graydeletebutton {
-  height: 30px;
-  width: 25px;
-  display: none;
-}
-
-.delete-container {
-  height: 30px;
-  width: 25px;
-}
-
-button.deletebutton:disabled {
+button.modaldelete:disabled {
   cursor: not-allowed;
   pointer-events: none !important;
+  opacity: 0.4;
 }
 
-button.deletebutton:disabled .delete-container > img:first-child {
-  display: none;
+.modaldelete-container {
+  position: relative !important;
+  display: block !important;
+  height: 100% !important;
+  width: 100% !important;
+  overflow: hidden !important;
 }
 
-button.deletebutton:disabled .graydeletebutton {
-  display: block;
+.modaldelete-container .modaldelete-icon,
+.modaldelete-container .graymodaldelete {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  font-size: 36px !important;
 }
 
-button.deletebutton:not(:disabled) .delete-container:hover > img:first-child {
-  display: none;
+.modaldelete-container .modaldelete-icon {
+  opacity: 1 !important;
 }
 
-button.deletebutton:not(:disabled) .delete-container:hover .graydeletebutton {
-  display: block;
+.graymodaldelete {
+  color: #6b7280;
+  opacity: 0 !important;
+}
+
+button.modaldelete:not(:disabled) .modaldelete-container:hover svg:first-child {
+  opacity: 0 !important;
+}
+
+button.modaldelete:not(:disabled) .modaldelete-container:hover svg:last-child {
+  opacity: 1 !important;
 }
 
 button.messagedelete {

@@ -1,5 +1,7 @@
 import { FormDialog } from "@/components/FormDialog";
 import type { Judge } from "@/components/admin/types";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import DeleteForeverOutlinedIcon from "@mui/icons-material/DeleteForeverOutlined";
 
 type JudgesModalProps = {
   open: boolean;
@@ -44,7 +46,7 @@ export function JudgesModal({
       </button>
       {judges.map((judge) => (
         <div key={judge.id} className="space-y-2 rounded bg-white p-3">
-          <div className="flex flex-wrap items-start gap-2">
+          <div className="flex items-center gap-2">
             <input
               className="min-w-0 flex-1 rounded border p-2"
               value={judge.name}
@@ -55,11 +57,12 @@ export function JudgesModal({
               type="button"
               onClick={() => onRequestRemoveJudge(judge.id, judge.name)}
               disabled={judges.length <= 1}
-              className="deletebutton"
+              className="modaldelete h-9 w-9 shrink-0 self-center"
+              aria-label={`Remove ${judge.name || "judge"}`}
             >
-              <div className="delete-container">
-                <img src="/images/deletebutton.png" alt="Delete Button" className="deletebutton" />
-                <img src="/images/graydeletebutton.png" alt="Hovered Delete Button" className="graydeletebutton" />
+              <div className="modaldelete-container" aria-hidden>
+                <DeleteForeverIcon className="modaldelete-icon" fontSize="inherit" />
+                <DeleteForeverOutlinedIcon className="graymodaldelete" fontSize="inherit" />
               </div>
             </button>
           </div>

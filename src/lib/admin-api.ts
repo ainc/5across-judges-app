@@ -33,26 +33,39 @@ export type ArchivedCompetition = {
   finalSubmissionCount: number;
 };
 
+async function readOkJson<T>(response: Response): Promise<T | null> {
+  if (!response.ok) return null;
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) return null;
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 export async function loadArchivedCompetitionDetails(id: string) {
   const response = await fetch(`/api/admin/competitions/archived/${id}`, { cache: "no-store" });
-  if (!response.ok) return null;
-  return (await response.json()) as ArchivedCompetitionDetails;
+  return readOkJson<ArchivedCompetitionDetails>(response);
 }
 
 export async function loadAdminData() {
   const response = await fetch("/api/admin/competition", { cache: "no-store" });
-  if (!response.ok) return null;
-  return (await response.json()) as AdminCompetitionResponse;
+  return readOkJson<AdminCompetitionResponse>(response);
 }
 
 export async function loadResultsPreview() {
   const response = await fetch("/api/results", { cache: "no-store" });
-  if (!response.ok) return null;
-  const payload = await response.json();
+  const payload = await readOkJson<{
+    competition: { winner: string | null };
+    finalJudgeCount: number;
+    rankings: Array<Record<string, unknown>>;
+  }>(response);
+  if (!payload) return null;
   return {
-    winner: payload.competition.winner as string | null,
-    finalJudgeCount: payload.finalJudgeCount as number,
-    rankings: (payload.rankings as Array<Record<string, unknown>>).map((row) => ({
+    winner: payload.competition.winner,
+    finalJudgeCount: payload.finalJudgeCount,
+    rankings: payload.rankings.map((row) => ({
       rank: row.rank as number,
       companyName: row.companyName as string,
       finalScore: row.finalScore as number,
@@ -63,9 +76,8 @@ export async function loadResultsPreview() {
 
 export async function loadArchivedCompetitions() {
   const response = await fetch("/api/admin/competitions/archived", { cache: "no-store" });
-  if (!response.ok) return [];
-  const payload = await response.json();
-  return payload.competitions as ArchivedCompetition[];
+  const payload = await readOkJson<{ competitions: ArchivedCompetition[] }>(response);
+  return payload?.competitions ?? [];
 }
 
 export async function readJsonResponse(response: Response) {

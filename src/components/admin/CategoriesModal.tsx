@@ -1,5 +1,7 @@
 import { FormDialog } from "@/components/FormDialog";
 import type { Category } from "@/components/admin/types";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import DeleteForeverOutlinedIcon from "@mui/icons-material/DeleteForeverOutlined";
 
 type CategoriesModalProps = {
   open: boolean;
@@ -75,11 +77,12 @@ export function CategoriesModal({
               type="button"
               onClick={() => onRequestRemoveCategory(category.id, category.name)}
               disabled={categories.length <= 1}
-              className="deletebutton"
+              className="modaldelete h-9 w-9 shrink-0 self-center"
+              aria-label={`Remove ${category.name || "category"}`}
             >
-              <div className="delete-container">
-                <img src="/images/deletebutton.png" alt="Delete Button" className="deletebutton" />
-                <img src="/images/graydeletebutton.png" alt="Hovered Delete Button" className="graydeletebutton" />
+              <div className="modaldelete-container" aria-hidden>
+                <DeleteForeverIcon className="modaldelete-icon" fontSize="inherit" />
+                <DeleteForeverOutlinedIcon className="graymodaldelete" fontSize="inherit" />
               </div>
             </button>
           </div>
