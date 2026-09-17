@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { CompanyResultsTables } from "@/components/CompanyResultsTables";
 import { SignOutButton } from "@/components/SignOutButton";
 import { getResults } from "@/lib/results-client";
+import { AppNav } from "@/components/AppNav";
 
 export default async function ResultsPage() {
   const session = await auth();
@@ -20,17 +21,7 @@ export default async function ResultsPage() {
       <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
         <div className="text-left space-y-1">
           <h1 className="text-2xl font-semibold">{data.competition.name} Results</h1>
-          <div className="flex flex-wrap gap-4 text-sm">
-              <Link href="/" className="underline">
-                Back to Home
-              </Link>
-            {isAdmin ? (
-              <Link href="/admin" className="underline">
-                Admin Dashboard
-              </Link>
-            ) : null}
-            <SignOutButton />
-          </div>
+          <AppNav showAdminLink={isAdmin} />
         </div>
         <img
           src="/images/5acrossbanner.png"

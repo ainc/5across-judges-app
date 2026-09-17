@@ -8,6 +8,7 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { formatScoreValue, formatTimestamp, useJudgingSession } from "@/hooks/useJudgingSession";
 import CancelIcon from '@mui/icons-material/Cancel';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import { AppNav } from "./AppNav";
 
 type JudgingPageProps = {
   lockedJudgeId?: string;
@@ -69,23 +70,13 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           <p className="text-sm text-gray-600">Awesome Inc</p>
           <h1 className="text-2xl font-semibold">{data.competition.name}</h1>
           <p className="text-sm text-gray-600">Judge Scoring Homepage</p>
+          <AppNav showAdminLink={isAdmin} />
         </div>
         <img
           src="/images/5acrossbanner.png"
           alt="5 Across Banner"
           className="fiveacross-banner justify-self-center"
         />
-        <div className="w-48 flex flex-col items-end gap-2 justify-self-end">
-          {showAdminLink ? (
-            <Link href="/admin" className="underline">
-              Admin Dashboard
-            </Link>
-          ) : null}
-          <Link href="/results" className="underline">
-            Current Results
-          </Link>
-          <SignOutButton />
-        </div>
       </header>
 
       {selectedJudge?.message && (

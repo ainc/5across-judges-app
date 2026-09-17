@@ -20,6 +20,7 @@ import { EventDateCalendar } from "@/components/EventDateCalendar";
 import { SignOutButton } from "@/components/SignOutButton";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { formatEventDate } from "@/lib/competition-results";
+import { AppNav } from "../AppNav";
 
 export function AdminDashboard() {
   const [messageJudgeId, setMessageJudgeId] = useState<string | null>(null);
@@ -81,15 +82,7 @@ export function AdminDashboard() {
             </div>
           ))}
         </div>
-        <div className="flex flex-wrap gap-4 text-sm">
-          <Link href="/" className="underline">
-           Back to Home
-          </Link>
-          <Link href="/results" className="underline">
-            Current Results
-          </Link>
-          <SignOutButton />
-        </div>
+        <AppNav showAdminLink={true} />
       </header>
 
       <div className="flex gap-10 items-start">
