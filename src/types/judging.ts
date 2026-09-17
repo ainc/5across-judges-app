@@ -25,10 +25,13 @@ export type JudgeScoresResponse = {
   entries: Array<{ companyId: string; categoryId: string; score: number }>;
 };
 
-export type PendingConfirm =
-  | { type: "restore-draft" }
-  | { type: "submit-final" }
-  | null;
+export type PendingConfirm = { type: "submit-final" } | null;
+
+export type ScoreUndo = {
+  companyId: string;
+  categoryId: string;
+  previous: number | undefined;
+};
 
 export type ScoreChange = {
   companyId: string;

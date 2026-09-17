@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormDialog } from "@/components/FormDialog";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -15,15 +16,15 @@ type JudgingPageProps = {
 
 export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPageProps) {
   const isAdmin = showAdminLink;
+  const [overrideEnabled, setOverrideEnabled] = useState(false);
+  const canEditScores = !isAdmin || overrideEnabled;
   const {
 
     data,
     selectedJudgeId,
-    setSelectedJudgeId,
+    selectJudge,
     scores,
     submissionStatus,
-    submittedAt,
-    submissionUpdatedAt,
     isSubmitting,
     isLoadingScores,
     toasts,
@@ -38,9 +39,11 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     entryCount,
     missingCellKeys,
     hasChangeLog,
-    hasSavedScores,
+    canUndo,
+    saveStatusLabel,
     updateScore,
-    restoreSavedDraft,
+    undoLastScore,
+    flushAutosave,
     submitScores,
     handleConfirmDialog,
     deleteIndividualJudgeMessage,
@@ -112,18 +115,30 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           ) : null}
           <span className="font-medium">{isAdmin ? "Editing Judge:" : "Judge:"}</span>
           {isAdmin ? (
-            <select
-              className="h-8 rounded border px-2 py-1"
-              value={selectedJudgeId}
-              onChange={(event) => setSelectedJudgeId(event.target.value)}
-            >
-              {data.judges.map((judge) => (
-                <option key={judge.id} value={judge.id}>
-                  {judge.name}
-                  {judge.code ? ` (${judge.code})` : ""}
-                </option>
-              ))}
-            </select>
+            <>
+              <select
+                className="h-8 rounded border px-2 py-1"
+                value={selectedJudgeId}
+                onChange={(event) => {
+                  setOverrideEnabled(false);
+                  selectJudge(event.target.value);
+                }}
+              >
+                {data.judges.map((judge) => (
+                  <option key={judge.id} value={judge.id}>
+                    {judge.name}
+                    {judge.code ? ` (${judge.code})` : ""}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setOverrideEnabled((on) => !on)}
+                className="dark-button h-8 rounded border border-black bg-gray-900 px-3 py-1 text-white"
+              >
+                {overrideEnabled ? "Override On" : "Override"}
+              </button>
+            </>
           ) : (
             <span>
               {selectedJudge?.name}
@@ -132,14 +147,16 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           )}
           {submissionStatus === "FINAL" ? (
             <span className="inline-flex h-8 rounded border border-green-900 bg-green-100 px-2 py-1 text-sm font-medium text-green-900">
-              Final scores submitted at: {submittedAt ? `${formatTimestamp(submittedAt)}` : ""}
+              {saveStatusLabel}
             </span>
-          ) : submissionStatus === "DRAFT" ? (
+          ) : submissionStatus === "DRAFT" || saveStatusLabel === "Saving..." ? (
             <span className="inline-flex h-8 rounded border border-amber-900 bg-amber-100 px-2 py-1 text-sm font-medium text-amber-900">
-              Draft{submissionUpdatedAt ? ` last saved at: ${formatTimestamp(submissionUpdatedAt)}` : ""}
+              {saveStatusLabel}
             </span>
           ) : (
-            <span className="inline-flex h-8 rounded border border-gray-400 bg-gray-100 px-2 py-1 text-sm text-gray-600">No saved scores</span>
+            <span className="inline-flex h-8 rounded border border-gray-400 bg-gray-100 px-2 py-1 text-sm text-gray-600">
+              {saveStatusLabel}
+            </span>
           )}
         </section>
         <div className="flex flex-wrap items-center gap-3">
@@ -189,11 +206,14 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                         max={5}
                         step={0.1}
                         type="number"
-                        disabled={isLoadingScores}
+                        disabled={isLoadingScores || !canEditScores}
                         placeholder=""
                         value={scores[key] ?? ""}
                         onChange={(event) => {
                           updateScore(company.id, category.id, event.target.value);
+                        }}
+                        onBlur={() => {
+                          void flushAutosave();
                         }}
                       />
                     </td>
@@ -220,22 +240,15 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
 
       <section className="flex flex-wrap items-center gap-3">
         <button
-          disabled={isSubmitting || isLoadingScores}
-          onClick={() => submitScores(false)}
-          className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
-        >
-          Save Draft
-        </button>
-        <button
           type="button"
-          disabled={isSubmitting || isLoadingScores || !hasSavedScores}
-          onClick={restoreSavedDraft}
+          disabled={isSubmitting || isLoadingScores || !canUndo || !canEditScores}
+          onClick={undoLastScore}
           className="white-button rounded border border-black bg-white text-black px-3 py-2 disabled:opacity-50"
         >
-          Restore Saved Draft
+          Undo
         </button>
         <button
-          disabled={isSubmitting || isLoadingScores}
+          disabled={isSubmitting || isLoadingScores || !canEditScores}
           onClick={() => submitScores(true)}
           className="red-button rounded border border-black bg-[#EE2524] px-3 py-2 text-white disabled:opacity-50"
         >
@@ -284,14 +297,6 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           </>
         )}
       </FormDialog>
-      <ConfirmDialog
-        open={pendingConfirm?.type === "restore-draft"}
-        title="Restore Saved Draft?"
-        message="This will overwrite any scores currently in the form for this judge and replace them with those contained in most recent save."
-        confirmLabel="Restore"
-        onConfirm={handleConfirmDialog}
-        onCancel={() => setPendingConfirm(null)}
-      />
       <ConfirmDialog
         open={pendingConfirm?.type === "submit-final"}
         title="Submit Final Scores?"
