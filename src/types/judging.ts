@@ -18,11 +18,14 @@ export type ActiveCompetitionResponse = {
 
 export type SubmissionStatus = "DRAFT" | "FINAL";
 
+export type JudgeNoteEntry = { companyId: string; body: string };
+
 export type JudgeScoresResponse = {
   status: SubmissionStatus | null;
   submittedAt: string | null;
   updatedAt: string | null;
   entries: Array<{ companyId: string; categoryId: string; score: number }>;
+  notes: JudgeNoteEntry[];
 };
 
 export type PendingConfirm = { type: "submit-final" } | null;

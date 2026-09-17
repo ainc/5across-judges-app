@@ -35,13 +35,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Judge not found for competition." }, { status: 404 });
   }
 
-  const [session, scores] = await Promise.all([
+  const [session, scores, notes] = await Promise.all([
     prisma.submissionSession.findUnique({
       where: { competitionId_judgeId: { competitionId, judgeId } },
     }),
     prisma.score.findMany({
       where: { competitionId, judgeId },
       select: { companyId: true, categoryId: true, score: true },
+    }),
+    prisma.judgeNote.findMany({
+      where: { competitionId, judgeId },
+      select: { companyId: true, body: true },
     }),
   ]);
 
@@ -54,6 +58,7 @@ export async function GET(request: NextRequest) {
       categoryId: entry.categoryId,
       score: entry.score,
     })),
+    notes,
   });
 }
 
@@ -61,6 +66,7 @@ const scorePayloadSchema = z.object({
   competitionId: z.string().min(1),
   judgeId: z.string().min(1),
   isFinal: z.boolean(),
+  notesOnly: z.boolean().optional(),
   entries: z.array(
     z.object({
       companyId: z.string().min(1),
@@ -71,6 +77,14 @@ const scorePayloadSchema = z.object({
         .transform(normalizeScore),
     }),
   ),
+  notes: z
+    .array(
+      z.object({
+        companyId: z.string().min(1),
+        body: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 export async function POST(request: Request) {
@@ -84,7 +98,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: payload.error.flatten() }, { status: 400 });
   }
 
-  const { competitionId, judgeId, isFinal, entries } = payload.data;
+  const { competitionId, judgeId, isFinal, notesOnly, entries, notes } = payload.data;
 
   if (!canAccessJudge(authResult.session, judgeId)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -113,6 +127,51 @@ export async function POST(request: Request) {
   );
   if (invalidEntry) {
     return NextResponse.json({ error: "Payload contains invalid company/category ids." }, { status: 400 });
+  }
+
+  if (notes) {
+    const invalidNote = notes.find((note) => !allowedCompanyIds.has(note.companyId));
+    if (invalidNote) {
+      return NextResponse.json({ error: "Payload contains invalid company ids in notes." }, { status: 400 });
+    }
+  }
+
+  async function saveNotes() {
+    if (!notes) return;
+    await prisma.$transaction(
+      notes.map((note) =>
+        prisma.judgeNote.upsert({
+          where: {
+            competitionId_judgeId_companyId: {
+              competitionId,
+              judgeId,
+              companyId: note.companyId,
+            },
+          },
+          create: {
+            competitionId,
+            judgeId,
+            companyId: note.companyId,
+            body: note.body,
+          },
+          update: { body: note.body },
+        }),
+      ),
+    );
+  }
+
+  if (notesOnly) {
+    await saveNotes();
+    const session = await prisma.submissionSession.findUnique({
+      where: { competitionId_judgeId: { competitionId, judgeId } },
+    });
+    return NextResponse.json({
+      sessionId: session?.id ?? null,
+      status: session?.status ?? null,
+      submittedAt: session?.submittedAt ?? null,
+      updatedAt: session?.updatedAt ?? null,
+      notesOnly: true,
+    });
   }
 
   const uniqueEntries = new Map(entries.map((entry) => [`${entry.companyId}:${entry.categoryId}`, entry]));
@@ -180,6 +239,8 @@ export async function POST(request: Request) {
     ),
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
   );
+
+  await saveNotes();
 
   const allScoresForJudge = await prisma.score.findMany({
     where: { competitionId, judgeId },

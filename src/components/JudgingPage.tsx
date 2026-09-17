@@ -24,6 +24,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     selectedJudgeId,
     selectJudge,
     scores,
+    notes,
     submissionStatus,
     isSubmitting,
     isLoadingScores,
@@ -42,6 +43,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     canUndo,
     saveStatusLabel,
     updateScore,
+    updateNote,
     undoLastScore,
     flushAutosave,
     submitScores,
@@ -236,6 +238,26 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
             </tr>
           </tbody>
         </table>
+      </section>
+
+      <section className="space-y-3 rounded border p-4">
+        <h2 className="text-lg font-semibold">Notes</h2>
+        <p className="text-sm text-gray-600">Commentary on each pitch. Notes save automatically with your draft.</p>
+        {data.companies.map((company) => (
+          <label key={company.id} className="block text-sm">
+            {company.name}
+            <textarea
+              className="mt-1 w-full rounded border p-2"
+              rows={3}
+              disabled={isLoadingScores || !canEditScores}
+              value={notes[company.id] ?? ""}
+              onChange={(event) => updateNote(company.id, event.target.value)}
+              onBlur={() => {
+                void flushAutosave();
+              }}
+            />
+          </label>
+        ))}
       </section>
 
       <section className="flex flex-wrap items-center gap-3">

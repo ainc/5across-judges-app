@@ -28,9 +28,11 @@ type PersistOptions = {
   skipConfirm?: boolean;
   quiet?: boolean;
   keepalive?: boolean;
+  notesOnly?: boolean;
   competitionId?: string;
   judgeId?: string;
   scoresSnapshot?: Record<string, number>;
+  notesSnapshot?: Record<string, string>;
 };
 
 function entriesFromScores(scores: Record<string, number>) {
@@ -52,11 +54,28 @@ function scoresDifferFromBaseline(
   return false;
 }
 
+function notesFromRecord(notes: Record<string, string>) {
+  return Object.entries(notes).map(([companyId, body]) => ({ companyId, body }));
+}
+
+function notesDifferFromBaseline(
+  baseline: Record<string, string> | undefined,
+  current: Record<string, string>,
+) {
+  const saved = baseline ?? {};
+  const keys = new Set([...Object.keys(saved), ...Object.keys(current)]);
+  for (const key of keys) {
+    if ((saved[key] ?? "") !== (current[key] ?? "")) return true;
+  }
+  return false;
+}
+
 export function useJudgingSession(options?: UseJudgingSessionOptions) {
   const lockedJudgeId = options?.lockedJudgeId;
   const [data, setData] = useState<ActiveCompetitionResponse | null>(null);
   const [selectedJudgeId, setSelectedJudgeId] = useState<string>(lockedJudgeId ?? "");
   const [scores, setScores] = useState<Record<string, number>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const [submissionStatus, setSubmissionStatus] = useState<SubmissionStatus | null>(null);
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [submissionUpdatedAt, setSubmissionUpdatedAt] = useState<string | null>(null);
@@ -72,7 +91,9 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
   const [nowMs, setNowMs] = useState(() => Date.now());
   const nextToastId = useRef(0);
   const baselineByJudge = useRef<Record<string, Record<string, number>>>({});
+  const notesBaselineByJudge = useRef<Record<string, Record<string, string>>>({});
   const scoresRef = useRef(scores);
+  const notesRef = useRef(notes);
   const dataRef = useRef(data);
   const selectedJudgeIdRef = useRef(selectedJudgeId);
   const submissionStatusRef = useRef(submissionStatus);
@@ -93,6 +114,10 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
   useEffect(() => {
     scoresRef.current = scores;
   }, [scores]);
+
+  useEffect(() => {
+    notesRef.current = notes;
+  }, [notes]);
 
   useEffect(() => {
     dataRef.current = data;
@@ -130,6 +155,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
           cancelScheduledAutosave();
           saveQueuedRef.current = false;
           setScores({});
+          setNotes({});
           setSubmissionStatus(null);
           setSubmittedAt(null);
           setSubmissionUpdatedAt(null);
@@ -138,14 +164,24 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
           setUndoStack([]);
           setIsAutosaving(false);
           baselineByJudge.current = {};
+          notesBaselineByJudge.current = {};
         }
         return payload;
       });
 
       if (options?.configUpdated) {
+        const companyIds = new Set(payload.companies.map((company) => company.id));
         setScores((currentScores) =>
           pruneScoresForCompetition(currentScores, payload.companies, payload.categories),
         );
+        setNotes((currentNotes) => {
+          const next: Record<string, string> = {};
+          for (const [companyId, body] of Object.entries(currentNotes)) {
+            if (companyIds.has(companyId)) next[companyId] = body;
+          }
+          notesRef.current = next;
+          return next;
+        });
         setMissingCells([]);
       }
 
@@ -237,9 +273,19 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
         for (const entry of payload.entries) {
           nextScores[`${entry.companyId}:${entry.categoryId}`] = entry.score;
         }
+        const nextNotes: Record<string, string> = {};
+        for (const company of data.companies) {
+          nextNotes[company.id] = "";
+        }
+        for (const note of payload.notes ?? []) {
+          nextNotes[note.companyId] = note.body;
+        }
         scoresRef.current = nextScores;
+        notesRef.current = nextNotes;
         setScores(nextScores);
+        setNotes(nextNotes);
         baselineByJudge.current[selectedJudgeId] = { ...nextScores };
+        notesBaselineByJudge.current[selectedJudgeId] = { ...nextNotes };
         setChangeLog((prev) => {
           const next = { ...prev };
           delete next[selectedJudgeId];
@@ -298,11 +344,13 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
       }
 
       const currentScores = saveOptions.scoresSnapshot ?? scoresRef.current;
+      const currentNotes = saveOptions.notesSnapshot ?? notesRef.current;
       const entries = entriesFromScores(currentScores);
+      const noteEntries = notesFromRecord(currentNotes);
 
       saveInFlightRef.current = true;
       setIsSubmitting(true);
-      if (!saveOptions.isFinal) setIsAutosaving(true);
+      if (!saveOptions.isFinal || saveOptions.notesOnly) setIsAutosaving(true);
       setMissingCells([]);
       try {
         const response = await fetch("/api/scores", {
@@ -312,7 +360,9 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
             competitionId: saveOptions.competitionId ?? competition.competition.id,
             judgeId,
             isFinal: saveOptions.isFinal,
-            entries,
+            notesOnly: saveOptions.notesOnly === true,
+            entries: saveOptions.notesOnly ? [] : entries,
+            notes: noteEntries,
           }),
           keepalive: saveOptions.keepalive,
         });
@@ -333,15 +383,24 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
             showToast(payload.error ?? "Unable to save scores for this judge.");
             return;
           }
-          const apiMissing = Array.isArray(payload.missingCells)
-            ? payload.missingCells
-            : getMissingCells(
-                competition.companies.map((company) => company.id),
-                competition.categories.map((category) => category.id),
-                entries,
-              );
-          setMissingCells(apiMissing);
-          showToast("All cells must be filled before final submission.");
+          if (response.status === 400 && Array.isArray(payload.missingCells)) {
+            setMissingCells(payload.missingCells);
+            showToast("All cells must be filled before final submission.");
+            return;
+          }
+          if (response.status === 400) {
+            const apiMissing = getMissingCells(
+              competition.companies.map((company) => company.id),
+              competition.categories.map((category) => category.id),
+              entries,
+            );
+            if (apiMissing.length > 0) {
+              setMissingCells(apiMissing);
+              showToast("All cells must be filled before final submission.");
+              return;
+            }
+          }
+          showToast(typeof payload.error === "string" ? payload.error : "Unable to save scores.");
           return;
         }
         if (saveOptions.isFinal) {
@@ -350,19 +409,24 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
           showToast("Draft saved successfully.");
         }
         setMissingCells([]);
-        setSubmissionStatus(payload.status ?? null);
-        setSubmittedAt(payload.submittedAt ?? null);
-        setSubmissionUpdatedAt(payload.updatedAt ?? null);
-        const savedScores: Record<string, number> = {};
-        for (const entry of entries) {
-          savedScores[`${entry.companyId}:${entry.categoryId}`] = entry.score;
+        if (!saveOptions.notesOnly) {
+          setSubmissionStatus(payload.status ?? null);
+          setSubmittedAt(payload.submittedAt ?? null);
+          setSubmissionUpdatedAt(payload.updatedAt ?? null);
+          const savedScores: Record<string, number> = {};
+          for (const entry of entries) {
+            savedScores[`${entry.companyId}:${entry.categoryId}`] = entry.score;
+          }
+          baselineByJudge.current[judgeId] = savedScores;
         }
-        baselineByJudge.current[judgeId] = savedScores;
-        setChangeLog((prev) => {
-          const next = { ...prev };
-          delete next[judgeId];
-          return next;
-        });
+        notesBaselineByJudge.current[judgeId] = { ...currentNotes };
+        if (!saveOptions.notesOnly) {
+          setChangeLog((prev) => {
+            const next = { ...prev };
+            delete next[judgeId];
+            return next;
+          });
+        }
       } finally {
         saveInFlightRef.current = false;
         setIsSubmitting(false);
@@ -388,14 +452,32 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
       setIsAutosaving(false);
       return;
     }
-    if (submissionStatusRef.current === "FINAL") {
+    const judgeId = selectedJudgeIdRef.current;
+    const currentScores = scoresRef.current;
+    const currentNotes = notesRef.current;
+    const scoresChanged = Boolean(
+      judgeId && scoresDifferFromBaseline(baselineByJudge.current[judgeId], currentScores),
+    );
+    const notesChanged = Boolean(
+      judgeId && notesDifferFromBaseline(notesBaselineByJudge.current[judgeId], currentNotes),
+    );
+    if (!judgeId || (!scoresChanged && !notesChanged)) {
       setIsAutosaving(false);
       return;
     }
-    const judgeId = selectedJudgeIdRef.current;
-    const currentScores = scoresRef.current;
-    if (!judgeId || !scoresDifferFromBaseline(baselineByJudge.current[judgeId], currentScores)) {
-      setIsAutosaving(false);
+    if (submissionStatusRef.current === "FINAL") {
+      if (!notesChanged) {
+        setIsAutosaving(false);
+        return;
+      }
+      await persistScores({
+        isFinal: false,
+        notesOnly: true,
+        quiet: true,
+        judgeId,
+        notesSnapshot: currentNotes,
+        competitionId: dataRef.current?.competition.id,
+      });
       return;
     }
     await persistScores({
@@ -403,12 +485,13 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
       quiet: true,
       judgeId,
       scoresSnapshot: currentScores,
+      notesSnapshot: currentNotes,
       competitionId: dataRef.current?.competition.id,
     });
   }, [cancelScheduledAutosave, persistScores]);
 
   const scheduleAutosave = useCallback(() => {
-    if (submissionStatusRef.current === "FINAL" || isLoadingScoresRef.current) return;
+    if (isLoadingScoresRef.current) return;
     setIsAutosaving(true);
     cancelScheduledAutosave();
     saveTimerRef.current = window.setTimeout(() => {
@@ -559,6 +642,13 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     [syncChangeLog],
   );
 
+  function updateNote(companyId: string, body: string) {
+    const next = { ...notesRef.current, [companyId]: body };
+    notesRef.current = next;
+    setNotes(next);
+    scheduleAutosave();
+  }
+
   function updateScore(companyId: string, categoryId: string, raw: string) {
     if (!selectedJudgeId) return;
     if (!applyScoreValue(selectedJudgeId, companyId, categoryId, raw, true)) return;
@@ -625,12 +715,28 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     }
 
     function onPageHide() {
-      if (submissionStatusRef.current === "FINAL" || isLoadingScoresRef.current) return;
+      if (isLoadingScoresRef.current) return;
       const judgeId = selectedJudgeIdRef.current;
       const competitionId = dataRef.current?.competition.id;
       const currentScores = scoresRef.current;
+      const currentNotes = notesRef.current;
       if (!judgeId || !competitionId) return;
-      if (!scoresDifferFromBaseline(baselineByJudge.current[judgeId], currentScores)) return;
+      const scoresChanged = scoresDifferFromBaseline(baselineByJudge.current[judgeId], currentScores);
+      const notesChanged = notesDifferFromBaseline(notesBaselineByJudge.current[judgeId], currentNotes);
+      if (submissionStatusRef.current === "FINAL") {
+        if (!notesChanged) return;
+        void persistScoresRef.current({
+          isFinal: false,
+          notesOnly: true,
+          quiet: true,
+          keepalive: true,
+          judgeId,
+          competitionId,
+          notesSnapshot: currentNotes,
+        });
+        return;
+      }
+      if (!scoresChanged && !notesChanged) return;
       void persistScoresRef.current({
         isFinal: false,
         quiet: true,
@@ -638,6 +744,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
         judgeId,
         competitionId,
         scoresSnapshot: currentScores,
+        notesSnapshot: currentNotes,
       });
     }
 
@@ -655,6 +762,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     selectedJudgeId,
     selectJudge,
     scores,
+    notes,
     submissionStatus,
     submittedAt,
     submissionUpdatedAt,
@@ -676,6 +784,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     canUndo: undoStack.length > 0,
     saveStatusLabel,
     updateScore,
+    updateNote,
     undoLastScore,
     flushAutosave,
     submitScores,
