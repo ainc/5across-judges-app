@@ -1,3 +1,11 @@
+export function firstPhrase(name: string) {
+  const parts = name.split("/").map((part) => part.trim()).filter(Boolean);
+  if (parts[0]?.toLowerCase() === "quality of overall pitch") {
+    return parts[parts.length - 1] ?? name;
+  }
+  return parts[0] || name;
+}
+
 export function formatScoreValue(value: number | null) {
   return value === null ? "empty" : value.toFixed(1);
 }

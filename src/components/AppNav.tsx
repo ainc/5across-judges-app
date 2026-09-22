@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
@@ -16,7 +17,12 @@ type AppNavProps = {
 export function AppNav({ showAdminLink = false }: AppNavProps) {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [canPortal, setCanPortal] = useState(false);
   const open = menuAnchor !== null;
+
+  useEffect(() => {
+    setCanPortal(true);
+  }, []);
 
   function closeMenu() {
     setMenuAnchor(null);
@@ -62,17 +68,22 @@ export function AppNav({ showAdminLink = false }: AppNavProps) {
           Sign Out
         </MenuItem>
       </Menu>
-      <ConfirmDialog
-        open={confirmOpen}
-        title="Sign Out?"
-        message="You will need to sign in again to score or view results."
-        confirmLabel="Sign Out"
-        onConfirm={() => {
-          setConfirmOpen(false);
-          void signOutAction();
-        }}
-        onCancel={() => setConfirmOpen(false)}
-      />
+      {canPortal
+        ? createPortal(
+            <ConfirmDialog
+              open={confirmOpen}
+              title="Sign Out?"
+              message="You will need to sign in again to score or view results."
+              confirmLabel="Sign Out"
+              onConfirm={() => {
+                setConfirmOpen(false);
+                void signOutAction();
+              }}
+              onCancel={() => setConfirmOpen(false)}
+            />,
+            document.body,
+          )
+        : null}
     </nav>
   );
 }

@@ -17,7 +17,6 @@ import { DashboardDeleteButton } from "@/components/admin/DashboardDeleteButton"
 import { JudgesModal } from "@/components/admin/JudgesModal";
 import { SendJudgeMessageModal } from "@/components/admin/SendJudgeMessageModal";
 import { EventDateCalendar } from "@/components/EventDateCalendar";
-import { SignOutButton } from "@/components/SignOutButton";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { formatEventDate } from "@/lib/competition-results";
 import { AppHeader } from "./AppHeader";
@@ -108,7 +107,7 @@ export function AdminDashboard() {
             <button
               onClick={startNextCompetition}
               disabled={isArchiving}
-              className="red-button rounded border border-black bg-[#EE2524] text-white px-3 py-2 disabled:opacity-50"
+              className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
             >
               End Current Competition
             </button>
@@ -290,7 +289,7 @@ export function AdminDashboard() {
             <button
               type="button"
               onClick={() => setPendingPrompt({ type: "reset" })}
-              className="red-button rounded border border-black bg-[#EE2524] text-white px-3 py-2 disabled:opacity-50"
+              className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
             >
               Reset Settings
             </button>

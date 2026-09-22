@@ -8,35 +8,31 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-open-sans);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-open-sans), "Open Sans", sans-serif;
+  min-width: 0;
 }
 
 .fiveacross-banner {
   display: block;
   height: auto;
-  width: 400px;
+  width: min(400px, 45vw);
 }
 
 .company-results-table {
-  table-layout: fixed;
-}
-
-.company-results-table th:first-child,
-.company-results-table td:first-child {
-  width: 55%;
+  table-layout: auto;
 }
 
 .goldmedal {
   height: 25px;
   width: 25px;
 }
+
 
 .event-date-calendar-trigger:focus-visible {
   outline: 2px solid #111827;
@@ -339,7 +335,7 @@ button.messagedelete:disabled {
 }
 
 .red-button:not(:disabled):hover {
-  background-color: #d75151;
+  background-color: #30303a;
 }
 
 .dark-button:disabled,
@@ -360,7 +356,7 @@ button.messagedelete:disabled {
 
 .red-button:disabled,
 .red-button:disabled:hover {
-  background-color: #ee2524 !important;
+  background-color: #111827 !important;
   pointer-events: none !important;
   opacity: 0.5;
   cursor: not-allowed;

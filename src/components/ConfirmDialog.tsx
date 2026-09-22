@@ -22,9 +22,7 @@ export function ConfirmDialog({
   if (!open) return null;
 
   const confirmClassName =
-    variant === "danger"
-      ? "red-button rounded border border-black bg-[#EE2524] px-2 py-1 text-white"
-      : "dark-button rounded border border-black bg-gray-900 px-2 py-1 text-white";
+    "dark-button rounded border border-black bg-gray-900 px-2 py-1 text-white";
 
   return (
     <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4">
