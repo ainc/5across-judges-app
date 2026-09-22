@@ -526,8 +526,6 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     [data?.judges, selectedJudgeId],
   );
 
-  const scoreLegend = "Scoring Range 1–5: 1: Weak, 2: Needs Improvement, 3: Competent, 4: Above Expectations, 5: Excellent";
-
   const totals = useMemo(() => {
     if (!data) return {};
     const categoryMap = new Map(data.categories.map((category) => [category.id, category]));
@@ -776,7 +774,6 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     changeLogOpen,
     setChangeLogOpen,
     selectedJudge,
-    scoreLegend,
     totals,
     entryCount,
     missingCellKeys,

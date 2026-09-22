@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormDialog } from "@/components/FormDialog";
@@ -12,6 +11,65 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import Tooltip from "@mui/material/Tooltip";
 import { AppHeader } from "./admin/AppHeader";
 import { StyledTable, tdClass, thClass } from "@/components/StyledTable";
+
+const SCORE_SCALE = [
+  { value: 1, label: ["Weak"] },
+  { value: 2, label: ["Needs", "Improvement"] },
+  { value: 3, label: ["Competent"] },
+  { value: 4, label: ["Above", "Expectations"] },
+  { value: 5, label: ["Excellent"] },
+] as const;
+
+const SCORE_SCALE_WIDTH = 192;
+const SCORE_SCALE_PAD = 16;
+const SCORE_SCALE_LINE_Y = 10;
+const SCORE_SCALE_SPAN = SCORE_SCALE_WIDTH - SCORE_SCALE_PAD * 2;
+
+function ScoreScaleGraphic() {
+  return (
+    <svg
+      className="score-scale-graphic"
+      viewBox={`0 0 ${SCORE_SCALE_WIDTH} 42`}
+      role="img"
+      aria-label="Scoring range 1 to 5: 1 Weak, 2 Needs Improvement, 3 Competent, 4 Above Expectations, 5 Excellent"
+    >
+      <line
+        x1={SCORE_SCALE_PAD}
+        y1={SCORE_SCALE_LINE_Y}
+        x2={SCORE_SCALE_WIDTH - SCORE_SCALE_PAD}
+        y2={SCORE_SCALE_LINE_Y}
+        stroke="#ee2524"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      {SCORE_SCALE.map((point, index) => {
+        const x = SCORE_SCALE_PAD + (SCORE_SCALE_SPAN * index) / (SCORE_SCALE.length - 1);
+        return (
+          <g key={point.value}>
+            <circle cx={x} cy={SCORE_SCALE_LINE_Y} r="5" fill="#ee2524" />
+            <text
+              x={x}
+              y={SCORE_SCALE_LINE_Y + 2.5}
+              textAnchor="middle"
+              fill="#fff"
+              fontSize="6"
+              fontWeight="700"
+            >
+              {point.value}
+            </text>
+            <text x={x} y={SCORE_SCALE_LINE_Y + 13} textAnchor="middle" fill="#323232" fontSize="5.5">
+              {point.label.map((line, lineIndex) => (
+                <tspan key={line} x={x} dy={lineIndex === 0 ? 0 : 6.5}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
 
 type JudgingPageProps = {
   lockedJudgeId?: string;
@@ -40,7 +98,6 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     changeLogOpen,
     setChangeLogOpen,
     selectedJudge,
-    scoreLegend,
     totals,
     entryCount,
     missingCellKeys,
@@ -95,12 +152,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
       )}
       <div className="space-y-2">
         <section className="flex flex-wrap items-center gap-3">
-          {isAdmin ? (
-            <span className="inline-flex h-8 rounded border border-green-900 bg-green-100 px-3 py-1 text-medium font-medium text-green-900">
-              Admin
-            </span>
-          ) : null}
-          <span className="font-medium">{isAdmin ? "Editing Judge:" : "Judge:"}</span>
+          <span className="font-medium">{isAdmin ? "Editing Judge:" : ""}</span>
           {isAdmin ? (
             <>
               <select
@@ -145,11 +197,6 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
               {saveStatusLabel}
             </span>
           )}
-        </section>
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="inline-flex h-8 rounded border border-gray-400 bg-gray-100 px-2 py-1 text-sm text-gray-600">
-            {scoreLegend}
-          </p>
           <div className="ml-auto shrink-0">
             <button
               type="button"
@@ -159,8 +206,10 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
               View Change History
             </button>
           </div>
-        </div>
+        </section>
       </div>
+
+      <ScoreScaleGraphic />
 
       <StyledTable>
           <thead className="sticky top-0 bg-white">

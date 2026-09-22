@@ -362,6 +362,16 @@ button.messagedelete:disabled {
   cursor: not-allowed;
 }
 
+.score-scale-graphic {
+  display: block;
+  width: 12rem;
+  max-width: 100%;
+  height: auto;
+  margin: 0.15rem 0 0;
+  overflow: visible;
+  font-family: inherit;
+}
+
 .score-input {
   appearance: textfield;
   -moz-appearance: textfield;
