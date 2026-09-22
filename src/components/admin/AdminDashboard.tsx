@@ -20,7 +20,7 @@ import { EventDateCalendar } from "@/components/EventDateCalendar";
 import { SignOutButton } from "@/components/SignOutButton";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { formatEventDate } from "@/lib/competition-results";
-import { AppNav } from "../AppNav";
+import { AppHeader } from "./AppHeader";
 
 export function AdminDashboard() {
   const [messageJudgeId, setMessageJudgeId] = useState<string | null>(null);
@@ -70,20 +70,11 @@ export function AdminDashboard() {
   if (!data) return null;
 
   return (
-    <main className="p-6 space-y-6">
-      <header className="space-y-2">
+    <>
+      <AppHeader showAdminLink={true}>
         <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
-        <h3 className="text-base font-semibold">Active Competition: {data.competition.name}</h3>
-        <p className="text-sm text-gray-600">Competition settings can only be edited when competition is live.</p>
-        <div id="toast-container">
-          {toasts.map((toast) => (
-            <div key={toast.id} className="toast">
-              {toast.message}
-            </div>
-          ))}
-        </div>
-        <AppNav showAdminLink={true} />
-      </header>
+      </AppHeader>
+      <main className="space-y-6 px-6 pb-6">
 
       <div className="flex gap-10 items-start">
         <section className="flex-1 rounded border p-4 space-y-3">
@@ -398,6 +389,7 @@ export function AdminDashboard() {
         onSubmit={handlePromptSubmit}
         onCancel={() => setPendingPrompt(null)}
       />
-    </main>
+      </main>
+    </>
   );
 }

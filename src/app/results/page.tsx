@@ -1,10 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { CompanyResultsTables } from "@/components/CompanyResultsTables";
-import { SignOutButton } from "@/components/SignOutButton";
 import { getResults } from "@/lib/results-client";
-import { AppNav } from "@/components/AppNav";
+import { AppHeader } from "@/components/admin/AppHeader";
+import { StyledTable, tdClass, thClass } from "@/components/StyledTable";
 
 export default async function ResultsPage() {
   const session = await auth();
@@ -17,34 +16,26 @@ export default async function ResultsPage() {
   const isAdmin = session.user.role === "ADMIN";
 
   return (
-    <main className="p-6 space-y-4">
-      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-        <div className="text-left space-y-1">
-          <h1 className="text-2xl font-semibold">{data.competition.name} Results</h1>
-          <AppNav showAdminLink={isAdmin} />
-        </div>
-        <img
-          src="/images/5acrossbanner.png"
-          alt="5 Across Banner"
-          className="fiveacross-banner justify-self-center"
-        />
-        <div className="w-48 justify-self-end" aria-hidden="true" />
-      </header>
+    <>
+      <AppHeader showAdminLink={isAdmin}>
+        <h1 className="text-2xl font-semibold">Current Results</h1>
+      </AppHeader>
+      <main className="space-y-4 px-6 pb-6">
 
-      <table className="min-w-full border-collapse border">
+      <StyledTable>
         <thead className="bg-gray-100">
           <tr>
-            <th className="border p-2 text-left">Rank</th>
-            <th className="border p-2 text-left">Company</th>
-            <th className="border p-2 text-left">Final Score</th>
-            <th className="border p-2 text-left">Judges Included</th>
+            <th className={thClass}>Rank</th>
+            <th className={thClass}>Company</th>
+            <th className={thClass}>Final Score</th>
+            <th className={thClass}>Judges Included</th>
           </tr>
         </thead>
         <tbody>
           {data.rankings.map((row) => (
             <tr key={row.companyId}>
-              <td className="border p-2">{row.rank}</td>
-              <td className="border p-2">
+              <td className={tdClass}>{row.rank}</td>
+              <td className={tdClass}>
                 <div className="flex items-center gap-2">
                   <span>{row.companyName}</span>
                   {row.rank === 1 && (
@@ -52,14 +43,15 @@ export default async function ResultsPage() {
                   )}
                 </div>
               </td>
-              <td className="border p-2">{row.finalScore.toFixed(1)}</td>
-              <td className="border p-2">{row.judgeCount}</td>
+              <td className={tdClass}>{row.finalScore.toFixed(1)}</td>
+              <td className={tdClass}>{row.judgeCount}</td>
             </tr>
           ))}
         </tbody>
-      </table>
+      </StyledTable>
 
       <CompanyResultsTables rankings={data.rankings} categories={data.categories} />
-    </main>
+      </main>
+    </>
   );
 }

@@ -8,7 +8,18 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { formatScoreValue, formatTimestamp, useJudgingSession } from "@/hooks/useJudgingSession";
 import CancelIcon from '@mui/icons-material/Cancel';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
-import { AppNav } from "./AppNav";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import Tooltip from "@mui/material/Tooltip";
+import { AppHeader } from "./admin/AppHeader";
+import { StyledTable, tdClass, thClass } from "@/components/StyledTable";
+
+function firstPhrase(name: string) {
+  const parts = name.split("/").map((part) => part.trim()).filter(Boolean);
+  if (parts[0]?.toLowerCase() === "quality of overall pitch") {
+    return parts[parts.length - 1] ?? name;
+  }
+  return parts[0] || name;
+}
 
 type JudgingPageProps = {
   lockedJudgeId?: string;
@@ -18,6 +29,7 @@ type JudgingPageProps = {
 export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPageProps) {
   const isAdmin = showAdminLink;
   const [overrideEnabled, setOverrideEnabled] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const canEditScores = !isAdmin || overrideEnabled;
   const {
 
@@ -56,28 +68,18 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     return <main className="p-6"></main>;
   }
 
+  const selectedId =
+    selectedCompanyId && data.companies.some((company) => company.id === selectedCompanyId)
+      ? selectedCompanyId
+      : data.companies[0]?.id ?? "";
+  const visibleCompanies = data.companies.filter((company) => company.id === selectedId);
+
   return (
-    <main className="p-6 space-y-4">
-      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-        <div id="toast-container">
-          {toasts.map((toast) => (
-            <div key={toast.id} className="toast">
-              {toast.message}
-            </div>
-          ))}
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">Awesome Inc</p>
-          <h1 className="text-2xl font-semibold">{data.competition.name}</h1>
-          <p className="text-sm text-gray-600">Judge Scoring Homepage</p>
-          <AppNav showAdminLink={isAdmin} />
-        </div>
-        <img
-          src="/images/5acrossbanner.png"
-          alt="5 Across Banner"
-          className="fiveacross-banner justify-self-center"
-        />
-      </header>
+    <>
+      <AppHeader showAdminLink={isAdmin}>
+        <h1 className="text-2xl font-semibold">Judge's Scoring Homepage</h1>
+      </AppHeader>
+      <main className="space-y-4 px-6 pb-6">
 
       {selectedJudge?.message && (
         <section className="rounded border border-blue-300 bg-blue-50 p-4">
@@ -168,13 +170,27 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         </div>
       </div>
 
-      <section className="overflow-auto border rounded">
-        <table className="min-w-full border-collapse">
+      <label>
+        <select
+          aria-label="Company"
+          value={selectedId}
+          onChange={(event) => setSelectedCompanyId(event.target.value)}
+          className="rounded border p-2"
+        >
+          {data.companies.map((company) => (
+            <option key={company.id} value={company.id}>
+              {company.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <StyledTable>
           <thead className="sticky top-0 bg-white">
             <tr>
-              <th className="sticky left-0 bg-white border p-2 text-left">Category <span className="text-sm font-medium text-gray-600">(Weight)</span></th>
-              {data.companies.map((company) => (
-                <th key={company.id} className="border p-2 min-w-40">
+              <th className={`${thClass} sticky left-0 bg-white`}>Category</th>
+              {visibleCompanies.map((company) => (
+                <th key={company.id} className={`${thClass} min-w-40`}>
                   {company.name}
                 </th>
               ))}
@@ -183,16 +199,28 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           <tbody>
             {data.categories.map((category) => (
               <tr key={category.id}>
-                <td className="sticky left-0 bg-white border p-2 text-medium">
-                  {category.name} <span className="text-sm font-medium text-gray-600">({category.weight}%)</span>
+                <td className={`${tdClass} sticky left-0 bg-white text-medium`}>
+                  <span className="inline-flex items-center gap-1">
+                    {firstPhrase(category.name)}
+                    <Tooltip title={category.name} arrow>
+                      <button
+                        type="button"
+                        aria-label={`Full description: ${category.name}`}
+                        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-500 hover:text-gray-800"
+                      >
+                        <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+                      </button>
+                    </Tooltip>
+                    <span className="text-sm font-medium text-gray-600">({category.weight}%)</span>
+                  </span>
                 </td>
-                {data.companies.map((company) => {
+                {visibleCompanies.map((company) => {
                   const key = `${company.id}:${category.id}`;
                   const isMissing = missingCellKeys.has(key);
                   return (
-                    <td key={key} className={`border p-1 text-center ${isMissing ? "bg-red-50" : ""}`}>
+                    <td key={key} className={`${tdClass} p-1 text-center ${isMissing ? "bg-red-50" : ""}`}>
                       <input
-                        className={`w-16 rounded border px-2 py-1 text-center disabled:bg-gray-50 ${
+                        className={`score-input w-16 rounded border px-2 py-1 text-center disabled:bg-gray-50 ${
                           isMissing ? "border-red-500 bg-red-100" : ""
                         }`}
                         min={1}
@@ -215,26 +243,24 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
               </tr>
             ))}
             <tr className="bg-gray-50">
-              <td className="sticky left-0 bg-gray-50 border p-2 font-semibold">Weighted Total</td>
-              {data.companies.map((company) => {
+              <td className={`${tdClass} sticky left-0 bg-gray-50 font-semibold`}>Weighted Total</td>
+              {visibleCompanies.map((company) => {
                 const hasScores = data.categories.some(
                   (category) => typeof scores[`${company.id}:${category.id}`] === "number",
                 );
                 return (
-                  <td key={company.id} className="border p-2 text-center font-semibold">
+                  <td key={company.id} className={`${tdClass} text-center font-semibold`}>
                     {hasScores ? totals[company.id]?.toFixed(1) ?? "0.0" : ""}
                   </td>
                 );
               })}
             </tr>
           </tbody>
-        </table>
-      </section>
+      </StyledTable>
 
-      <section className="space-y-3 rounded border p-4">
+      <section className="space-y-3 rounded-xl border p-4">
         <h2 className="text-lg font-semibold">Notes</h2>
-        <p className="text-sm text-gray-600">Commentary on each pitch. Notes save automatically with your draft.</p>
-        {data.companies.map((company) => (
+        {visibleCompanies.map((company) => (
           <label key={company.id} className="block text-sm">
             {company.name}
             <textarea
@@ -320,6 +346,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         onConfirm={handleConfirmDialog}
         onCancel={() => setPendingConfirm(null)}
       />
-    </main>
+      </main>
+    </>
   );
 }
