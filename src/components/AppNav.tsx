@@ -49,9 +49,11 @@ export function AppNav({ showAdminLink = false }: AppNavProps) {
         transformOrigin={{ vertical: "top", horizontal: "right" }}
         sx={{
           "& .MuiMenuItem-root": {
-            fontWeight: 400,
-            fontSize: "0.875rem",
-            textTransform: "uppercase",
+            fontFamily: "var(--font-open-sans), \"Open Sans\", sans-serif",
+            fontWeight: 300,
+            fontSize: "10pt",
+            letterSpacing: "normal",
+            textTransform: "none",
           },
         }}
       >

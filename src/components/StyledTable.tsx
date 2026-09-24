@@ -3,15 +3,15 @@ type StyledTableProps = {
   tableClassName?: string;
 };
 
-export const thClass = "border p-2 text-left";
-export const tdClass = "border p-2";
+export const thClass = "border-r border-b p-2 text-left";
+export const tdClass = "border-r border-b p-2";
 
 export function StyledTable({ children, tableClassName }: StyledTableProps) {
   return (
     <section className="overflow-hidden rounded-xl border">
       <div className="overflow-auto">
         <table
-          className={["min-w-full border-collapse", tableClassName]
+          className={["styled-table min-w-full border-collapse", tableClassName]
             .filter(Boolean)
             .join(" ")}
         >

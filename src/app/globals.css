@@ -20,9 +20,9 @@ body {
 
 .page-header,
 .page-header h1 {
-  font-size: 1.25rem;
-  font-weight: 900;
-  letter-spacing: 2px;
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.15px;
   line-height: 1.3;
   text-transform: uppercase;
 }
@@ -57,9 +57,40 @@ body {
   table-layout: auto;
 }
 
+.styled-table tr > :last-child {
+  border-right-width: 0;
+}
+
+.styled-table tbody tr:last-child > * {
+  border-bottom-width: 0;
+}
+
 .goldmedal {
   height: 25px;
   width: 25px;
+}
+
+@keyframes podium-bar-rise {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.podium-bar-clip {
+  overflow: hidden;
+}
+
+.podium-bar {
+  animation: podium-bar-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .podium-bar {
+    animation: none;
+  }
 }
 
 
@@ -355,8 +386,14 @@ button.messagedelete:disabled {
   opacity: 1 !important;
 }
 
+.dark-button:not(:disabled) {
+  background-color: #7b8290;
+  color: #111827;
+}
+
 .dark-button:not(:disabled):hover {
-  background-color: #30303a;
+  background-color: #636a76;
+  color: #ffffff;
 }
 
 .white-button:not(:disabled):hover {
@@ -369,9 +406,10 @@ button.messagedelete:disabled {
 
 .dark-button:disabled,
 .dark-button:disabled:hover {
-  background-color: #111827 !important;
+  background-color: #c5c9d0 !important;
+  color: #6b7280;
   pointer-events: none !important;
-  opacity: 0.5;
+  opacity: 1;
   cursor: not-allowed;
 }
 

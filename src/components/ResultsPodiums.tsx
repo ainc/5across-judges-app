@@ -8,17 +8,17 @@ type PodiumRow = {
 };
 
 const HEIGHT_PX: Record<number, number> = {
-  1: 208,
-  2: 160,
-  3: 128,
-  4: 96,
-  5: 80,
+  1: 248,
+  2: 192,
+  3: 152,
+  4: 116,
+  5: 96,
 };
 
 const FACE: Record<number, { background: string; color: string }> = {
-  1: { background: "#EE2524", color: "#ffffff" },
-  2: { background: "#ED3742", color: "#ffffff" },
-  3: { background: "#e45d65", color: "#ffffff" },
+  1: { background: "#EC3641", color: "#ffffff" },
+  2: { background: "#EF5E66", color: "#ffffff" },
+  3: { background: "#F4868D", color: "#ffffff" },
   4: { background: "#939597", color: "#ffffff" },
   5: { background: "#D1D2D4", color: "#323232" },
 };
@@ -37,7 +37,7 @@ export function ResultsPodiums({ rankings }: { rankings: PodiumRow[] }) {
         display: "flex",
         alignItems: "flex-end",
         width: "100%",
-        minHeight: 352,
+        minHeight: 392,
         gap: 8,
         overflow: "visible",
       }}
@@ -81,21 +81,32 @@ export function ResultsPodiums({ rankings }: { rankings: PodiumRow[] }) {
               ) : null}
             </div>
             <div
+              className="podium-bar-clip"
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
                 width: "100%",
                 height: HEIGHT_PX[rank] ?? 64,
                 borderTopLeftRadius: 6,
                 borderTopRightRadius: 6,
-                background: face.background,
-                color: face.color,
-                fontSize: 18,
-                fontWeight: 700,
               }}
             >
-              {Number(row.finalScore).toFixed(1)}
+              <div
+                className="podium-bar"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                  width: "100%",
+                  height: "100%",
+                  paddingBottom: 10,
+                  background: face.background,
+                  color: face.color,
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                Score: {Number(row.finalScore).toFixed(1)}
+              </div>
             </div>
           </div>
         );

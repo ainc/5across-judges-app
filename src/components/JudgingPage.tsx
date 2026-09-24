@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormDialog } from "@/components/FormDialog";
 import { firstPhrase } from "@/lib/judging-format";
@@ -28,48 +28,68 @@ const SCORE_SCALE_LINE_Y = 22;
 const SCORE_SCALE_SPAN = SCORE_SCALE_WIDTH - SCORE_SCALE_NUMBER_PAD * 2;
 
 function ScoreScaleGraphic() {
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setExpanded(true));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  const lineLeft = `${(SCORE_SCALE_LINE_PAD / SCORE_SCALE_WIDTH) * 100}%`;
+  const lineWidth = `${((SCORE_SCALE_WIDTH - SCORE_SCALE_LINE_PAD * 2) / SCORE_SCALE_WIDTH) * 100}%`;
+  const lineTop = `${(SCORE_SCALE_LINE_Y / 68) * 100}%`;
+
   return (
-    <svg
-      className="score-scale-graphic"
-      viewBox={`0 0 ${SCORE_SCALE_WIDTH} 68`}
-      style={{ width: "32rem" }}
-      role="img"
-      aria-label="Scoring range 1 to 5: 1 Weak, 2 Needs Improvement, 3 Competent, 4 Above Expectations, 5 Excellent"
-    >
-      <line
-        x1={SCORE_SCALE_LINE_PAD}
-        y1={SCORE_SCALE_LINE_Y}
-        x2={SCORE_SCALE_WIDTH - SCORE_SCALE_LINE_PAD}
-        y2={SCORE_SCALE_LINE_Y}
-        stroke="#ee2524"
-        strokeWidth="2.5"
-        strokeLinecap="round"
+    <div className="score-scale-graphic" style={{ position: "relative" }}>
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: lineLeft,
+          top: lineTop,
+          width: expanded ? lineWidth : 0,
+          height: 2.5,
+          marginTop: -1.25,
+          borderRadius: 999,
+          background: "#ee2524",
+          transformOrigin: "left",
+          transition: "width 0.85s cubic-bezier(0.22, 1, 0.36, 1)",
+        }}
       />
-      {SCORE_SCALE.map((point, index) => {
-        const x = SCORE_SCALE_NUMBER_PAD + (SCORE_SCALE_SPAN * index) / (SCORE_SCALE.length - 1);
-        return (
-          <g key={point.value}>
-            <text
-              x={x}
-              y={SCORE_SCALE_LINE_Y - 8}
-              textAnchor="middle"
-              fill="#ee2524"
-              fontSize="11"
-              fontWeight="700"
-            >
-              {point.value}
-            </text>
-            <text x={x} y={SCORE_SCALE_LINE_Y + 16} textAnchor="middle" fill="#323232" fontSize="8">
-              {point.label.map((line, lineIndex) => (
-                <tspan key={line} x={x} dy={lineIndex === 0 ? 0 : 10}>
-                  {line}
-                </tspan>
-              ))}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+      <svg
+        viewBox={`0 0 ${SCORE_SCALE_WIDTH} 68`}
+        style={{ display: "block", width: "100%" }}
+        role="img"
+        aria-label="Scoring range 1 to 5: 1 Weak, 2 Needs Improvement, 3 Competent, 4 Above Expectations, 5 Excellent"
+      >
+        {SCORE_SCALE.map((point, index) => {
+          const x = SCORE_SCALE_NUMBER_PAD + (SCORE_SCALE_SPAN * index) / (SCORE_SCALE.length - 1);
+          return (
+            <g key={point.value}>
+              <text
+                x={x}
+                y={SCORE_SCALE_LINE_Y - 8}
+                textAnchor="middle"
+                fill="#ee2524"
+                fontSize="11"
+                fontWeight="700"
+              >
+                {point.value}
+              </text>
+              <text x={x} y={SCORE_SCALE_LINE_Y + 16} textAnchor="middle" fill="#323232" fontSize="8">
+                {point.label.map((line, lineIndex) => (
+                  <tspan key={line} x={x} dy={lineIndex === 0 ? 0 : 10}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 }
 
@@ -154,6 +174,13 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         <section className="flex flex-wrap items-center gap-3">
           {isAdmin ? (
             <>
+              <button
+                type="button"
+                onClick={() => setOverrideEnabled((on) => !on)}
+                className="dark-button h-8 rounded border border-black bg-gray-900 px-3 py-1 text-white"
+              >
+                {overrideEnabled ? "Override On" : "Override"}
+              </button>
               <AppSelect
                 aria-label="Judge"
                 className="h-8 rounded border px-2 py-1"
@@ -166,17 +193,9 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                 {data.judges.map((judge) => (
                   <option key={judge.id} value={judge.id}>
                     {judge.name}
-                    {judge.code ? ` (${judge.code})` : ""}
                   </option>
                 ))}
               </AppSelect>
-              <button
-                type="button"
-                onClick={() => setOverrideEnabled((on) => !on)}
-                className="dark-button h-8 rounded border border-black bg-gray-900 px-3 py-1 text-white"
-              >
-                {overrideEnabled ? "Override On" : "Override"}
-              </button>
             </>
           ) : (
             <span>
@@ -282,7 +301,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           <label key={company.id} className="block text-sm">
             {company.name}
             <textarea
-              className="mt-1 w-full rounded border p-2"
+              className="mt-1 w-full resize-none rounded border p-2 [field-sizing:fixed]"
               rows={3}
               disabled={isLoadingScores || !canEditScores}
               value={notes[company.id] ?? ""}
@@ -298,11 +317,10 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
       <section className="flex flex-wrap items-center gap-3">
         <button
           type="button"
-          disabled={isSubmitting || isLoadingScores || !canUndo || !canEditScores}
-          onClick={undoLastScore}
-          className="white-button rounded border border-black bg-white text-black px-3 py-2 disabled:opacity-50"
+          onClick={() => setChangeLogOpen(true)}
+          className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white"
         >
-          Undo
+          View Change History
         </button>
         <button
           disabled={isSubmitting || isLoadingScores || !canEditScores}
@@ -313,10 +331,11 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         </button>
         <button
           type="button"
-          onClick={() => setChangeLogOpen(true)}
-          className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white"
+          disabled={isSubmitting || isLoadingScores || !canUndo || !canEditScores}
+          onClick={undoLastScore}
+          className="white-button rounded border border-black bg-white text-black px-3 py-2 disabled:opacity-50"
         >
-          View Change History
+          Undo
         </button>
       </section>
 

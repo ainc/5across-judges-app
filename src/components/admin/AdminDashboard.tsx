@@ -8,7 +8,7 @@ import { AdminPromptDialogs } from "@/components/admin/AdminPromptDialogs";
 import { ArchivedDetailsModal } from "@/components/admin/ArchivedDetailsModal";
 import { CategoriesModal } from "@/components/admin/CategoriesModal";
 import { CompaniesModal } from "@/components/admin/CompaniesModal";
-import { DashboardDeleteButton } from "@/components/admin/DashboardDeleteButton";
+import { DashboardTextActions, DashboardTextButton } from "@/components/admin/DashboardTextButton";
 import { JudgesModal } from "@/components/admin/JudgesModal";
 import { SendJudgeMessageModal } from "@/components/admin/SendJudgeMessageModal";
 import { EventDateCalendar } from "@/components/EventDateCalendar";
@@ -73,37 +73,31 @@ export function AdminDashboard() {
       <main className="px-6 pb-6">
         <div className="flex items-start gap-10">
           <div className="flex min-w-0 flex-1 flex-col gap-10">
-            <section className="rounded border p-4 space-y-3">
+            <section className="overflow-hidden rounded border p-4 space-y-3">
               <h2 className="text-xl font-semibold">Competition Actions</h2>
-              <div className="flex flex-col items-start gap-3">
-                <button
-                  type="button"
-                  onClick={endCurrentCompetition}
-                  disabled={isArchiving || !data}
-                  className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
-                >
-                  End Competition
-                </button>
-                <button
-                  type="button"
-                  onClick={startNewCompetition}
-                  disabled={isStarting || !!data}
-                  className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
-                >
-                  Start New Competition
-                </button>
-                <button
-                  type="button"
+              <DashboardTextActions>
+                <DashboardTextButton
                   onClick={() => setMessageOpen(true)}
                   disabled={!data || data.judges.length === 0}
-                  className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
                 >
                   Message Judge
-                </button>
-              </div>
+                </DashboardTextButton>
+                <DashboardTextButton
+                  onClick={endCurrentCompetition}
+                  disabled={isArchiving || !data}
+                >
+                  End Competition
+                </DashboardTextButton>
+                <DashboardTextButton
+                  onClick={startNewCompetition}
+                  disabled={isStarting || !!data}
+                >
+                  Start New Competition
+                </DashboardTextButton>
+              </DashboardTextActions>
             </section>
 
-            <section className="rounded border p-4 space-y-3">
+            <section className="overflow-hidden rounded border p-4 space-y-3">
               <h2 className="text-xl font-semibold">Recent 5 Across Results</h2>
               {resultsPreview ? (
                 <>
@@ -125,28 +119,27 @@ export function AdminDashboard() {
                   {data ? "No final submissions yet." : "No live competition. Start a new competition to begin scoring."}
                 </p>
               )}
-              <button
-                onClick={() => setPendingConfirm({ type: "save-results" })}
-                disabled={isSavingResults || !data}
-                className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
-              >
-                Save & Copy Competition
-              </button>
+              <DashboardTextActions>
+                <DashboardTextButton
+                  onClick={() => setPendingConfirm({ type: "save-results" })}
+                  disabled={isSavingResults || !data}
+                >
+                  Save & Copy Competition
+                </DashboardTextButton>
+              </DashboardTextActions>
             </section>
 
             {data ? (
-              <section className="rounded border p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">"{data.competition.name}" Settings</h2>
-                  <button
-                    type="button"
+              <section className="overflow-hidden rounded border p-4 space-y-3">
+                <h2 className="text-xl font-semibold">{data.competition.name} Settings</h2>
+                <DashboardTextActions>
+                  <DashboardTextButton
                     onClick={() => void saveSettings()}
                     disabled={isSaving}
-                    className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
                   >
                     {isSaving ? "Publishing..." : "Publish Competition Settings"}
-                  </button>
-                </div>
+                  </DashboardTextButton>
+                </DashboardTextActions>
                 <label className="block text-sm">
                   Competition Name
                   <input
@@ -165,7 +158,7 @@ export function AdminDashboard() {
                 <label className="block text-sm">
                   Competition Summary
                   <textarea
-                    className="mt-1 w-full rounded border p-2 field-sizing-content font-mono text-sm"
+                    className="mt-1 w-full resize-none rounded border p-2 font-mono text-sm [field-sizing:fixed]"
                     rows={6}
                     value={autoResultsSummary}
                     readOnly
@@ -180,45 +173,37 @@ export function AdminDashboard() {
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col gap-10">
-            <section className="rounded border p-4 space-y-3">
+            <section className="overflow-hidden rounded border p-4 space-y-3">
               <h2 className="text-xl font-semibold">Settings</h2>
-              <div className="flex flex-col items-start gap-3">
-                <button
-                  type="button"
+              <DashboardTextActions>
+                <DashboardTextButton
                   onClick={() => openSectionModal("judges")}
                   disabled={!data}
-                  className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
                 >
                   Manage Judges
-                </button>
-                <button
-                  type="button"
+                </DashboardTextButton>
+                <DashboardTextButton
                   onClick={() => openSectionModal("companies")}
                   disabled={!data}
-                  className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
                 >
                   Manage Companies
-                </button>
-                <button
-                  type="button"
+                </DashboardTextButton>
+                <DashboardTextButton
                   onClick={() => openSectionModal("categories")}
                   disabled={!data}
-                  className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
                 >
                   Manage Scoring Criteria
-                </button>
-                <button
-                  type="button"
+                </DashboardTextButton>
+                <DashboardTextButton
                   onClick={() => setPendingPrompt({ type: "reset" })}
                   disabled={!data}
-                  className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
                 >
                   Reset Settings
-                </button>
-              </div>
+                </DashboardTextButton>
+              </DashboardTextActions>
             </section>
 
-            <section className="relative rounded border p-4 space-y-3">
+            <section className="relative overflow-hidden rounded border p-4 space-y-3">
               <button
                 type="button"
                 aria-label="Create competition"
@@ -243,12 +228,9 @@ export function AdminDashboard() {
               {archived.length === 0 ? (
                 <p className="text-sm text-gray-600">No competitions in archive.</p>
               ) : (
-                <ul className="space-y-2">
+                <ul className="space-y-4">
                   {archived.map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex flex-col items-start gap-3 rounded bg-white p-3"
-                    >
+                    <li key={item.id} className="space-y-3">
                       <div className="min-w-0 text-sm">
                         <p className="font-medium leading-none">{item.name}</p>
                         <p className="mt-1 text-gray-600 leading-none">
@@ -257,97 +239,35 @@ export function AdminDashboard() {
                           {item.finalSubmissionCount === 1 ? "" : "s"}
                         </p>
                       </div>
-                      <div className="flex flex-col items-start gap-3">
-                        <button
-                          type="button"
+                      <DashboardTextActions>
+                        <DashboardTextButton
                           onClick={() => void makeArchivedCompetitionLive(item.id, item.name)}
                           disabled={
                             isActivatingArchived === item.id ||
                             isDeletingArchived === item.id ||
                             isCreatingArchived === item.id
                           }
-                          className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
                         >
                           Make Competition Live
-                        </button>
-                        <button
-                          type="button"
+                        </DashboardTextButton>
+                        <DashboardTextButton
                           onClick={() => void openArchivedDetails(item.id)}
                           disabled={isLoadingArchivedDetails}
-                          className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
                         >
                           View Competition Details
-                        </button>
-                        <button
-                          type="button"
+                        </DashboardTextButton>
+                        <DashboardTextButton
                           onClick={() => void deletePastCompetition(item.id, item.name)}
                           disabled={isDeletingArchived === item.id}
-                          className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
                         >
                           Delete Competition
-                        </button>
-                      </div>
+                        </DashboardTextButton>
+                      </DashboardTextActions>
                     </li>
                   ))}
                 </ul>
               )}
             </section>
-
-            {data ? (
-              <section className="rounded border p-4 space-y-3">
-                {data.judges.map((judge, index) => (
-                  <div
-                    key={judge.id}
-                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 rounded bg-white px-0.5 py-2"
-                  >
-                    <div className="flex min-w-0 gap-1">
-                      <span className="text-base font-medium text-gray-600">{index + 1}.</span>
-                      <div className="flex flex-col">
-                        <span className="text-base font-medium text-black">
-                          {judge.name.trim() || "Unnamed judge"}
-                        </span>
-                        {judge.code ? (
-                          <span className="text-sm font-medium text-gray-600">Code: {judge.code}</span>
-                        ) : null}
-                      </div>
-                    </div>
-                    <DashboardDeleteButton
-                      variant="message"
-                      onClick={() => requestDeleteJudgeMessage(judge.id, judge.name)}
-                      disabled={!judge.message?.trim()}
-                      aria-label={judge.message?.trim() ? "Delete message" : "No message sent"}
-                      title={judge.message?.trim() ? "Delete message" : "No message sent"}
-                    />
-                  </div>
-                ))}
-
-                {data.companies.map((company) => (
-                  <div key={company.id} className="rounded bg-white px-0.5 py-2">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-base font-medium text-black">
-                        {company.name.trim() || "Unnamed company"}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-
-                <div className="flex items-center justify-end">
-                  <span
-                    className={`text-sm font-medium ${criteriaWeightTotal === 100 ? "text-green-700" : "text-red-700"}`}
-                  >
-                    Weights: {criteriaWeightTotal}%
-                  </span>
-                </div>
-                {data.categories.map((category) => (
-                  <div key={category.id} className="flex flex-wrap items-center gap-2 rounded bg-white px-1 py-3 font-medium text-base text-black">
-                    <span className="font-medium">{category.name.trim() || "Unnamed category"}</span>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <span className="text-sm text-gray-600">({category.weight}%)</span>
-                    </div>
-                  </div>
-                ))}
-              </section>
-            ) : null}
           </div>
         </div>
 

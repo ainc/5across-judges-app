@@ -17,7 +17,7 @@ export default async function ResultsPage() {
 
   return (
     <>
-      <AppHeader showAdminLink={isAdmin}>
+      <AppHeader showAdminLink={isAdmin} className="mb-8">
         <h1>Current Results</h1>
       </AppHeader>
       <main className="min-w-0 space-y-4 px-6 pb-6">
