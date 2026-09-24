@@ -543,11 +543,6 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     return result;
   }, [data, scores]);
 
-  const entryCount = useMemo(() => {
-    if (!data) return 0;
-    return data.companies.length * data.categories.length;
-  }, [data]);
-
   const missingCellKeys = useMemo(
     () => new Set(missingCells.map((cell) => `${cell.companyId}:${cell.categoryId}`)),
     [missingCells],
@@ -775,7 +770,6 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     setChangeLogOpen,
     selectedJudge,
     totals,
-    entryCount,
     missingCellKeys,
     hasChangeLog,
     canUndo: undoStack.length > 0,

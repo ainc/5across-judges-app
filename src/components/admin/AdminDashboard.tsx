@@ -68,7 +68,7 @@ export function AdminDashboard() {
   return (
     <>
       <AppHeader showAdminLink={true}>
-        <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
+        <h1>Admin Dashboard</h1>
       </AppHeader>
       <main className="px-6 pb-6">
         <div className="flex items-start gap-10">

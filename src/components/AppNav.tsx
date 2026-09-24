@@ -47,6 +47,13 @@ export function AppNav({ showAdminLink = false }: AppNavProps) {
         onClose={closeMenu}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
+        sx={{
+          "& .MuiMenuItem-root": {
+            fontWeight: 400,
+            fontSize: "0.875rem",
+            textTransform: "uppercase",
+          },
+        }}
       >
         <MenuItem component={Link} href="/" onClick={closeMenu}>
           Home

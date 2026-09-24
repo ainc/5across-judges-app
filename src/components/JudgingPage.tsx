@@ -22,9 +22,10 @@ const SCORE_SCALE = [
 ] as const;
 
 const SCORE_SCALE_WIDTH = 360;
-const SCORE_SCALE_PAD = 28;
-const SCORE_SCALE_LINE_Y = 16;
-const SCORE_SCALE_SPAN = SCORE_SCALE_WIDTH - SCORE_SCALE_PAD * 2;
+const SCORE_SCALE_NUMBER_PAD = 32;
+const SCORE_SCALE_LINE_PAD = 16;
+const SCORE_SCALE_LINE_Y = 22;
+const SCORE_SCALE_SPAN = SCORE_SCALE_WIDTH - SCORE_SCALE_NUMBER_PAD * 2;
 
 function ScoreScaleGraphic() {
   return (
@@ -36,30 +37,29 @@ function ScoreScaleGraphic() {
       aria-label="Scoring range 1 to 5: 1 Weak, 2 Needs Improvement, 3 Competent, 4 Above Expectations, 5 Excellent"
     >
       <line
-        x1={SCORE_SCALE_PAD}
+        x1={SCORE_SCALE_LINE_PAD}
         y1={SCORE_SCALE_LINE_Y}
-        x2={SCORE_SCALE_WIDTH - SCORE_SCALE_PAD}
+        x2={SCORE_SCALE_WIDTH - SCORE_SCALE_LINE_PAD}
         y2={SCORE_SCALE_LINE_Y}
         stroke="#ee2524"
         strokeWidth="2.5"
         strokeLinecap="round"
       />
       {SCORE_SCALE.map((point, index) => {
-        const x = SCORE_SCALE_PAD + (SCORE_SCALE_SPAN * index) / (SCORE_SCALE.length - 1);
+        const x = SCORE_SCALE_NUMBER_PAD + (SCORE_SCALE_SPAN * index) / (SCORE_SCALE.length - 1);
         return (
           <g key={point.value}>
-            <circle cx={x} cy={SCORE_SCALE_LINE_Y} r="7" fill="#ee2524" />
             <text
               x={x}
-              y={SCORE_SCALE_LINE_Y + 3}
+              y={SCORE_SCALE_LINE_Y - 8}
               textAnchor="middle"
-              fill="#fff"
-              fontSize="9"
+              fill="#ee2524"
+              fontSize="11"
               fontWeight="700"
             >
               {point.value}
             </text>
-            <text x={x} y={SCORE_SCALE_LINE_Y + 20} textAnchor="middle" fill="#323232" fontSize="8">
+            <text x={x} y={SCORE_SCALE_LINE_Y + 16} textAnchor="middle" fill="#323232" fontSize="8">
               {point.label.map((line, lineIndex) => (
                 <tspan key={line} x={x} dy={lineIndex === 0 ? 0 : 10}>
                   {line}
@@ -100,7 +100,6 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     setChangeLogOpen,
     selectedJudge,
     totals,
-    entryCount,
     missingCellKeys,
     hasChangeLog,
     canUndo,
@@ -127,7 +126,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
   return (
     <>
       <AppHeader showAdminLink={isAdmin}>
-        <h1 className="text-2xl font-semibold">Judge's Scoring Homepage</h1>
+        <h1>Judge's Scoring Homepage</h1>
       </AppHeader>
       <main className="space-y-4 px-6 pb-6">
 
@@ -153,10 +152,10 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
       )}
       <div className="space-y-2">
         <section className="flex flex-wrap items-center gap-3">
-          <span className="font-medium">{isAdmin ? "Editing Judge:" : ""}</span>
           {isAdmin ? (
             <>
               <AppSelect
+                aria-label="Judge"
                 className="h-8 rounded border px-2 py-1"
                 value={selectedJudgeId}
                 onChange={(event) => {
@@ -188,15 +187,6 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           <span className="text-sm text-gray-600">
             {saveStatusLabel}
           </span>
-          <div className="ml-auto shrink-0">
-            <button
-              type="button"
-              onClick={() => setChangeLogOpen(true)}
-              className="dark-button rounded border border-black bg-gray-900 px-3 py-1 text-white"
-            >
-              View Change History
-            </button>
-          </div>
         </section>
       </div>
 
@@ -321,9 +311,13 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         >
           Submit Final Scores
         </button>
-        <p className="text-sm text-gray-600">
-          {Object.keys(scores).length}/{entryCount} cells scored
-        </p>
+        <button
+          type="button"
+          onClick={() => setChangeLogOpen(true)}
+          className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white"
+        >
+          View Change History
+        </button>
       </section>
 
       <FormDialog

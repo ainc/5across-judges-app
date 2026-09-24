@@ -18,7 +18,9 @@ export function AppHeader({ showAdminLink = false, children }: AppHeaderProps) {
         className="h-12 w-auto shrink-0"
       />
     <div className="flex flex-col items-end text-right">
-        {children}
+        <div className="page-header">
+          {children}
+        </div>
         <AppNav showAdminLink={showAdminLink} />
     </div>
     </header>
