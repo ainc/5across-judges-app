@@ -68,6 +68,8 @@ body {
 }
 
 .event-date-calendar .rdp-dropdown_root select {
+  appearance: auto;
+  -webkit-appearance: menulist;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   padding: 4px 8px;
@@ -364,7 +366,7 @@ button.messagedelete:disabled {
 
 .score-scale-graphic {
   display: block;
-  width: 12rem;
+  width: 32rem;
   max-width: 100%;
   height: auto;
   margin: 0.15rem 0 0;

@@ -23,7 +23,7 @@ export function AdminPromptDialogs({ pendingPrompt, onSubmit, onCancel }: AdminP
       <PromptDialog
         open={pendingPrompt?.type === "start-next"}
         title="Name New Competition"
-        message="Choose a name for the new active competition. The current competition will be archived with its results."
+        message="Choose a name for the new live competition."
         label="Competition Name:"
         defaultValue={pendingPrompt?.type === "start-next" ? pendingPrompt.defaultValue : ""}
         confirmLabel="Start New Competition"

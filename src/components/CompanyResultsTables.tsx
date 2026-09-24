@@ -3,6 +3,7 @@
 import { useState } from "react";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import Tooltip from "@mui/material/Tooltip";
+import { AppSelect } from "@/components/AppSelect";
 import { StyledTable, tdClass, thClass } from "@/components/StyledTable";
 import { firstPhrase } from "@/lib/judging-format";
 
@@ -35,7 +36,7 @@ export function CompanyResultsTables({
             <thead>
               <tr>
                 <th className={`${thClass} font-semibold`}>
-                  <select
+                  <AppSelect
                     aria-label="Company"
                     value={selectedCompanyId}
                     onChange={(event) => setSelectedCompanyId(event.target.value)}
@@ -46,7 +47,7 @@ export function CompanyResultsTables({
                         {option.companyName}
                       </option>
                     ))}
-                  </select>
+                  </AppSelect>
                 </th>
                 {row.byJudge.map((judge) => (
                   <th key={judge.judgeId} className={`${thClass} text-center font-normal`}>

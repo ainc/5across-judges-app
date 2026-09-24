@@ -8,12 +8,14 @@ type AppHeaderProps = {
 
 export function AppHeader({ showAdminLink = false, children }: AppHeaderProps) {
   return (
-    <header className="sticky top-0 z-50 mb-6 flex w-full min-w-0 items-center justify-between gap-4 overflow-hidden bg-white px-4 py-3 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 mb-12 flex w-full min-w-0 items-center justify-between gap-4 overflow-hidden bg-white px-4 py-3 backdrop-blur-sm">
 
       <img
         src="https://awesomeinc.org/static/03d26df95cda6e973c41adb3678dd8a2/d66c5/5AcrossLogo_15_black%406x.webp"
         alt="5 Across Banner"
-        className="fiveacross-banner"
+        width={200}
+        height={48}
+        className="h-12 w-auto shrink-0"
       />
     <div className="flex flex-col items-end text-right">
         {children}

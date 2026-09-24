@@ -10,6 +10,7 @@ import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import Tooltip from "@mui/material/Tooltip";
 import { AppHeader } from "./admin/AppHeader";
+import { AppSelect } from "@/components/AppSelect";
 import { StyledTable, tdClass, thClass } from "@/components/StyledTable";
 
 const SCORE_SCALE = [
@@ -20,16 +21,17 @@ const SCORE_SCALE = [
   { value: 5, label: ["Excellent"] },
 ] as const;
 
-const SCORE_SCALE_WIDTH = 192;
-const SCORE_SCALE_PAD = 16;
-const SCORE_SCALE_LINE_Y = 10;
+const SCORE_SCALE_WIDTH = 360;
+const SCORE_SCALE_PAD = 28;
+const SCORE_SCALE_LINE_Y = 16;
 const SCORE_SCALE_SPAN = SCORE_SCALE_WIDTH - SCORE_SCALE_PAD * 2;
 
 function ScoreScaleGraphic() {
   return (
     <svg
       className="score-scale-graphic"
-      viewBox={`0 0 ${SCORE_SCALE_WIDTH} 42`}
+      viewBox={`0 0 ${SCORE_SCALE_WIDTH} 68`}
+      style={{ width: "32rem" }}
       role="img"
       aria-label="Scoring range 1 to 5: 1 Weak, 2 Needs Improvement, 3 Competent, 4 Above Expectations, 5 Excellent"
     >
@@ -39,27 +41,27 @@ function ScoreScaleGraphic() {
         x2={SCORE_SCALE_WIDTH - SCORE_SCALE_PAD}
         y2={SCORE_SCALE_LINE_Y}
         stroke="#ee2524"
-        strokeWidth="1.5"
+        strokeWidth="2.5"
         strokeLinecap="round"
       />
       {SCORE_SCALE.map((point, index) => {
         const x = SCORE_SCALE_PAD + (SCORE_SCALE_SPAN * index) / (SCORE_SCALE.length - 1);
         return (
           <g key={point.value}>
-            <circle cx={x} cy={SCORE_SCALE_LINE_Y} r="5" fill="#ee2524" />
+            <circle cx={x} cy={SCORE_SCALE_LINE_Y} r="7" fill="#ee2524" />
             <text
               x={x}
-              y={SCORE_SCALE_LINE_Y + 2.5}
+              y={SCORE_SCALE_LINE_Y + 3}
               textAnchor="middle"
               fill="#fff"
-              fontSize="6"
+              fontSize="9"
               fontWeight="700"
             >
               {point.value}
             </text>
-            <text x={x} y={SCORE_SCALE_LINE_Y + 13} textAnchor="middle" fill="#323232" fontSize="5.5">
+            <text x={x} y={SCORE_SCALE_LINE_Y + 20} textAnchor="middle" fill="#323232" fontSize="8">
               {point.label.map((line, lineIndex) => (
-                <tspan key={line} x={x} dy={lineIndex === 0 ? 0 : 6.5}>
+                <tspan key={line} x={x} dy={lineIndex === 0 ? 0 : 10}>
                   {line}
                 </tspan>
               ))}
@@ -88,7 +90,6 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     selectJudge,
     scores,
     notes,
-    submissionStatus,
     isSubmitting,
     isLoadingScores,
     toasts,
@@ -155,7 +156,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           <span className="font-medium">{isAdmin ? "Editing Judge:" : ""}</span>
           {isAdmin ? (
             <>
-              <select
+              <AppSelect
                 className="h-8 rounded border px-2 py-1"
                 value={selectedJudgeId}
                 onChange={(event) => {
@@ -169,7 +170,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                     {judge.code ? ` (${judge.code})` : ""}
                   </option>
                 ))}
-              </select>
+              </AppSelect>
               <button
                 type="button"
                 onClick={() => setOverrideEnabled((on) => !on)}
@@ -184,19 +185,9 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
               {selectedJudge?.code ? ` (${selectedJudge.code})` : ""}
             </span>
           )}
-          {submissionStatus === "FINAL" ? (
-            <span className="inline-flex h-8 rounded border border-green-900 bg-green-100 px-2 py-1 text-sm font-medium text-green-900">
-              {saveStatusLabel}
-            </span>
-          ) : submissionStatus === "DRAFT" || saveStatusLabel === "Saving..." ? (
-            <span className="inline-flex h-8 rounded border border-amber-900 bg-amber-100 px-2 py-1 text-sm font-medium text-amber-900">
-              {saveStatusLabel}
-            </span>
-          ) : (
-            <span className="inline-flex h-8 rounded border border-gray-400 bg-gray-100 px-2 py-1 text-sm text-gray-600">
-              {saveStatusLabel}
-            </span>
-          )}
+          <span className="text-sm text-gray-600">
+            {saveStatusLabel}
+          </span>
           <div className="ml-auto shrink-0">
             <button
               type="button"
@@ -217,7 +208,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
               <th className={`${thClass} sticky left-0 bg-white`}>Category</th>
               {visibleCompanies.map((company) => (
                 <th key={company.id} className={`${thClass} min-w-40`}>
-                  <select
+                  <AppSelect
                     aria-label="Company"
                     value={selectedId}
                     onChange={(event) => setSelectedCompanyId(event.target.value)}
@@ -228,7 +219,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                         {option.name}
                       </option>
                     ))}
-                  </select>
+                  </AppSelect>
                 </th>
               ))}
             </tr>

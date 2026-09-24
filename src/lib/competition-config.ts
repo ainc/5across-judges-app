@@ -12,6 +12,15 @@ export const DEFAULT_COMPANIES = [
   { name: "Company E" },
 ] as const;
 
+export const DEFAULT_CATEGORIES = [
+  { name: "Strength / Creativity / Uniqueness of idea / Technology", weight: 15, maxScore: 5 },
+  { name: "Description / Knowledge of the target market", weight: 20, maxScore: 5 },
+  { name: "Traction / Growth", weight: 25, maxScore: 5 },
+  { name: "Revenue Model", weight: 20, maxScore: 5 },
+  { name: "Team / Advisors", weight: 15, maxScore: 5 },
+  { name: "Quality of overall pitch / Presentation", weight: 5, maxScore: 5 },
+] as const;
+
 type ConfigRevisionInput = {
   updatedAt: Date | string;
   judges: Array<{ id: string; name: string; code?: string | null; message?: string | null }>;

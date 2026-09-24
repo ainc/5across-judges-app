@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { pruneScoresForCompetition } from "@/lib/competition-config";
-import { formatSaveAge, formatScoreValue, formatTimestamp } from "@/lib/judging-format";
+import { formatFinalSubmitAge, formatSaveAge, formatScoreValue, formatTimestamp } from "@/lib/judging-format";
 import { getMissingCells, isScoreInRange, normalizeScore } from "@/lib/scoring";
 import type {
   ActiveCompetitionResponse,
@@ -560,7 +560,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
 
   const saveStatusLabel = useMemo(() => {
     if (submissionStatus === "FINAL") {
-      return submittedAt ? `Final scores submitted at: ${formatTimestamp(submittedAt)}` : "Final scores submitted";
+      return formatFinalSubmitAge(submittedAt, nowMs);
     }
     if (isAutosaving) return "Saving...";
     if (!submissionStatus) return "No saved scores";
