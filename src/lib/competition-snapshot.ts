@@ -9,6 +9,7 @@ export async function copyCompetitionToArchive(sourceId: string) {
       categories: true,
       sessions: true,
       scores: true,
+      notes: true,
     },
   });
 
@@ -76,6 +77,24 @@ export async function copyCompetitionToArchive(sourceId: string) {
         },
       });
       sessionIdMap.set(session.id, newSession.id);
+    }
+
+    for (const note of source.notes) {
+      const judgeName = judgeNameById.get(note.judgeId);
+      const companyName = companyNameById.get(note.companyId);
+      if (!judgeName || !companyName) continue;
+      const newJudgeId = judgeIdByName.get(judgeName);
+      const newCompanyId = companyIdByName.get(companyName);
+      if (!newJudgeId || !newCompanyId) continue;
+
+      await tx.judgeNote.create({
+        data: {
+          competitionId: archived.id,
+          judgeId: newJudgeId,
+          companyId: newCompanyId,
+          body: note.body,
+        },
+      });
     }
 
     for (const score of source.scores) {

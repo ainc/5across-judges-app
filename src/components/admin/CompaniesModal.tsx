@@ -6,6 +6,8 @@ type CompaniesModalProps = {
   companies: Company[];
   onClose: () => void;
   onCompanyNameChange: (id: string, name: string) => void;
+  onSave: () => void;
+  isSaving?: boolean;
 };
 
 export function CompaniesModal({
@@ -13,12 +15,16 @@ export function CompaniesModal({
   companies,
   onClose,
   onCompanyNameChange,
+  onSave,
+  isSaving = false,
 }: CompaniesModalProps) {
   return (
     <FormDialog
       open={open}
       title="Manage Companies"
       onClose={onClose}
+      onSave={onSave}
+      isSaving={isSaving}
       panelClassName="max-h-[90vh] max-w-2xl overflow-y-auto"
     >
       {companies.map((company) => (

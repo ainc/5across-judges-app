@@ -22,16 +22,14 @@ export function ConfirmDialog({
   if (!open) return null;
 
   const confirmClassName =
-    variant === "danger"
-      ? "red-button rounded border border-black bg-[#EE2524] px-2 py-1 text-white"
-      : "dark-button rounded border border-black bg-gray-900 px-2 py-1 text-white";
+    "dark-button rounded border border-black bg-gray-900 px-2 py-1 text-white";
 
   return (
     <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4">
       <button
         type="button"
         aria-label="Close dialog"
-        className="dark-button absolute inset-0 bg-black/40"
+        className="absolute inset-0 appearance-none border-0 bg-black/40 p-0 hover:bg-black/40"
         onClick={onCancel}
       />
       <div

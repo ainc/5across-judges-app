@@ -35,6 +35,7 @@ model Competition {
   categories  Category[]
   sessions    SubmissionSession[]
   scores      Score[]
+  notes         JudgeNote[]
 }
 
 model Judge {
@@ -47,6 +48,7 @@ model Judge {
   competition   Competition         @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   sessions      SubmissionSession[]
   scores        Score[]
+  notes         JudgeNote[]
 
   @@unique([competitionId, name])
 }
@@ -59,6 +61,7 @@ model Company {
   createdAt     DateTime    @default(now())
   competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   scores        Score[]
+  notes         JudgeNote[]
 
   @@unique([competitionId, name])
 }
@@ -118,4 +121,19 @@ model Score {
   session       SubmissionSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([competitionId, judgeId, companyId, categoryId])
+}
+
+model JudgeNote {
+  id            String      @id @default(cuid())
+  competitionId String
+  judgeId       String
+  companyId     String
+  body          String      @default("")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  judge         Judge       @relation(fields: [judgeId], references: [id], onDelete: Cascade)
+  company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([competitionId, judgeId, companyId])
 }

@@ -8,35 +8,91 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-open-sans);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-open-sans), "Open Sans", sans-serif;
+  min-width: 0;
+}
+
+.page-header,
+.page-header h1 {
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.15px;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.event-date-calendar .rdp-dropdown_root {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  padding-right: 1.4rem;
+}
+
+.event-date-calendar .rdp-dropdown_root::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  pointer-events: none;
+  transform: translateY(-50%);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23323232' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M4 6.5 L8 10.5 L12 6.5'/%3E%3C/svg%3E") no-repeat center / contain;
 }
 
 .fiveacross-banner {
   display: block;
   height: auto;
-  width: 400px;
+  width: min(400px, 45vw);
 }
 
 .company-results-table {
-  table-layout: fixed;
+  table-layout: auto;
 }
 
-.company-results-table th:first-child,
-.company-results-table td:first-child {
-  width: 55%;
+.styled-table tr > :last-child {
+  border-right-width: 0;
+}
+
+.styled-table tbody tr:last-child > * {
+  border-bottom-width: 0;
 }
 
 .goldmedal {
   height: 25px;
   width: 25px;
 }
+
+@keyframes podium-bar-rise {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.podium-bar-clip {
+  overflow: hidden;
+}
+
+.podium-bar {
+  animation: podium-bar-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .podium-bar {
+    animation: none;
+  }
+}
+
 
 .event-date-calendar-trigger:focus-visible {
   outline: 2px solid #111827;
@@ -75,8 +131,8 @@ body {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   padding: 4px 8px;
+  padding-right: 1.5rem;
   font-size: 0.875rem;
-  background-color: #fff;
 }
 
 @layer components {
@@ -118,52 +174,6 @@ body {
  * MUI icon overlays: position/opacity/display use !important so Emotion
  * cannot leave both filled + outline layers visible in production (Netlify).
  */
-button.newcompetitionbutton {
-  display: block;
-  height: 1.75rem;
-  width: 1.75rem;
-  aspect-ratio: 1;
-  padding: 0;
-  border: none;
-  background: transparent;
-  line-height: 0;
-  color: inherit;
-}
-
-.newcompetition-container {
-  position: relative !important;
-  display: block;
-  height: 100%;
-  width: 100%;
-  overflow: visible;
-}
-
-.newcompetition-container .newcompetitionbutton,
-.newcompetition-container .graynewcompetitionbutton {
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  display: block !important;
-  aspect-ratio: 1;
-  height: calc(100% * 24 / 20) !important;
-  width: auto !important;
-  font-size: inherit !important;
-  transform: translate(-50%, -50%) !important;
-}
-
-.graynewcompetitionbutton {
-  color: #6b7280;
-  opacity: 0 !important;
-}
-
-.newcompetition-container:hover svg:first-child {
-  opacity: 0 !important;
-}
-
-.newcompetition-container:hover svg:last-child {
-  opacity: 1 !important;
-}
-
 .archived-row-actions > .makelivebutton,
 .archived-row-actions > .viewbutton,
 .archived-row-actions > .archivedeletebutton {
@@ -330,8 +340,14 @@ button.messagedelete:disabled {
   opacity: 1 !important;
 }
 
+.dark-button:not(:disabled) {
+  background-color: #7b8290;
+  color: #111827;
+}
+
 .dark-button:not(:disabled):hover {
-  background-color: #30303a;
+  background-color: #636a76;
+  color: #ffffff;
 }
 
 .white-button:not(:disabled):hover {
@@ -339,14 +355,15 @@ button.messagedelete:disabled {
 }
 
 .red-button:not(:disabled):hover {
-  background-color: #d75151;
+  background-color: #30303a;
 }
 
 .dark-button:disabled,
 .dark-button:disabled:hover {
-  background-color: #111827 !important;
+  background-color: #c5c9d0 !important;
+  color: #6b7280;
   pointer-events: none !important;
-  opacity: 0.5;
+  opacity: 1;
   cursor: not-allowed;
 }
 
@@ -360,10 +377,31 @@ button.messagedelete:disabled {
 
 .red-button:disabled,
 .red-button:disabled:hover {
-  background-color: #ee2524 !important;
+  background-color: #111827 !important;
   pointer-events: none !important;
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.score-scale-graphic {
+  display: block;
+  width: 32rem;
+  max-width: 100%;
+  height: auto;
+  margin: 0.15rem 0 0 -1.25rem;
+  overflow: visible;
+  font-family: inherit;
+}
+
+.score-input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
 }
 
 .signoutbutton {

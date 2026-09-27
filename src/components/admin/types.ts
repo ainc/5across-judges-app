@@ -3,8 +3,9 @@ export type Company = { id: string; name: string; presenter: string | null };
 export type Category = { id: string; name: string; weight: number; maxScore: number };
 
 export type PendingConfirm =
-  | { type: "start-next" }
+  | { type: "end-current" }
   | { type: "save-results" }
+  | { type: "save-details" }
   | { type: "activate"; id: string; name: string }
   | { type: "delete"; id: string; name: string }
   | { type: "remove-category"; id: string; name: string }

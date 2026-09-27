@@ -57,6 +57,16 @@ export function EventDateCalendar({ value, onChange }: EventDateCalendarProps) {
 
   useEffect(() => {
     if (!open) return;
+    const root = containerRef.current;
+    if (!root) return;
+    root.querySelectorAll("select").forEach((el) => {
+      el.style.setProperty("appearance", "none", "important");
+      el.style.setProperty("-webkit-appearance", "none", "important");
+    });
+  }, [open, month]);
+
+  useEffect(() => {
+    if (!open) return;
 
     function handlePointerDown(event: MouseEvent) {
       if (containerRef.current?.contains(event.target as Node)) return;

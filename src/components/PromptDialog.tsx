@@ -44,7 +44,7 @@ export function PromptDialog({
       <button
         type="button"
         aria-label="Close dialog"
-        className="blue-button absolute inset-0 bg-black/40"
+        className="absolute inset-0 appearance-none border-0 bg-black/40 p-0 hover:bg-black/40"
         onClick={onCancel}
       />
       <div

@@ -14,6 +14,8 @@ type JudgesModalProps = {
   onRequestRemoveJudge: (id: string, name: string) => void;
   onSendMessage: (id: string) => void;
   onRequestDeleteMessage: (id: string, name: string) => void;
+  onSave: () => void;
+  isSaving?: boolean;
 };
 
 export function JudgesModal({
@@ -28,12 +30,16 @@ export function JudgesModal({
   onRequestRemoveJudge,
   onSendMessage,
   onRequestDeleteMessage,
+  onSave,
+  isSaving = false,
 }: JudgesModalProps) {
   return (
     <FormDialog
       open={open}
       title="Manage Judges"
       onClose={onClose}
+      onSave={onSave}
+      isSaving={isSaving}
       panelClassName="max-h-[90vh] max-w-2xl overflow-y-auto"
     >
       <button

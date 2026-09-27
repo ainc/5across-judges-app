@@ -29,7 +29,9 @@ export function useAdminDashboard() {
   const [archived, setArchived] = useState<ArchivedCompetition[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingResults, setIsSavingResults] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
   const [isDeletingArchived, setIsDeletingArchived] = useState<string | null>(null);
   const [isActivatingArchived, setIsActivatingArchived] = useState<string | null>(null);
   const [isCreatingArchived, setIsCreatingArchived] = useState<string | null>(null);
@@ -41,6 +43,9 @@ export function useAdminDashboard() {
   const [viewingArchived, setViewingArchived] = useState<ArchivedCompetitionDetails | null>(null);
   const [isLoadingArchivedDetails, setIsLoadingArchivedDetails] = useState(false);
   const nextToastId = useRef(0);
+  const sectionSnapshot = useRef<Pick<AdminCompetitionResponse, "judges" | "companies" | "categories"> | null>(
+    null,
+  );
 
   const showToast = useCallback((message: string) => {
     const id = nextToastId.current++;
@@ -59,14 +64,8 @@ export function useAdminDashboard() {
 
     setArchived(history);
     setResultsPreview(preview);
-
-    if (!adminData) {
-      showToast("No active competition is available yet.");
-      setData(null);
-      return;
-    }
-
     setData(adminData);
+    setIsReady(true);
   }, []);
 
   useEffect(() => {
@@ -140,12 +139,25 @@ export function useAdminDashboard() {
   }
 
   function openSectionModal(section: Exclude<SectionModal, null>) {
+    if (data) {
+      sectionSnapshot.current = {
+        judges: data.judges.map((judge) => ({ ...judge })),
+        companies: data.companies.map((company) => ({ ...company })),
+        categories: data.categories.map((category) => ({ ...category })),
+      };
+    }
     setOpenSection(section);
   }
 
   function closeSectionModal() {
+    setData((prev) => {
+      if (!prev || !sectionSnapshot.current || !openSection) return prev;
+      if (openSection === "judges") return { ...prev, judges: sectionSnapshot.current.judges };
+      if (openSection === "companies") return { ...prev, companies: sectionSnapshot.current.companies };
+      return { ...prev, categories: sectionSnapshot.current.categories };
+    });
+    sectionSnapshot.current = null;
     setOpenSection(null);
-    showToast("Settings must be saved by clicking 'Publish Competition Settings'.")
   }
 
   async function openArchivedDetails(id: string) {
@@ -231,7 +243,7 @@ export function useAdminDashboard() {
     if (!judge) return false;
 
     if (judge.id.startsWith("new-")) {
-      showToast("Save competition settings before sending a message to a new judge.");
+      showToast("Save judges before sending a message to a new judge.");
       return false;
     }
 
@@ -309,78 +321,120 @@ export function useAdminDashboard() {
     showToast(`Message to ${judge.name} deleted.`);
   }
 
-  async function saveSettings() {
-    if (!data) return;
-
-    if (data.judges.length === 0) {
-      showToast("Add at least one judge before saving.");
-      return;
-    }
-
-    if (data.judges.some((judge) => !judge.name.trim())) {
-      showToast("All judges must have a name before saving.");
-      return;
-    }
-
-    if (data.categories.length === 0) {
-      showToast("Add at least one scoring criteria before saving.");
-      return;
-    }
-
-    if (data.categories.some((category) => !category.name.trim())) {
-      showToast("All scoring criteria must have a name before saving.");
-      return;
-    }
-
-    if (weightTotal !== 100) {
-      showToast(`Category weights must total 100% (currently ${weightTotal}%).`);
-      return;
-    }
-
+  async function persistCompetition(
+    body: Record<string, unknown>,
+    apply: (prev: AdminCompetitionResponse, payload: Record<string, unknown>) => AdminCompetitionResponse,
+    successMessage: string,
+  ) {
     setIsSaving(true);
     try {
       const response = await fetch("/api/admin/competition", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: data.competition.name,
-          eventDate: data.competition.eventDate,
-          resultsSummary: autoResultsSummary,
-          judges: data.judges,
-          companies: data.companies,
-          categories: data.categories,
-        }),
+        body: JSON.stringify(body),
       });
-
       const payload = await readJsonResponse(response);
-      if (response.ok && payload.judges && payload.categories) {
-        setData((prev) =>
-          prev
-            ? {
-                ...prev,
-                competition: (payload.competition as AdminCompetitionResponse["competition"]) ?? prev.competition,
-                judges: payload.judges as AdminCompetitionResponse["judges"],
-                companies:
-                  (payload.companies as AdminCompetitionResponse["companies"] | undefined) ??
-                  prev.companies,
-                categories: payload.categories as AdminCompetitionResponse["categories"],
-              }
-            : prev,
-        );
-      }
       if (response.ok) {
+        setData((prev) => (prev ? apply(prev, payload) : prev));
         const preview = await loadResultsPreview();
         setResultsPreview(preview);
+        showToast(successMessage);
+        return true;
       }
-      showToast(
-        response.ok
-          ? "5 Across settings saved and published to home page."
-          : (payload.error as string | undefined) ?? "Unable to save settings.",
-      );
+      showToast((payload.error as string | undefined) ?? "Unable to save settings.");
+      return false;
     } catch {
       showToast("Unable to save settings.");
+      return false;
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function saveCompetitionDetails() {
+    if (!data) return false;
+    return persistCompetition(
+      {
+        name: data.competition.name,
+        eventDate: data.competition.eventDate,
+        resultsSummary: autoResultsSummary,
+      },
+      (prev, payload) => ({
+        ...prev,
+        competition: (payload.competition as AdminCompetitionResponse["competition"]) ?? prev.competition,
+      }),
+      "Competition details saved.",
+    );
+  }
+
+  async function saveJudges() {
+    if (!data) return false;
+    if (data.judges.length === 0) {
+      showToast("Add at least one judge before saving.");
+      return false;
+    }
+    if (data.judges.some((judge) => !judge.name.trim())) {
+      showToast("All judges must have a name before saving.");
+      return false;
+    }
+    return persistCompetition(
+      { judges: data.judges },
+      (prev, payload) => ({
+        ...prev,
+        judges: (payload.judges as AdminCompetitionResponse["judges"]) ?? prev.judges,
+      }),
+      "Judges saved.",
+    );
+  }
+
+  async function saveCompanies() {
+    if (!data) return false;
+    if (data.companies.some((company) => !company.name.trim())) {
+      showToast("All companies must have a name before saving.");
+      return false;
+    }
+    return persistCompetition(
+      { companies: data.companies },
+      (prev, payload) => ({
+        ...prev,
+        companies: (payload.companies as AdminCompetitionResponse["companies"]) ?? prev.companies,
+      }),
+      "Companies saved.",
+    );
+  }
+
+  async function saveCategories() {
+    if (!data) return false;
+    if (data.categories.length === 0) {
+      showToast("Add at least one scoring criteria before saving.");
+      return false;
+    }
+    if (data.categories.some((category) => !category.name.trim())) {
+      showToast("All scoring criteria must have a name before saving.");
+      return false;
+    }
+    if (weightTotal !== 100) {
+      showToast(`Category weights must total 100% (currently ${weightTotal}%).`);
+      return false;
+    }
+    return persistCompetition(
+      { categories: data.categories },
+      (prev, payload) => ({
+        ...prev,
+        categories: (payload.categories as AdminCompetitionResponse["categories"]) ?? prev.categories,
+      }),
+      "Scoring criteria saved.",
+    );
+  }
+
+  async function saveOpenSection() {
+    let saved = false;
+    if (openSection === "judges") saved = await saveJudges();
+    else if (openSection === "companies") saved = await saveCompanies();
+    else if (openSection === "categories") saved = await saveCategories();
+    if (saved) {
+      sectionSnapshot.current = null;
+      setOpenSection(null);
     }
   }
 
@@ -413,37 +467,61 @@ export function useAdminDashboard() {
     setIsSavingResults(false);
   }
 
-  function startNextCompetition() {
+  function endCurrentCompetition() {
     if (!data) return;
-    setPendingConfirm({ type: "start-next" });
+    setPendingConfirm({ type: "end-current" });
   }
 
-  async function executeStartNextCompetition(nextName: string) {
+  async function executeEndCurrentCompetition() {
     if (!data) return;
 
     const oldName = data.competition.name;
     setIsArchiving(true);
 
+    const response = await fetch("/api/admin/competition/end", { method: "POST" });
+    const payload = await readJsonResponse(response);
+    if (!response.ok) {
+      showToast((payload.error as string | undefined) ?? "Unable to end competition.");
+      setIsArchiving(false);
+      return;
+    }
+
+    await refresh();
+    showToast(`"${oldName}" results have been computed and the competition is archived.`);
+    setIsArchiving(false);
+  }
+
+  function startNewCompetition() {
+    if (data) {
+      showToast("End the current competition before starting a new one.");
+      return;
+    }
+    setPendingPrompt({
+      type: "start-next",
+      defaultValue: archived[0]?.name ?? "5 Across",
+    });
+  }
+
+  async function executeStartNewCompetition(nextName: string) {
+    setIsStarting(true);
+
     const response = await fetch("/api/admin/competition/next", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nextName,
-        eventDate: data.competition.eventDate,
-      }),
+      body: JSON.stringify({ nextName }),
     });
 
     const payload = await readJsonResponse(response);
     if (!response.ok) {
       showToast((payload.error as string | undefined) ?? "Unable to start new competition.");
-      setIsArchiving(false);
+      setIsStarting(false);
       return;
     }
 
     const newName = (payload.nextCompetitionName as string | undefined) ?? nextName;
     await refresh();
-    showToast(`"${oldName}" has been ended and archived, "${newName}" created.`);
-    setIsArchiving(false);
+    showToast(`"${newName}" is now the live competition.`);
+    setIsStarting(false);
   }
 
   function createArchivedCompetition(templateId: string, templateName: string) {
@@ -527,15 +605,12 @@ export function useAdminDashboard() {
 
     const confirmType = pendingConfirm.type;
 
-    if (confirmType === "start-next") {
-      if (data) {
-        setPendingPrompt({
-          type: "start-next",
-          defaultValue: data.competition.name,
-        });
-      }
+    if (confirmType === "end-current") {
+      void executeEndCurrentCompetition();
     } else if (confirmType === "save-results") {
       void saveResultsSnapshot();
+    } else if (confirmType === "save-details") {
+      void saveCompetitionDetails();
     } else if (confirmType === "activate") {
       void executeMakeArchivedCompetitionLive(pendingConfirm.id, pendingConfirm.name);
     } else if (confirmType === "delete") {
@@ -570,7 +645,7 @@ export function useAdminDashboard() {
         })),
       };
     });
-    showToast("Settings reset to default values. Click 'Publish Competition Settings' to apply to homepage.");
+    showToast("Judges and company names reset. Open Manage Judges and Manage Companies and click Save to apply.");
   }
 
   function handlePromptSubmit(name: string) {
@@ -579,7 +654,7 @@ export function useAdminDashboard() {
     if (pendingPrompt.type === "create-archived") {
       void executeCreateArchivedCompetition(pendingPrompt.templateId, name);
     } else if (pendingPrompt.type === "start-next") {
-      void executeStartNextCompetition(name);
+      void executeStartNewCompetition(name);
     } else if (pendingPrompt.type === "reset") {
       resetSettingsToDefaults();
     }
@@ -588,6 +663,7 @@ export function useAdminDashboard() {
   }
 
   return {
+    isReady,
     data,
     archived,
     resultsPreview,
@@ -599,6 +675,7 @@ export function useAdminDashboard() {
     isSaving,
     isSavingResults,
     isArchiving,
+    isStarting,
     isDeletingArchived,
     isActivatingArchived,
     isCreatingArchived,
@@ -613,6 +690,7 @@ export function useAdminDashboard() {
     updateList,
     openSectionModal,
     closeSectionModal,
+    saveOpenSection,
     openArchivedDetails,
     closeArchivedDetails,
     addJudge,
@@ -621,8 +699,9 @@ export function useAdminDashboard() {
     requestRemoveCategory,
     sendIndividualJudgeMessage,
     requestDeleteJudgeMessage,
-    saveSettings,
-    startNextCompetition,
+    saveCompetitionDetails,
+    endCurrentCompetition,
+    startNewCompetition,
     createArchivedCompetition,
     makeArchivedCompetitionLive,
     deletePastCompetition,
