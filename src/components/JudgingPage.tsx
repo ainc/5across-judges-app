@@ -198,10 +198,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
               </AppSelect>
             </>
           ) : (
-            <span>
-              {selectedJudge?.name}
-              {selectedJudge?.code ? ` (${selectedJudge.code})` : ""}
-            </span>
+            <span>{selectedJudge?.name}</span>
           )}
           <span className="text-sm text-gray-600">
             {saveStatusLabel}
