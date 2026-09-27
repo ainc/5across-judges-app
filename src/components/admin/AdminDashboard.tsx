@@ -1,7 +1,5 @@
 "use client";
 
-import AddCircleIcon from "@mui/icons-material/AddCircle";
-import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined";
 import { useState } from "react";
 import { AdminConfirmDialogs } from "@/components/admin/AdminConfirmDialogs";
 import { AdminPromptDialogs } from "@/components/admin/AdminPromptDialogs";
@@ -45,6 +43,7 @@ export function AdminDashboard() {
     updateList,
     openSectionModal,
     closeSectionModal,
+    saveOpenSection,
     openArchivedDetails,
     closeArchivedDetails,
     addJudge,
@@ -53,7 +52,6 @@ export function AdminDashboard() {
     requestRemoveCategory,
     sendIndividualJudgeMessage,
     requestDeleteJudgeMessage,
-    saveSettings,
     endCurrentCompetition,
     startNewCompetition,
     createArchivedCompetition,
@@ -134,10 +132,10 @@ export function AdminDashboard() {
                 <h2 className="text-xl font-semibold">{data.competition.name} Settings</h2>
                 <DashboardTextActions>
                   <DashboardTextButton
-                    onClick={() => void saveSettings()}
+                    onClick={() => setPendingConfirm({ type: "save-details" })}
                     disabled={isSaving}
                   >
-                    {isSaving ? "Publishing..." : "Publish Competition Settings"}
+                    {isSaving ? "Saving..." : "Save Competition Details"}
                   </DashboardTextButton>
                 </DashboardTextActions>
                 <label className="block text-sm">
@@ -203,28 +201,24 @@ export function AdminDashboard() {
               </DashboardTextActions>
             </section>
 
-            <section className="relative overflow-hidden rounded border p-4 space-y-3">
-              <button
-                type="button"
-                aria-label="Create competition"
-                onClick={() => {
-                  if (!data) return;
-                  createArchivedCompetition(data.competition.id, data.competition.name);
-                }}
-                disabled={
-                  !data ||
-                  isCreatingArchived !== null ||
-                  isActivatingArchived !== null ||
-                  isDeletingArchived !== null
-                }
-                className="newcompetitionbutton absolute top-2.5 right-2.5 z-10"
-              >
-                <div className="newcompetition-container" aria-hidden>
-                  <AddCircleIcon className="newcompetitionbutton" fontSize="inherit" />
-                  <AddCircleOutlineOutlinedIcon className="graynewcompetitionbutton" fontSize="inherit" />
-                </div>
-              </button>
-              <h2 className="text-xl font-semibold leading-none pr-12">Archived Competitions</h2>
+            <section className="overflow-hidden rounded border p-4 space-y-3">
+              <h2 className="text-xl font-semibold">Archived Competitions</h2>
+              <DashboardTextActions>
+                <DashboardTextButton
+                  onClick={() => {
+                    if (!data) return;
+                    createArchivedCompetition(data.competition.id, data.competition.name);
+                  }}
+                  disabled={
+                    !data ||
+                    isCreatingArchived !== null ||
+                    isActivatingArchived !== null ||
+                    isDeletingArchived !== null
+                  }
+                >
+                  Create New Competition
+                </DashboardTextButton>
+              </DashboardTextActions>
               {archived.length === 0 ? (
                 <p className="text-sm text-gray-600">No competitions in archive.</p>
               ) : (
@@ -288,6 +282,8 @@ export function AdminDashboard() {
               onRequestRemoveJudge={requestRemoveJudge}
               onSendMessage={(id) => void sendIndividualJudgeMessage(id)}
               onRequestDeleteMessage={requestDeleteJudgeMessage}
+              onSave={() => void saveOpenSection()}
+              isSaving={isSaving}
             />
             <SendJudgeMessageModal
               open={messageOpen}
@@ -304,6 +300,8 @@ export function AdminDashboard() {
               companies={data.companies}
               onClose={closeSectionModal}
               onCompanyNameChange={(id, name) => updateList("companies", id, "name", name)}
+              onSave={() => void saveOpenSection()}
+              isSaving={isSaving}
             />
             <CategoriesModal
               open={openSection === "categories"}
@@ -314,6 +312,8 @@ export function AdminDashboard() {
               onCategoryNameChange={(id, name) => updateList("categories", id, "name", name)}
               onCategoryWeightChange={(id, weight) => updateList("categories", id, "weight", weight)}
               onRequestRemoveCategory={requestRemoveCategory}
+              onSave={() => void saveOpenSection()}
+              isSaving={isSaving}
             />
           </>
         ) : null}

@@ -33,7 +33,7 @@ export function AdminPromptDialogs({ pendingPrompt, onSubmit, onCancel }: AdminP
       <PromptDialog
         open={pendingPrompt?.type === "reset"}
         title="Reset Settings?"
-        message={`Overwrite current competition settings and reset to default values?\n\nValues will only be updated in Admin Dashboard, 'Publish Competition Settings' must be clicked to implement changes to homepage.`}
+        message={`Overwrite current judges and company names with default values?\n\nValues will only update in the Admin Dashboard. Open Manage Judges and Manage Companies and click Save to apply them.`}
         confirmLabel="Reset"
         onSubmit={onSubmit}
         onCancel={onCancel}

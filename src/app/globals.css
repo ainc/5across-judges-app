@@ -174,52 +174,6 @@ body {
  * MUI icon overlays: position/opacity/display use !important so Emotion
  * cannot leave both filled + outline layers visible in production (Netlify).
  */
-button.newcompetitionbutton {
-  display: block;
-  height: 1.75rem;
-  width: 1.75rem;
-  aspect-ratio: 1;
-  padding: 0;
-  border: none;
-  background: transparent;
-  line-height: 0;
-  color: inherit;
-}
-
-.newcompetition-container {
-  position: relative !important;
-  display: block;
-  height: 100%;
-  width: 100%;
-  overflow: visible;
-}
-
-.newcompetition-container .newcompetitionbutton,
-.newcompetition-container .graynewcompetitionbutton {
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  display: block !important;
-  aspect-ratio: 1;
-  height: calc(100% * 24 / 20) !important;
-  width: auto !important;
-  font-size: inherit !important;
-  transform: translate(-50%, -50%) !important;
-}
-
-.graynewcompetitionbutton {
-  color: #6b7280;
-  opacity: 0 !important;
-}
-
-.newcompetition-container:hover svg:first-child {
-  opacity: 0 !important;
-}
-
-.newcompetition-container:hover svg:last-child {
-  opacity: 1 !important;
-}
-
 .archived-row-actions > .makelivebutton,
 .archived-row-actions > .viewbutton,
 .archived-row-actions > .archivedeletebutton {

@@ -5,6 +5,7 @@ export type Category = { id: string; name: string; weight: number; maxScore: num
 export type PendingConfirm =
   | { type: "end-current" }
   | { type: "save-results" }
+  | { type: "save-details" }
   | { type: "activate"; id: string; name: string }
   | { type: "delete"; id: string; name: string }
   | { type: "remove-category"; id: string; name: string }

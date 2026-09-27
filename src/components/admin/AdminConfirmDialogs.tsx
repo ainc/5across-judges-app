@@ -21,6 +21,16 @@ export function AdminConfirmDialogs({ pendingConfirm, onConfirm, onCancel }: Adm
         onCancel={onCancel}
       />
       <ConfirmDialog
+        open={pendingConfirm?.type === "save-details"}
+        title="Save Competition Details?"
+        message={
+          "Save the competition name, date, and summary to the live competition?\n\nJudges, companies, and scoring criteria are saved from their Manage windows. This does not end the competition or archive results."
+        }
+        confirmLabel="Save"
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+      <ConfirmDialog
         open={pendingConfirm?.type === "end-current"}
         title="End Current Competition?"
         message={
