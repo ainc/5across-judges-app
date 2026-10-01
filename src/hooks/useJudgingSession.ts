@@ -56,7 +56,11 @@ function scoresDifferFromBaseline(
 }
 
 function notesFromRecord(notes: Record<string, string>) {
-  return Object.entries(notes).map(([companyId, body]) => ({ companyId, body }));
+  return Object.entries(notes).flatMap(([key, body]) => {
+    const [companyId, categoryId] = key.split(":");
+    if (!companyId || !categoryId) return [];
+    return [{ companyId, categoryId, body }];
+  });
 }
 
 function notesDifferFromBaseline(
@@ -172,9 +176,11 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
           pruneScoresForCompetition(currentScores, payload.companies, payload.categories),
         );
         setNotes((currentNotes) => {
+          const categoryIds = new Set(payload.categories.map((category) => category.id));
           const next: Record<string, string> = {};
-          for (const [companyId, body] of Object.entries(currentNotes)) {
-            if (companyIds.has(companyId)) next[companyId] = body;
+          for (const [key, body] of Object.entries(currentNotes)) {
+            const [companyId, categoryId] = key.split(":");
+            if (companyIds.has(companyId) && categoryIds.has(categoryId)) next[key] = body;
           }
           notesRef.current = next;
           return next;
@@ -271,11 +277,8 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
           nextScores[`${entry.companyId}:${entry.categoryId}`] = entry.score;
         }
         const nextNotes: Record<string, string> = {};
-        for (const company of data.companies) {
-          nextNotes[company.id] = "";
-        }
         for (const note of payload.notes ?? []) {
-          nextNotes[note.companyId] = note.body;
+          nextNotes[`${note.companyId}:${note.categoryId}`] = note.body;
         }
         scoresRef.current = nextScores;
         notesRef.current = nextNotes;
@@ -638,8 +641,8 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     [syncChangeLog],
   );
 
-  function updateNote(companyId: string, body: string) {
-    const next = { ...notesRef.current, [companyId]: body };
+  function updateNote(companyId: string, categoryId: string, body: string) {
+    const next = { ...notesRef.current, [`${companyId}:${categoryId}`]: body };
     notesRef.current = next;
     setNotes(next);
     scheduleAutosave();

@@ -18,7 +18,7 @@ export type ActiveCompetitionResponse = {
 
 export type SubmissionStatus = "DRAFT" | "FINAL";
 
-export type JudgeNoteEntry = { companyId: string; body: string };
+export type JudgeNoteEntry = { companyId: string; categoryId: string; body: string };
 
 export type JudgeScoresResponse = {
   status: SubmissionStatus | null;

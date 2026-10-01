@@ -224,11 +224,11 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
   const visibleCompanies = data.companies.filter((company) => company.id === selectedId);
 
   return (
-    <>
-      <AppHeader showAdminLink={isAdmin}>
+    <div className="flex h-dvh flex-col overflow-hidden">
+      <AppHeader showAdminLink={isAdmin} className="mb-6 shrink-0">
         <h1>Judge's Scoring Homepage</h1>
       </AppHeader>
-      <main className="space-y-4 px-6 pb-6">
+      <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-6 pb-3">
 
       {selectedJudge?.message && (
         <section className="rounded border border-blue-300 bg-blue-50 p-4">
@@ -286,14 +286,18 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         </section>
       </div>
 
-      <ScoreScaleGraphic />
-
-      <StyledTable>
+      <div className="min-h-0 flex-1">
+      <StyledTable className="h-full" tableClassName="table-fixed">
+          <colgroup>
+            <col />
+            <col className="w-72" />
+            <col className="w-48" />
+          </colgroup>
           <thead className="sticky top-0 bg-white">
             <tr>
               <th className={`${thClass} sticky left-0 bg-white`}>Category</th>
               {visibleCompanies.map((company) => (
-                <th key={company.id} className={`${thClass} min-w-40`}>
+                <th key={company.id} className={`${thClass} w-72`}>
                   <AppSelect
                     aria-label="Company"
                     value={selectedId}
@@ -308,11 +312,12 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                   </AppSelect>
                 </th>
               ))}
+              <th className={`${thClass} w-48 bg-white`}>Notes</th>
             </tr>
           </thead>
           <tbody>
             {data.categories.map((category) => (
-              <tr key={category.id}>
+              <tr key={category.id} className="h-px">
                 <td className={`${tdClass} sticky left-0 bg-white text-medium`}>
                   <span className="inline-flex items-center gap-1">
                     {category.name}
@@ -347,68 +352,69 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                     </td>
                   );
                 })}
+                {visibleCompanies.map((company) => (
+                  <td key={`${company.id}:${category.id}:note`} className={`${tdClass} h-px p-1 align-top`}>
+                    <textarea
+                      aria-label={`Notes for ${category.name}`}
+                      className="block h-full w-full resize-none rounded border px-2 py-1 text-sm"
+                      rows={1}
+                      disabled={isLoadingScores || !canEditScores}
+                      value={notes[`${company.id}:${category.id}`] ?? ""}
+                      onChange={(event) => updateNote(company.id, category.id, event.target.value)}
+                      onBlur={() => {
+                        void flushAutosave();
+                      }}
+                    />
+                  </td>
+                ))}
               </tr>
             ))}
-            <tr className="bg-gray-50">
-              <td className={`${tdClass} sticky left-0 bg-gray-50 font-semibold`}>Weighted Total</td>
+            <tr className="h-0 bg-gray-50">
+              <td className={`${tdClass} sticky left-0 bg-gray-50 py-1 font-semibold`}>Weighted Total</td>
               {visibleCompanies.map((company) => {
                 const hasScores = data.categories.some(
                   (category) => typeof scores[`${company.id}:${category.id}`] === "number",
                 );
                 return (
-                  <td key={company.id} className={`${tdClass} text-center font-semibold`}>
+                  <td key={company.id} className={`${tdClass} py-1 text-center font-semibold`}>
                     {hasScores ? formatWeightedTotal(totals[company.id] ?? 0) : ""}
                   </td>
                 );
               })}
+              <td className={`${tdClass} py-1`} />
             </tr>
           </tbody>
       </StyledTable>
+      </div>
 
-      <section className="space-y-3 rounded-xl border p-4">
-        <h2 className="text-lg font-semibold">Notes</h2>
-        {visibleCompanies.map((company) => (
-          <label key={company.id} className="block text-sm">
-            {company.name}
-            <textarea
-              className="mt-1 w-full resize-none rounded border p-2 [field-sizing:fixed]"
-              rows={3}
-              disabled={isLoadingScores || !canEditScores}
-              value={notes[company.id] ?? ""}
-              onChange={(event) => updateNote(company.id, event.target.value)}
-              onBlur={() => {
-                void flushAutosave();
-              }}
-            />
-          </label>
-        ))}
-      </section>
-
-      <section className="flex flex-wrap items-center gap-3">
-        {isAdmin ? (
+      <section className="flex shrink-0 flex-wrap items-center gap-3">
+        <ScoreScaleGraphic />
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+          {isAdmin ? (
+            <button
+              type="button"
+              onClick={() => setChangeLogOpen(true)}
+              className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white"
+            >
+              View Change History
+            </button>
+          ) : null}
+          <button
+            disabled={isSubmitting || isLoadingScores || !canEditScores}
+            onClick={() => submitCompanyScores(selectedId)}
+            className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white disabled:opacity-50"
+          >
+            Submit Company Scores
+          </button>
           <button
             type="button"
-            onClick={() => setChangeLogOpen(true)}
-            className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white"
+            disabled={isSubmitting || isLoadingScores || !canUndo || !canEditScores}
+            onClick={undoLastScore}
+            className="white-button rounded border border-black bg-white text-black px-3 py-2 disabled:opacity-50"
           >
-            View Change History
+            Undo
           </button>
-        ) : null}
-        <button
-          disabled={isSubmitting || isLoadingScores || !canEditScores}
-          onClick={() => submitCompanyScores(selectedId)}
-          className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white disabled:opacity-50"
-        >
-          Submit Company Scores
-        </button>
-        <button
-          type="button"
-          disabled={isSubmitting || isLoadingScores || !canUndo || !canEditScores}
-          onClick={undoLastScore}
-          className="white-button rounded border border-black bg-white text-black px-3 py-2 disabled:opacity-50"
-        >
-          Undo
-        </button>
+        </div>
       </section>
 
       <FormDialog
@@ -470,6 +476,6 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         onCancel={() => setPendingConfirm(null)}
       />
       </main>
-    </>
+    </div>
   );
 }

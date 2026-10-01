@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     }),
     prisma.judgeNote.findMany({
       where: { competitionId, judgeId },
-      select: { companyId: true, body: true },
+      select: { companyId: true, categoryId: true, body: true },
     }),
   ]);
 
@@ -79,6 +79,7 @@ const scorePayloadSchema = z.object({
     .array(
       z.object({
         companyId: z.string().min(1),
+        categoryId: z.string().min(1),
         body: z.string(),
       }),
     )
@@ -128,9 +129,11 @@ export async function POST(request: Request) {
   }
 
   if (notes) {
-    const invalidNote = notes.find((note) => !allowedCompanyIds.has(note.companyId));
+    const invalidNote = notes.find(
+      (note) => !allowedCompanyIds.has(note.companyId) || !allowedCategoryIds.has(note.categoryId),
+    );
     if (invalidNote) {
-      return NextResponse.json({ error: "Payload contains invalid company ids in notes." }, { status: 400 });
+      return NextResponse.json({ error: "Payload contains invalid company or category ids in notes." }, { status: 400 });
     }
   }
 
@@ -140,16 +143,18 @@ export async function POST(request: Request) {
       notes.map((note) =>
         prisma.judgeNote.upsert({
           where: {
-            competitionId_judgeId_companyId: {
+            competitionId_judgeId_companyId_categoryId: {
               competitionId,
               judgeId,
               companyId: note.companyId,
+              categoryId: note.categoryId,
             },
           },
           create: {
             competitionId,
             judgeId,
             companyId: note.companyId,
+            categoryId: note.categoryId,
             body: note.body,
           },
           update: { body: note.body },

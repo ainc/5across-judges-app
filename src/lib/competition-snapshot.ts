@@ -83,16 +83,19 @@ export async function copyCompetitionToArchive(sourceId: string) {
     for (const note of source.notes) {
       const judgeName = judgeNameById.get(note.judgeId);
       const companyName = companyNameById.get(note.companyId);
-      if (!judgeName || !companyName) continue;
+      const categoryName = categoryNameById.get(note.categoryId);
+      if (!judgeName || !companyName || !categoryName) continue;
       const newJudgeId = judgeIdByName.get(judgeName);
       const newCompanyId = companyIdByName.get(companyName);
-      if (!newJudgeId || !newCompanyId) continue;
+      const newCategoryId = categoryIdByName.get(categoryName);
+      if (!newJudgeId || !newCompanyId || !newCategoryId) continue;
 
       await tx.judgeNote.create({
         data: {
           competitionId: archived.id,
           judgeId: newJudgeId,
           companyId: newCompanyId,
+          categoryId: newCategoryId,
           body: note.body,
         },
       });

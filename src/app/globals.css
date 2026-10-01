@@ -388,7 +388,7 @@ button.messagedelete:disabled {
   width: 32rem;
   max-width: 100%;
   height: auto;
-  margin: 0.15rem 0 0 -1.25rem;
+  margin: 0;
   overflow: visible;
   font-family: inherit;
 }

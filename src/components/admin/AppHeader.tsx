@@ -14,9 +14,9 @@ export function AppHeader({ showAdminLink = false, children, className = "mb-12"
       <img
         src="https://awesomeinc.org/static/03d26df95cda6e973c41adb3678dd8a2/d66c5/5AcrossLogo_15_black%406x.webp"
         alt="5 Across Banner"
-        width={200}
-        height={48}
-        className="h-12 w-auto shrink-0"
+        width={333}
+        height={80}
+        className="h-20 w-auto shrink-0"
       />
     <div className="flex flex-col items-end text-right">
         <div className="page-header">
