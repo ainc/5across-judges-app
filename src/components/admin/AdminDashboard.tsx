@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { AdminConfirmDialogs } from "@/components/admin/AdminConfirmDialogs";
 import { AdminPromptDialogs } from "@/components/admin/AdminPromptDialogs";
-import { ArchivedDetailsModal } from "@/components/admin/ArchivedDetailsModal";
 import { CategoriesModal } from "@/components/admin/CategoriesModal";
 import { CompaniesModal } from "@/components/admin/CompaniesModal";
 import { DashboardTextActions, DashboardTextButton } from "@/components/admin/DashboardTextButton";
@@ -11,28 +11,22 @@ import { JudgesModal } from "@/components/admin/JudgesModal";
 import { SendJudgeMessageModal } from "@/components/admin/SendJudgeMessageModal";
 import { EventDateCalendar } from "@/components/EventDateCalendar";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
-import { formatEventDate } from "@/lib/competition-results";
 import { AppHeader } from "./AppHeader";
 
 export function AdminDashboard() {
+  const router = useRouter();
   const [messageOpen, setMessageOpen] = useState(false);
   const {
     data,
-    archived,
     resultsPreview,
     pendingConfirm,
     pendingPrompt,
     openSection,
-    viewingArchived,
     isSaving,
     isReady,
     isSavingResults,
     isArchiving,
     isStarting,
-    isDeletingArchived,
-    isActivatingArchived,
-    isCreatingArchived,
-    isLoadingArchivedDetails,
     individualJudgeMessageStatus,
     autoResultsSummary,
     criteriaWeightTotal,
@@ -44,8 +38,6 @@ export function AdminDashboard() {
     openSectionModal,
     closeSectionModal,
     saveOpenSection,
-    openArchivedDetails,
-    closeArchivedDetails,
     addJudge,
     requestRemoveJudge,
     addCategory,
@@ -54,9 +46,6 @@ export function AdminDashboard() {
     requestDeleteJudgeMessage,
     endCurrentCompetition,
     startNewCompetition,
-    createArchivedCompetition,
-    makeArchivedCompetitionLive,
-    deletePastCompetition,
     handleConfirmDialog,
     handlePromptSubmit,
   } = useAdminDashboard();
@@ -107,7 +96,7 @@ export function AdminDashboard() {
                   <ol className="list-decimal pl-5 text-sm space-y-1">
                     {resultsPreview.rankings.map((row) => (
                       <li key={row.rank}>
-                        {row.companyName} — <strong>{row.finalScore.toFixed(1)}</strong>
+                        {row.companyName} — <strong>{row.finalScore.toFixed(2)}</strong>
                       </li>
                     ))}
                   </ol>
@@ -204,63 +193,10 @@ export function AdminDashboard() {
             <section className="overflow-hidden rounded border p-4 space-y-3">
               <h2 className="text-xl font-semibold">Archived Competitions</h2>
               <DashboardTextActions>
-                <DashboardTextButton
-                  onClick={() => {
-                    if (!data) return;
-                    createArchivedCompetition(data.competition.id, data.competition.name);
-                  }}
-                  disabled={
-                    !data ||
-                    isCreatingArchived !== null ||
-                    isActivatingArchived !== null ||
-                    isDeletingArchived !== null
-                  }
-                >
-                  Create New Competition
+                <DashboardTextButton onClick={() => router.push("/admin/archived")}>
+                  Open Archived Competitions
                 </DashboardTextButton>
               </DashboardTextActions>
-              {archived.length === 0 ? (
-                <p className="text-sm text-gray-600">No competitions in archive.</p>
-              ) : (
-                <ul className="space-y-4">
-                  {archived.map((item) => (
-                    <li key={item.id} className="space-y-3">
-                      <div className="min-w-0 text-sm">
-                        <p className="font-medium leading-none">{item.name}</p>
-                        <p className="mt-1 text-gray-600 leading-none">
-                          {formatEventDate(item.eventDate)} · Winner: {item.winner ?? "TBD"} ·{" "}
-                          {item.finalSubmissionCount} final submission
-                          {item.finalSubmissionCount === 1 ? "" : "s"}
-                        </p>
-                      </div>
-                      <DashboardTextActions>
-                        <DashboardTextButton
-                          onClick={() => void makeArchivedCompetitionLive(item.id, item.name)}
-                          disabled={
-                            isActivatingArchived === item.id ||
-                            isDeletingArchived === item.id ||
-                            isCreatingArchived === item.id
-                          }
-                        >
-                          Make Competition Live
-                        </DashboardTextButton>
-                        <DashboardTextButton
-                          onClick={() => void openArchivedDetails(item.id)}
-                          disabled={isLoadingArchivedDetails}
-                        >
-                          View Competition Details
-                        </DashboardTextButton>
-                        <DashboardTextButton
-                          onClick={() => void deletePastCompetition(item.id, item.name)}
-                          disabled={isDeletingArchived === item.id}
-                        >
-                          Delete Competition
-                        </DashboardTextButton>
-                      </DashboardTextActions>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </section>
           </div>
         </div>
@@ -310,6 +246,9 @@ export function AdminDashboard() {
               onClose={closeSectionModal}
               onAddCategory={addCategory}
               onCategoryNameChange={(id, name) => updateList("categories", id, "name", name)}
+              onCategoryDescriptionChange={(id, description) =>
+                updateList("categories", id, "description", description)
+              }
               onCategoryWeightChange={(id, weight) => updateList("categories", id, "weight", weight)}
               onRequestRemoveCategory={requestRemoveCategory}
               onSave={() => void saveOpenSection()}
@@ -318,7 +257,6 @@ export function AdminDashboard() {
           </>
         ) : null}
 
-        <ArchivedDetailsModal details={viewingArchived} onClose={closeArchivedDetails} />
         <AdminConfirmDialogs
           pendingConfirm={pendingConfirm}
           onConfirm={handleConfirmDialog}

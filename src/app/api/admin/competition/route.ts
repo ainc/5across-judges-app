@@ -14,7 +14,7 @@ export async function GET() {
     where: { isActive: true },
     include: {
       judges: { orderBy: { createdAt: "asc" } },
-      companies: { orderBy: { name: "asc" } },
+      companies: { orderBy: { createdAt: "asc" } },
       categories: { orderBy: { createdAt: "asc" } },
     },
   });
@@ -188,8 +188,13 @@ export async function PUT(request: Request) {
   }
 
   if ("categories" in payload) {
-    const payloadCategories: Array<{ id?: string; name?: string; weight?: number; maxScore?: number }> =
-      payload.categories ?? [];
+    const payloadCategories: Array<{
+      id?: string;
+      name?: string;
+      description?: string;
+      weight?: number;
+      maxScore?: number;
+    }> = payload.categories ?? [];
 
     if (payloadCategories.length === 0) {
       return NextResponse.json({ error: "At least one scoring criterion is required." }, { status: 400 });
@@ -212,6 +217,7 @@ export async function PUT(request: Request) {
 
     for (const category of payloadCategories) {
       const name = category.name!.trim();
+      const description = category.description?.trim() ?? "";
       const isNew =
         !category.id ||
         category.id.startsWith("new-") ||
@@ -222,6 +228,7 @@ export async function PUT(request: Request) {
           data: {
             competitionId: competition.id,
             name,
+            description,
             weight: typeof category.weight === "number" ? category.weight : 0,
             maxScore: typeof category.maxScore === "number" ? category.maxScore : 5,
           },
@@ -233,6 +240,7 @@ export async function PUT(request: Request) {
         where: { id: category.id, competitionId: competition.id },
         data: {
           name,
+          description,
           weight: typeof category.weight === "number" ? category.weight : undefined,
           maxScore: typeof category.maxScore === "number" ? category.maxScore : undefined,
         },
@@ -251,7 +259,7 @@ export async function PUT(request: Request) {
     where: { id: competition.id },
     include: {
       judges: { orderBy: { createdAt: "asc" } },
-      companies: { orderBy: { name: "asc" } },
+      companies: { orderBy: { createdAt: "asc" } },
       categories: { orderBy: { createdAt: "asc" } },
     },
   });

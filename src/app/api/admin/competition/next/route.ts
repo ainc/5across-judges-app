@@ -33,6 +33,7 @@ export async function POST(request: Request) {
     latestArchived?.categories.length
       ? latestArchived.categories.map((category) => ({
           name: category.name,
+          description: category.description,
           weight: category.weight,
           maxScore: category.maxScore,
         }))

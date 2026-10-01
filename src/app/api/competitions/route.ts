@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildRankings, scoresFromFinalJudges, winnerFromRankings } from "@/lib/competition-results";
+import { buildRankings, countPublishedJudges, scoresFromFinalJudges, winnerFromRankings } from "@/lib/competition-results";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/require-auth";
 
@@ -23,7 +23,7 @@ export async function GET() {
   });
 
   const payload = competitions.map((competition) => {
-    const finalScores = scoresFromFinalJudges(competition.scores, competition.sessions);
+    const finalScores = scoresFromFinalJudges(competition.scores);
     const rankings = buildRankings(
       competition.companies,
       competition.judges,
@@ -38,7 +38,7 @@ export async function GET() {
       isActive: competition.isActive,
       winner: winnerFromRankings(rankings),
       judgeCount: competition.judges.length,
-      finalSubmissionCount: competition.sessions.filter((session) => session.status === "FINAL").length,
+      finalSubmissionCount: countPublishedJudges(competition.scores),
     };
   });
 

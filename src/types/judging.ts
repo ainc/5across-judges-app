@@ -1,6 +1,6 @@
 export type Judge = { id: string; name: string; code: string | null; message: string | null };
 export type Company = { id: string; name: string; presenter?: string | null };
-export type Category = { id: string; name: string; weight: number; maxScore: number };
+export type Category = { id: string; name: string; description: string; weight: number; maxScore: number };
 
 export type ActiveCompetitionResponse = {
   competition: {
@@ -28,7 +28,7 @@ export type JudgeScoresResponse = {
   notes: JudgeNoteEntry[];
 };
 
-export type PendingConfirm = { type: "submit-final" } | null;
+export type PendingConfirm = { type: "submit-company"; companyId: string } | null;
 
 export type ScoreUndo = {
   companyId: string;

@@ -9,6 +9,7 @@ type CategoriesModalProps = {
   onClose: () => void;
   onAddCategory: () => void;
   onCategoryNameChange: (id: string, name: string) => void;
+  onCategoryDescriptionChange: (id: string, description: string) => void;
   onCategoryWeightChange: (id: string, weight: number | "") => void;
   onRequestRemoveCategory: (id: string, name: string) => void;
   onSave: () => void;
@@ -22,6 +23,7 @@ export function CategoriesModal({
   onClose,
   onAddCategory,
   onCategoryNameChange,
+  onCategoryDescriptionChange,
   onCategoryWeightChange,
   onRequestRemoveCategory,
   onSave,
@@ -75,6 +77,16 @@ export function CategoriesModal({
               aria-label={`Remove ${category.name || "category"}`}
             />
           </div>
+          <label className="block text-sm">
+            Description
+            <textarea
+              className="mt-1 w-full resize-none rounded border p-2"
+              rows={2}
+              value={category.description ?? ""}
+              placeholder="Shown in the info tab"
+              onChange={(event) => onCategoryDescriptionChange(category.id, event.target.value)}
+            />
+          </label>
           <label className="block text-sm">
             Weight (%)
             <input

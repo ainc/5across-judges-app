@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import Tooltip from "@mui/material/Tooltip";
 import { AppSelect } from "@/components/AppSelect";
 import { StyledTable, tdClass, thClass } from "@/components/StyledTable";
-import { firstPhrase } from "@/lib/judging-format";
+import { formatWeightedTotal } from "@/lib/judging-format";
 
-type CategoryRef = { name: string; weight: number };
+type CategoryRef = { name: string; description?: string | null; weight: number };
 type JudgeScore = {
   judgeId: string;
   judgeName: string;
@@ -17,17 +16,21 @@ type JudgeScore = {
 type CompanyRanking = {
   companyId: string;
   companyName: string;
+  pitch: number;
   byJudge: JudgeScore[];
 };
 
 export function CompanyResultsTables({
   rankings,
   categories,
+  selectedCompanyId,
+  onSelectCompany,
 }: {
   rankings: CompanyRanking[];
   categories: CategoryRef[];
+  selectedCompanyId: string;
+  onSelectCompany: (companyId: string) => void;
 }) {
-  const [selectedCompanyId, setSelectedCompanyId] = useState(rankings[0]?.companyId ?? "");
   const visibleRankings = rankings.filter((row) => row.companyId === selectedCompanyId);
   return (
     <section className="space-y-8">
@@ -39,12 +42,12 @@ export function CompanyResultsTables({
                   <AppSelect
                     aria-label="Company"
                     value={selectedCompanyId}
-                    onChange={(event) => setSelectedCompanyId(event.target.value)}
+                    onChange={(event) => onSelectCompany(event.target.value)}
                     className="w-full rounded border bg-white p-1 font-semibold"
                   >
                     {rankings.map((option) => (
                       <option key={option.companyId} value={option.companyId}>
-                        {option.companyName}
+                        Pitch {option.pitch} - {option.companyName}
                       </option>
                     ))}
                   </AppSelect>
@@ -61,16 +64,18 @@ export function CompanyResultsTables({
                 <tr key={category.name}>
                   <td className={tdClass}>
                     <span className="inline-flex items-center gap-1">
-                      {firstPhrase(category.name)}
-                      <Tooltip title={category.name} arrow>
-                        <button
-                          type="button"
-                          aria-label={`Full description: ${category.name}`}
-                          className="inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-500 hover:text-gray-800"
-                        >
-                          <InfoOutlinedIcon sx={{ fontSize: 16 }} />
-                        </button>
-                      </Tooltip>
+                      {category.name}
+                      {category.description?.trim() ? (
+                        <Tooltip title={category.description} arrow>
+                          <button
+                            type="button"
+                            aria-label={`Full description: ${category.description}`}
+                            className="inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-500 hover:text-gray-800"
+                          >
+                            <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+                          </button>
+                        </Tooltip>
+                      ) : null}
                       <span className="text-xs text-gray-600">({category.weight}%)</span>
                     </span>
                   </td>
@@ -87,7 +92,7 @@ export function CompanyResultsTables({
                 <td className={`${tdClass} font-semibold`}>Average Per Judge</td>
                 {row.byJudge.map((judge) => (
                   <td key={judge.judgeId} className={`${tdClass} text-center font-semibold`}>
-                    {judge.judgeTotal !== null ? judge.judgeTotal.toFixed(1) : ""}
+                    {judge.judgeTotal !== null ? formatWeightedTotal(judge.judgeTotal) : ""}
                   </td>
                 ))}
               </tr>

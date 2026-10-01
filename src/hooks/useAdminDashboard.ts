@@ -212,7 +212,7 @@ export function useAdminDashboard() {
             ...prev,
             categories: [
               ...prev.categories,
-              { id: newId, name: "", weight: 0, maxScore: 5 },
+              { id: newId, name: "", description: "", weight: 0, maxScore: 5 },
             ],
           }
         : prev,

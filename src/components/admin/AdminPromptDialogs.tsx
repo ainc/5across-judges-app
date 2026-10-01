@@ -13,7 +13,7 @@ export function AdminPromptDialogs({ pendingPrompt, onSubmit, onCancel }: AdminP
       <PromptDialog
         open={pendingPrompt?.type === "create-archived"}
         title="Create New Competition"
-        message="Settings of new competition can be edited at any time by making it live."
+        message={`This adds an inactive competition to the archive. The live competition is left as it is.\n\nScoring criteria are copied from the live competition. Judges start as Judge A, B, and C, and companies start as Company A through E. No scores are copied.\n\nYou can edit these settings later by making this competition live.`}
         label="Competition Name:"
         defaultValue={pendingPrompt?.type === "create-archived" ? pendingPrompt.defaultValue : ""}
         confirmLabel="Create"

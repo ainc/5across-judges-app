@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { pruneScoresForCompetition } from "@/lib/competition-config";
-import { formatFinalSubmitAge, formatSaveAge, formatScoreValue, formatTimestamp } from "@/lib/judging-format";
-import { getMissingCells, isScoreInRange, normalizeScore } from "@/lib/scoring";
+import { formatSaveAge, formatScoreValue, formatTimestamp } from "@/lib/judging-format";
+import { getMissingCells, normalizeScore, roundToHundredth } from "@/lib/scoring";
 import type {
   ActiveCompetitionResponse,
   Judge,
@@ -25,6 +25,7 @@ type UseJudgingSessionOptions = {
 
 type PersistOptions = {
   isFinal: boolean;
+  companyId?: string;
   skipConfirm?: boolean;
   quiet?: boolean;
   keepalive?: boolean;
@@ -96,12 +97,12 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
   const notesRef = useRef(notes);
   const dataRef = useRef(data);
   const selectedJudgeIdRef = useRef(selectedJudgeId);
-  const submissionStatusRef = useRef(submissionStatus);
   const isLoadingScoresRef = useRef(isLoadingScores);
   const saveTimerRef = useRef<number | null>(null);
   const saveQueuedRef = useRef(false);
   const saveInFlightRef = useRef(false);
-  const persistScoresRef = useRef<(options: PersistOptions) => Promise<void>>(async () => {});
+  const submitWaitRef = useRef<{ companyId: string; resolve: (submitted: boolean) => void } | null>(null);
+  const persistScoresRef = useRef<(options: PersistOptions) => Promise<boolean>>(async () => false);
 
   const showToast = useCallback((message: string) => {
     const id = nextToastId.current++;
@@ -126,10 +127,6 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
   useEffect(() => {
     selectedJudgeIdRef.current = selectedJudgeId;
   }, [selectedJudgeId]);
-
-  useEffect(() => {
-    submissionStatusRef.current = submissionStatus;
-  }, [submissionStatus]);
 
   useEffect(() => {
     isLoadingScoresRef.current = isLoadingScores;
@@ -324,18 +321,27 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     async (saveOptions: PersistOptions) => {
       const competition = dataRef.current;
       const judgeId = saveOptions.judgeId ?? selectedJudgeIdRef.current;
-      if (!competition || !judgeId) return;
+      if (!competition || !judgeId) return false;
 
-      if (saveOptions.isFinal && !saveOptions.skipConfirm) {
-        setPendingConfirm({ type: "submit-final" });
-        return;
+      if (saveOptions.isFinal && !saveOptions.companyId) return false;
+      const companyId = saveOptions.companyId;
+
+      if (saveOptions.isFinal && companyId && !saveOptions.skipConfirm) {
+        setPendingConfirm({ type: "submit-company", companyId });
+        return false;
       }
 
       if (saveInFlightRef.current) {
+        if (saveOptions.isFinal && companyId && saveOptions.skipConfirm) {
+          setIsSubmitting(true);
+          return new Promise<boolean>((resolve) => {
+            submitWaitRef.current = { companyId, resolve };
+          });
+        }
         if (!saveOptions.isFinal) {
           saveQueuedRef.current = true;
         }
-        return;
+        return false;
       }
 
       if (saveOptions.isFinal) {
@@ -349,7 +355,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
       const noteEntries = notesFromRecord(currentNotes);
 
       saveInFlightRef.current = true;
-      setIsSubmitting(true);
+      if (saveOptions.isFinal) setIsSubmitting(true);
       if (!saveOptions.isFinal || saveOptions.notesOnly) setIsAutosaving(true);
       setMissingCells([]);
       try {
@@ -360,6 +366,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
             competitionId: saveOptions.competitionId ?? competition.competition.id,
             judgeId,
             isFinal: saveOptions.isFinal,
+            companyId: saveOptions.companyId,
             notesOnly: saveOptions.notesOnly === true,
             entries: saveOptions.notesOnly ? [] : entries,
             notes: noteEntries,
@@ -369,7 +376,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
         const contentType = response.headers.get("content-type") ?? "";
         if (!contentType.includes("application/json")) {
           showToast("Unable to save scores. Please sign in again.");
-          return;
+          return false;
         }
         const payload = (await response.json()) as {
           missingCells?: Array<{ companyId: string; categoryId: string }>;
@@ -381,30 +388,30 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
         if (!response.ok) {
           if (response.status === 401 || response.status === 403) {
             showToast(payload.error ?? "Unable to save scores for this judge.");
-            return;
+            return false;
           }
           if (response.status === 400 && Array.isArray(payload.missingCells)) {
             setMissingCells(payload.missingCells);
-            showToast("All cells must be filled before final submission.");
-            return;
+            showToast("All cells must be filled before submitting company scores.");
+            return false;
           }
-          if (response.status === 400) {
+          if (response.status === 400 && saveOptions.companyId) {
             const apiMissing = getMissingCells(
-              competition.companies.map((company) => company.id),
+              [saveOptions.companyId],
               competition.categories.map((category) => category.id),
-              entries,
+              entries.filter((entry) => entry.companyId === saveOptions.companyId),
             );
             if (apiMissing.length > 0) {
               setMissingCells(apiMissing);
-              showToast("All cells must be filled before final submission.");
-              return;
+              showToast("All cells must be filled before submitting company scores.");
+              return false;
             }
           }
           showToast(typeof payload.error === "string" ? payload.error : "Unable to save scores.");
-          return;
+          return false;
         }
         if (saveOptions.isFinal) {
-          showToast("Final scores submitted successfully.");
+          showToast("Company scores submitted.");
         } else if (!saveOptions.quiet) {
           showToast("Draft saved successfully.");
         }
@@ -423,17 +430,33 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
         if (!saveOptions.notesOnly) {
           setChangeLog((prev) => {
             const next = { ...prev };
-            delete next[judgeId];
-            return next;
-          });
+          delete next[judgeId];
+          return next;
+        });
         }
+        return true;
       } finally {
         saveInFlightRef.current = false;
-        setIsSubmitting(false);
         setIsAutosaving(false);
-        if (saveQueuedRef.current) {
+        const waitingSubmit = submitWaitRef.current;
+        if (waitingSubmit) {
+          submitWaitRef.current = null;
           saveQueuedRef.current = false;
-          if (submissionStatusRef.current !== "FINAL") {
+          try {
+            const submitted = await persistScoresRef.current({
+              isFinal: true,
+              companyId: waitingSubmit.companyId,
+              skipConfirm: true,
+            });
+            waitingSubmit.resolve(submitted);
+          } catch {
+            setIsSubmitting(false);
+            waitingSubmit.resolve(false);
+          }
+        } else {
+          if (saveOptions.isFinal) setIsSubmitting(false);
+          if (saveQueuedRef.current) {
+            saveQueuedRef.current = false;
             void persistScoresRef.current({ isFinal: false, quiet: true });
           }
         }
@@ -463,21 +486,6 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     );
     if (!judgeId || (!scoresChanged && !notesChanged)) {
       setIsAutosaving(false);
-      return;
-    }
-    if (submissionStatusRef.current === "FINAL") {
-      if (!notesChanged) {
-        setIsAutosaving(false);
-        return;
-      }
-      await persistScores({
-        isFinal: false,
-        notesOnly: true,
-        quiet: true,
-        judgeId,
-        notesSnapshot: currentNotes,
-        competitionId: dataRef.current?.competition.id,
-      });
       return;
     }
     await persistScores({
@@ -511,14 +519,12 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     [flushAutosave],
   );
 
-  function handleConfirmDialog() {
-    if (!pendingConfirm) return;
-
-    if (pendingConfirm.type === "submit-final") {
-      void persistScores({ isFinal: true, skipConfirm: true });
-    }
-
+  async function handleConfirmDialog() {
+    if (pendingConfirm?.type !== "submit-company") return null;
+    const companyId = pendingConfirm.companyId;
     setPendingConfirm(null);
+    const submitted = await persistScores({ isFinal: true, companyId, skipConfirm: true });
+    return submitted ? companyId : null;
   }
 
   const selectedJudge = useMemo(
@@ -538,7 +544,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
           total += value * ((categoryMap.get(category.id)?.weight ?? 0) / 100);
         }
       }
-      result[company.id] = Math.round(total * 100) / 100;
+      result[company.id] = roundToHundredth(total);
     }
     return result;
   }, [data, scores]);
@@ -554,13 +560,10 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
   );
 
   const saveStatusLabel = useMemo(() => {
-    if (submissionStatus === "FINAL") {
-      return formatFinalSubmitAge(submittedAt, nowMs);
-    }
     if (isAutosaving) return "Saving...";
     if (!submissionStatus) return "No saved scores";
     return formatSaveAge(submissionUpdatedAt, nowMs);
-  }, [isAutosaving, nowMs, submissionStatus, submissionUpdatedAt, submittedAt]);
+  }, [isAutosaving, nowMs, submissionStatus, submissionUpdatedAt]);
 
   const syncChangeLog = useCallback((judgeId: string, companyId: string, categoryId: string, toValue: number | undefined) => {
     const key = `${companyId}:${categoryId}`;
@@ -617,7 +620,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
       }
 
       const numeric = Number(raw);
-      if (!isScoreInRange(numeric)) return false;
+      if (!Number.isFinite(numeric)) return false;
 
       const normalized = normalizeScore(numeric);
       if (recordUndo) {
@@ -662,12 +665,8 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     scheduleAutosave();
   }
 
-  function submitScores(isFinal: boolean, skipConfirm = false) {
-    if (isFinal) {
-      void persistScores({ isFinal: true, skipConfirm });
-      return;
-    }
-    void flushAutosave();
+  function submitCompanyScores(companyId: string) {
+    void persistScores({ isFinal: true, companyId });
   }
 
   const deleteIndividualJudgeMessage = useCallback(async (judge: Judge) => {
@@ -716,19 +715,6 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
       if (!judgeId || !competitionId) return;
       const scoresChanged = scoresDifferFromBaseline(baselineByJudge.current[judgeId], currentScores);
       const notesChanged = notesDifferFromBaseline(notesBaselineByJudge.current[judgeId], currentNotes);
-      if (submissionStatusRef.current === "FINAL") {
-        if (!notesChanged) return;
-        void persistScoresRef.current({
-          isFinal: false,
-          notesOnly: true,
-          quiet: true,
-          keepalive: true,
-          judgeId,
-          competitionId,
-          notesSnapshot: currentNotes,
-        });
-        return;
-      }
       if (!scoresChanged && !notesChanged) return;
       void persistScoresRef.current({
         isFinal: false,
@@ -778,7 +764,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     updateNote,
     undoLastScore,
     flushAutosave,
-    submitScores,
+    submitCompanyScores,
     handleConfirmDialog,
     deleteIndividualJudgeMessage,
   };

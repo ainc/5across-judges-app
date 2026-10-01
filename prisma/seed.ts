@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { DEFAULT_CATEGORIES } from "../src/lib/competition-config";
 import { saltAndHashPassword } from "../src/utils/password";
 
 const prisma = new PrismaClient();
@@ -70,26 +71,7 @@ async function main() {
         ],
       },
       categories: {
-        create: [
-          {
-            name: "Strength / Creativity / Uniqueness of idea / Technology",
-            weight: 15,
-            maxScore: 5,
-          },
-          {
-            name: "Description / Knowledge of the target market",
-            weight: 20,
-            maxScore: 5,
-          },
-          { name: "Traction / Growth", weight: 25, maxScore: 5 },
-          { name: "Revenue Model", weight: 20, maxScore: 5 },
-          { name: "Team / Advisors", weight: 15, maxScore: 5 },
-          {
-            name: "Quality of overall pitch / Presentation",
-            weight: 5,
-            maxScore: 5,
-          },
-        ],
+        create: DEFAULT_CATEGORIES.map((category) => ({ ...category })),
       },
     },
     select: { id: true, name: true },
@@ -104,8 +86,8 @@ async function main() {
       companies: { create: [{ name: "Legacy Co A" }, { name: "Legacy Co B" }] },
       categories: {
         create: [
-          { name: "Idea", weight: 50, maxScore: 5 },
-          { name: "Execution", weight: 50, maxScore: 5 },
+          { name: "Idea", description: "Idea", weight: 50, maxScore: 5 },
+          { name: "Execution", description: "Execution", weight: 50, maxScore: 5 },
         ],
       },
     },

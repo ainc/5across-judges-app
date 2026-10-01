@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { CompanyResultsTables } from "@/components/CompanyResultsTables";
-import { ResultsPodiums } from "@/components/ResultsPodiums";
+import { CurrentResults } from "@/components/CurrentResults";
 import { getResults } from "@/lib/results-client";
 import { AppHeader } from "@/components/admin/AppHeader";
 
@@ -22,16 +21,7 @@ export default async function ResultsPage() {
       </AppHeader>
       <main className="min-w-0 space-y-4 px-6 pb-6">
 
-      <ResultsPodiums
-        rankings={data.rankings.map((row) => ({
-          companyId: row.companyId,
-          companyName: row.companyName,
-          finalScore: row.finalScore,
-          rank: row.rank,
-        }))}
-      />
-
-      <CompanyResultsTables rankings={data.rankings} categories={data.categories} />
+      <CurrentResults rankings={data.rankings} categories={data.categories} />
       </main>
     </>
   );

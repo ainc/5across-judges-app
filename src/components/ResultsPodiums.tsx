@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { formatWeightedTotal } from "@/lib/judging-format";
+
 type PodiumRow = {
   companyId: string;
   companyName: string;
@@ -25,7 +28,23 @@ const FACE: Record<number, { background: string; color: string }> = {
 
 const VISUAL_ORDER = [4, 2, 1, 3, 5];
 
-export function ResultsPodiums({ rankings }: { rankings: PodiumRow[] }) {
+function lighten(hex: string, amount: number): string {
+  const value = Number.parseInt(hex.slice(1), 16);
+  const mix = (channel: number) => Math.round(channel + (255 - channel) * amount);
+  return `rgb(${mix((value >> 16) & 255)}, ${mix((value >> 8) & 255)}, ${mix(value & 255)})`;
+}
+
+export function ResultsPodiums({
+  rankings,
+  selectedCompanyId,
+  onSelectCompany,
+}: {
+  rankings: PodiumRow[];
+  selectedCompanyId: string;
+  onSelectCompany: (companyId: string) => void;
+}) {
+  const [hoveredCompanyId, setHoveredCompanyId] = useState<string | null>(null);
+
   if (rankings.length === 0) {
     return <p className="text-sm text-gray-600">No results yet.</p>;
   }
@@ -47,9 +66,23 @@ export function ResultsPodiums({ rankings }: { rankings: PodiumRow[] }) {
         const visual = VISUAL_ORDER.indexOf(rank);
         const face = FACE[rank] ?? FACE[5];
 
+        const hasSelection = selectedCompanyId !== "";
+        const selected = hasSelection && row.companyId === selectedCompanyId;
+        const hovered = hoveredCompanyId === row.companyId;
+        const enlarged = selected || hovered;
+        const dimmed = hasSelection && !enlarged;
+
         return (
-          <div
+          <button
             key={row.companyId}
+            type="button"
+            aria-pressed={selected}
+            aria-label={`${row.companyName}, rank ${rank}`}
+            onClick={() => onSelectCompany(row.companyId)}
+            onMouseEnter={() => setHoveredCompanyId(row.companyId)}
+            onMouseLeave={() => setHoveredCompanyId((current) => (current === row.companyId ? null : current))}
+            onFocus={() => setHoveredCompanyId(row.companyId)}
+            onBlur={() => setHoveredCompanyId((current) => (current === row.companyId ? null : current))}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -57,6 +90,18 @@ export function ResultsPodiums({ rankings }: { rankings: PodiumRow[] }) {
               flex: "1 1 0%",
               minWidth: 0,
               order: visual === -1 ? rank + 10 : visual,
+              margin: 0,
+              padding: 0,
+              border: "none",
+              background: "transparent",
+              color: "inherit",
+              font: "inherit",
+              cursor: "pointer",
+              position: "relative",
+              zIndex: enlarged ? 1 : 0,
+              transform: enlarged ? "scale(1.06)" : "scale(1)",
+              transformOrigin: "bottom center",
+              transition: "transform 160ms ease",
             }}
           >
             <div
@@ -99,16 +144,17 @@ export function ResultsPodiums({ rankings }: { rankings: PodiumRow[] }) {
                   width: "100%",
                   height: "100%",
                   paddingBottom: 10,
-                  background: face.background,
-                  color: face.color,
+                  background: dimmed ? lighten(face.background, 0.55) : face.background,
+                  color: dimmed ? "#323232" : face.color,
+                  transition: "background 180ms ease, color 180ms ease",
                   fontSize: 14,
                   fontWeight: 600,
                 }}
               >
-                Score: {Number(row.finalScore).toFixed(1)}
+                Score: {formatWeightedTotal(row.finalScore)}
               </div>
             </div>
-          </div>
+          </button>
         );
       })}
     </section>

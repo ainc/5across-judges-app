@@ -10,7 +10,7 @@ export type AdminCompetitionResponse = {
   };
   judges: Judge[];
   companies: Array<{ id: string; name: string; presenter: string | null }>;
-  categories: Array<{ id: string; name: string; weight: number; maxScore: number }>;
+  categories: Array<{ id: string; name: string; description: string; weight: number; maxScore: number }>;
 };
 
 export type ResultsPreview = {

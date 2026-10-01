@@ -13,18 +13,33 @@ export const DEFAULT_COMPANIES = [
 ] as const;
 
 export const DEFAULT_CATEGORIES = [
-  { name: "Strength / Creativity / Uniqueness of idea / Technology", weight: 15, maxScore: 5 },
-  { name: "Description / Knowledge of the target market", weight: 20, maxScore: 5 },
-  { name: "Traction / Growth", weight: 25, maxScore: 5 },
-  { name: "Revenue Model", weight: 20, maxScore: 5 },
-  { name: "Team / Advisors", weight: 15, maxScore: 5 },
-  { name: "Quality of overall pitch / Presentation", weight: 5, maxScore: 5 },
+  {
+    name: "Strength",
+    description: "Strength / Creativity / Uniqueness of idea / Technology",
+    weight: 15,
+    maxScore: 5,
+  },
+  {
+    name: "Description",
+    description: "Description / Knowledge of the target market",
+    weight: 20,
+    maxScore: 5,
+  },
+  { name: "Traction", description: "Traction / Growth", weight: 25, maxScore: 5 },
+  { name: "Revenue Model", description: "Revenue Model", weight: 20, maxScore: 5 },
+  { name: "Team", description: "Team / Advisors", weight: 15, maxScore: 5 },
+  {
+    name: "Presentation",
+    description: "Quality of overall pitch / Presentation",
+    weight: 5,
+    maxScore: 5,
+  },
 ] as const;
 
 type ConfigRevisionInput = {
   updatedAt: Date | string;
   judges: Array<{ id: string; name: string; code?: string | null; message?: string | null }>;
-  categories: Array<{ id: string; name: string; weight: number; maxScore?: number }>;
+  categories: Array<{ id: string; name: string; description?: string | null; weight: number; maxScore?: number }>;
 };
 
 export function buildCompetitionConfigRevision({
@@ -38,7 +53,10 @@ export function buildCompetitionConfigRevision({
     updatedAtValue,
     ...judges.map((judge) => `j:${judge.id}:${judge.name}:${judge.code ?? ""}:${judge.message ?? ""}`).sort(),
     ...categories
-      .map((category) => `c:${category.id}:${category.name}:${category.weight}:${category.maxScore ?? 5}`)
+      .map(
+        (category) =>
+          `c:${category.id}:${category.name}:${category.description ?? ""}:${category.weight}:${category.maxScore ?? 5}`,
+      )
       .sort(),
   ].join("|");
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormDialog } from "@/components/FormDialog";
-import { firstPhrase } from "@/lib/judging-format";
+import { formatWeightedTotal } from "@/lib/judging-format";
 import { formatScoreValue, formatTimestamp, useJudgingSession } from "@/hooks/useJudgingSession";
 import CancelIcon from '@mui/icons-material/Cancel';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
@@ -12,6 +12,16 @@ import Tooltip from "@mui/material/Tooltip";
 import { AppHeader } from "./admin/AppHeader";
 import { AppSelect } from "@/components/AppSelect";
 import { StyledTable, tdClass, thClass } from "@/components/StyledTable";
+
+const COMPANY_STORAGE_PREFIX = "judging-selected-company:";
+
+function storedCompanyId(competitionId: string) {
+  try {
+    return window.localStorage.getItem(`${COMPANY_STORAGE_PREFIX}${competitionId}`) ?? "";
+  } catch {
+    return "";
+  }
+}
 
 const SCORE_SCALE = [
   { value: 1, label: ["Weak"] },
@@ -26,6 +36,58 @@ const SCORE_SCALE_NUMBER_PAD = 32;
 const SCORE_SCALE_LINE_PAD = 16;
 const SCORE_SCALE_LINE_Y = 22;
 const SCORE_SCALE_SPAN = SCORE_SCALE_WIDTH - SCORE_SCALE_NUMBER_PAD * 2;
+
+function isIncompleteScoreInput(raw: string): boolean {
+  return raw === "." || raw === "-" || raw === "-." || raw.endsWith(".");
+}
+
+function ScoreInput({
+  value,
+  disabled,
+  isMissing,
+  onValue,
+  onBlur,
+}: {
+  value: number | undefined;
+  disabled: boolean;
+  isMissing: boolean;
+  onValue: (raw: string) => void;
+  onBlur: () => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  return (
+    <input
+      className={`score-input w-16 rounded border px-2 py-1 text-center disabled:bg-gray-50 ${
+        isMissing ? "border-red-500 bg-red-100" : ""
+      }`}
+      min={1}
+      max={5}
+      step={0.5}
+      type="number"
+      title="Whole or half points from 1 to 5"
+      disabled={disabled}
+      placeholder=""
+      value={draft ?? value ?? ""}
+      onChange={(event) => {
+        const raw = event.target.value;
+        if (raw === "" || (!isIncompleteScoreInput(raw) && Number.isFinite(Number(raw)))) {
+          setDraft(null);
+          onValue(raw);
+          return;
+        }
+        setDraft(raw);
+      }}
+      onBlur={() => {
+        if (draft !== null && Number.isFinite(Number(draft))) {
+          onValue(draft);
+        }
+        setDraft(null);
+        onBlur();
+      }}
+    />
+  );
+}
 
 function ScoreScaleGraphic() {
   const [expanded, setExpanded] = useState(false);
@@ -102,6 +164,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
   const isAdmin = showAdminLink;
   const [overrideEnabled, setOverrideEnabled] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
+  const [restoredCompetitionId, setRestoredCompetitionId] = useState("");
   const canEditScores = !isAdmin || overrideEnabled;
   const {
 
@@ -128,12 +191,29 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     updateNote,
     undoLastScore,
     flushAutosave,
-    submitScores,
+    submitCompanyScores,
     handleConfirmDialog,
     deleteIndividualJudgeMessage,
   } = useJudgingSession({ lockedJudgeId });
 
-  if (!data) {
+  useEffect(() => {
+    if (!data || restoredCompetitionId === data.competition.id) return;
+    const stored = storedCompanyId(data.competition.id);
+    const match = data.companies.some((company) => company.id === stored);
+    setSelectedCompanyId(match ? stored : "");
+    setRestoredCompetitionId(data.competition.id);
+  }, [data, restoredCompetitionId]);
+
+  useEffect(() => {
+    if (!data || restoredCompetitionId !== data.competition.id || !selectedCompanyId) return;
+    try {
+      window.localStorage.setItem(`${COMPANY_STORAGE_PREFIX}${data.competition.id}`, selectedCompanyId);
+    } catch {
+      // Storage can be unavailable in private browsing.
+    }
+  }, [data, restoredCompetitionId, selectedCompanyId]);
+
+  if (!data || restoredCompetitionId !== data.competition.id) {
     return <main className="p-6"></main>;
   }
 
@@ -220,9 +300,9 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                     onChange={(event) => setSelectedCompanyId(event.target.value)}
                     className="w-full rounded border bg-white p-1 font-semibold"
                   >
-                    {data.companies.map((option) => (
+                    {data.companies.map((option, index) => (
                       <option key={option.id} value={option.id}>
-                        {option.name}
+                        Pitch {index + 1} - {option.name}
                       </option>
                     ))}
                   </AppSelect>
@@ -235,16 +315,18 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
               <tr key={category.id}>
                 <td className={`${tdClass} sticky left-0 bg-white text-medium`}>
                   <span className="inline-flex items-center gap-1">
-                    {firstPhrase(category.name)}
-                    <Tooltip title={category.name} arrow>
-                      <button
-                        type="button"
-                        aria-label={`Full description: ${category.name}`}
-                        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-500 hover:text-gray-800"
-                      >
-                        <InfoOutlinedIcon sx={{ fontSize: 16 }} />
-                      </button>
-                    </Tooltip>
+                    {category.name}
+                    {category.description?.trim() ? (
+                      <Tooltip title={category.description} arrow>
+                        <button
+                          type="button"
+                          aria-label={`Full description: ${category.description}`}
+                          className="inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-500 hover:text-gray-800"
+                        >
+                          <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+                        </button>
+                      </Tooltip>
+                    ) : null}
                     <span className="text-sm font-medium text-gray-600">({category.weight}%)</span>
                   </span>
                 </td>
@@ -253,20 +335,11 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                   const isMissing = missingCellKeys.has(key);
                   return (
                     <td key={key} className={`${tdClass} p-1 text-center ${isMissing ? "bg-red-50" : ""}`}>
-                      <input
-                        className={`score-input w-16 rounded border px-2 py-1 text-center disabled:bg-gray-50 ${
-                          isMissing ? "border-red-500 bg-red-100" : ""
-                        }`}
-                        min={1}
-                        max={5}
-                        step={0.1}
-                        type="number"
+                      <ScoreInput
+                        value={scores[key]}
                         disabled={isLoadingScores || !canEditScores}
-                        placeholder=""
-                        value={scores[key] ?? ""}
-                        onChange={(event) => {
-                          updateScore(company.id, category.id, event.target.value);
-                        }}
+                        isMissing={isMissing}
+                        onValue={(raw) => updateScore(company.id, category.id, raw)}
                         onBlur={() => {
                           void flushAutosave();
                         }}
@@ -284,7 +357,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                 );
                 return (
                   <td key={company.id} className={`${tdClass} text-center font-semibold`}>
-                    {hasScores ? totals[company.id]?.toFixed(1) ?? "0.0" : ""}
+                    {hasScores ? formatWeightedTotal(totals[company.id] ?? 0) : ""}
                   </td>
                 );
               })}
@@ -312,19 +385,21 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
       </section>
 
       <section className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setChangeLogOpen(true)}
-          className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white"
-        >
-          View Change History
-        </button>
+        {isAdmin ? (
+          <button
+            type="button"
+            onClick={() => setChangeLogOpen(true)}
+            className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white"
+          >
+            View Change History
+          </button>
+        ) : null}
         <button
           disabled={isSubmitting || isLoadingScores || !canEditScores}
-          onClick={() => submitScores(true)}
+          onClick={() => submitCompanyScores(selectedId)}
           className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white disabled:opacity-50"
         >
-          Submit Final Scores
+          Submit Company Scores
         </button>
         <button
           type="button"
@@ -375,13 +450,23 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         )}
       </FormDialog>
       <ConfirmDialog
-        open={pendingConfirm?.type === "submit-final"}
-        title="Submit Final Scores?"
-        message={
-          "These can be revised at any time by simply re-submitting with updated scores.\n\nCurrently submitted scores can be viewed in 'Current Results'."
-        }
+        open={pendingConfirm?.type === "submit-company"}
+        title="Submit Company Scores?"
+        message={(() => {
+          const company = data.companies.find((item) => item.id === pendingConfirm?.companyId);
+          const pitch = company ? data.companies.findIndex((item) => item.id === company.id) + 1 : 0;
+          const label = company ? `Pitch ${pitch} - ${company.name}` : "this company";
+          return `Submit scores for ${label}. Every category needs a score. Submitted scores appear in Current Results. Later edits stay saved on this sheet, and Current Results updates when you submit this company again.`;
+        })()}
         confirmLabel="Submit"
-        onConfirm={handleConfirmDialog}
+        onConfirm={() => {
+          void handleConfirmDialog().then((companyId) => {
+            if (!companyId) return;
+            const index = data.companies.findIndex((company) => company.id === companyId);
+            const next = data.companies[index + 1];
+            if (next) setSelectedCompanyId(next.id);
+          });
+        }}
         onCancel={() => setPendingConfirm(null)}
       />
       </main>

@@ -41,6 +41,7 @@ export async function copyCompetitionToArchive(sourceId: string) {
         categories: {
           create: source.categories.map((category) => ({
             name: category.name,
+            description: category.description,
             weight: category.weight,
             maxScore: category.maxScore,
           })),
@@ -117,6 +118,7 @@ export async function copyCompetitionToArchive(sourceId: string) {
           categoryId: newCategoryId,
           sessionId: newSessionId,
           score: score.score,
+          publishedScore: score.publishedScore,
         },
       });
     }

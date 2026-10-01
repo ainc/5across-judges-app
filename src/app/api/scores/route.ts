@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireScorer } from "@/lib/require-auth";
-import { getMissingCells, getWeightedTotalForCompany, isScoreInRange, normalizeScore, roundScore } from "@/lib/scoring";
+import { getMissingCells, getWeightedTotalForCompany, normalizeScore, roundToHundredth } from "@/lib/scoring";
 
 function canAccessJudge(
   session: { user: { role?: string; judgeId?: string | null } } | null,
@@ -66,15 +66,13 @@ const scorePayloadSchema = z.object({
   competitionId: z.string().min(1),
   judgeId: z.string().min(1),
   isFinal: z.boolean(),
+  companyId: z.string().min(1).optional(),
   notesOnly: z.boolean().optional(),
   entries: z.array(
     z.object({
       companyId: z.string().min(1),
       categoryId: z.string().min(1),
-      score: z
-        .number()
-        .refine(isScoreInRange, { message: "Score must be between 0 and 5." })
-        .transform(normalizeScore),
+      score: z.number().finite().transform(normalizeScore),
     }),
   ),
   notes: z
@@ -98,7 +96,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: payload.error.flatten() }, { status: 400 });
   }
 
-  const { competitionId, judgeId, isFinal, notesOnly, entries, notes } = payload.data;
+  const { competitionId, judgeId, isFinal, companyId, notesOnly, entries, notes } = payload.data;
 
   if (!canAccessJudge(authResult.session, judgeId)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -177,20 +175,26 @@ export async function POST(request: Request) {
   const uniqueEntries = new Map(entries.map((entry) => [`${entry.companyId}:${entry.categoryId}`, entry]));
   const dedupedEntries = Array.from(uniqueEntries.values());
 
-  const missingCells = getMissingCells(
-    competition.companies.map((company) => company.id),
-    competition.categories.map((category) => category.id),
-    dedupedEntries,
-  );
+  if (isFinal) {
+    if (!companyId || !allowedCompanyIds.has(companyId)) {
+      return NextResponse.json({ error: "Company submit requires a valid company." }, { status: 400 });
+    }
 
-  if (isFinal && missingCells.length > 0) {
-    return NextResponse.json(
-      {
-        error: "Final submit requires every company/category score.",
-        missingCells,
-      },
-      { status: 400 },
+    const missingCells = getMissingCells(
+      [companyId],
+      competition.categories.map((category) => category.id),
+      dedupedEntries.filter((entry) => entry.companyId === companyId),
     );
+
+    if (missingCells.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Company submit requires every category score.",
+          missingCells,
+        },
+        { status: 400 },
+      );
+    }
   }
 
   const session = await prisma.submissionSession.upsert({
@@ -203,18 +207,18 @@ export async function POST(request: Request) {
     create: {
       competitionId,
       judgeId,
-      status: isFinal ? "FINAL" : "DRAFT",
-      submittedAt: isFinal ? new Date() : null,
+      status: "DRAFT",
+      submittedAt: null,
     },
     update: {
-      status: isFinal ? "FINAL" : "DRAFT",
-      submittedAt: isFinal ? new Date() : null,
+      updatedAt: new Date(),
     },
   });
 
   await prisma.$transaction(
-    dedupedEntries.map((entry) =>
-      prisma.score.upsert({
+    dedupedEntries.map((entry) => {
+      const publish = isFinal && entry.companyId === companyId;
+      return prisma.score.upsert({
         where: {
           competitionId_judgeId_companyId_categoryId: {
             competitionId,
@@ -230,13 +234,15 @@ export async function POST(request: Request) {
           categoryId: entry.categoryId,
           sessionId: session.id,
           score: entry.score,
+          publishedScore: publish ? entry.score : null,
         },
         update: {
           sessionId: session.id,
           score: entry.score,
+          ...(publish ? { publishedScore: entry.score } : {}),
         },
-      }),
-    ),
+      });
+    }),
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
   );
 
@@ -251,7 +257,7 @@ export async function POST(request: Request) {
     return {
       companyId: company.id,
       companyName: company.name,
-      weightedTotal: roundScore(weighted),
+      weightedTotal: roundToHundredth(weighted),
     };
   });
 

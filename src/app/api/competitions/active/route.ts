@@ -13,7 +13,7 @@ export async function GET() {
     where: { isActive: true },
     include: {
       judges: { orderBy: { name: "asc" } },
-      companies: { orderBy: { name: "asc" } },
+      companies: { orderBy: { createdAt: "asc" } },
       categories: { orderBy: { createdAt: "asc" } },
     },
   });

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { archivedCompetitionMatchesActive } from "@/lib/competition-snapshot";
-import { buildRankings, scoresFromFinalJudges, winnerFromRankings } from "@/lib/competition-results";
+import { buildRankings, countPublishedJudges, scoresFromFinalJudges, winnerFromRankings } from "@/lib/competition-results";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-auth";
 
@@ -19,7 +19,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const competition = await prisma.competition.findUnique({
     where: { id },
     include: {
-      companies: { orderBy: { name: "asc" } },
+      companies: { orderBy: { createdAt: "asc" } },
       judges: { orderBy: { name: "asc" } },
       categories: { orderBy: { createdAt: "asc" } },
       sessions: true,
@@ -33,7 +33,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Competition not found." }, { status: 404 });
   }
 
-  const finalScores = scoresFromFinalJudges(competition.scores, competition.sessions);
+  const finalScores = scoresFromFinalJudges(competition.scores);
   const rankings = buildRankings(
     competition.companies,
     competition.judges,
@@ -63,7 +63,7 @@ export async function GET(_request: Request, context: RouteContext) {
       weight: category.weight,
     })),
     winner: winnerFromRankings(rankings),
-    finalSubmissionCount: competition.sessions.filter((session) => session.status === "FINAL").length,
+    finalSubmissionCount: countPublishedJudges(competition.scores),
     rankings: rankings.map(({ rank, companyName, finalScore, judgeCount }) => ({
       rank,
       companyName,

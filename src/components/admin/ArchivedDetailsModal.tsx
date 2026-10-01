@@ -65,7 +65,7 @@ export function ArchivedDetailsModal({ details, onClose }: ArchivedDetailsModalP
               <ol className="mt-1 list-decimal pl-5">
                 {details.rankings.map((row) => (
                   <li key={row.rank}>
-                    {row.companyName} — {row.finalScore.toFixed(1)} ({row.judgeCount} judge
+                    {row.companyName} — {row.finalScore.toFixed(2)} ({row.judgeCount} judge
                     {row.judgeCount === 1 ? "" : "s"})
                   </li>
                 ))}

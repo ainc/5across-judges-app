@@ -70,6 +70,7 @@ model Category {
   id            String      @id @default(cuid())
   competitionId String
   name          String
+  description   String      @default("")
   weight        Int
   maxScore      Int         @default(5)
   createdAt     DateTime    @default(now())
@@ -111,7 +112,8 @@ model Score {
   companyId     String
   categoryId    String
   sessionId     String
-  score         Float
+  score          Float
+  publishedScore Float?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
   competition   Competition       @relation(fields: [competitionId], references: [id], onDelete: Cascade)
