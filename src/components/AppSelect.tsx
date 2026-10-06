@@ -13,7 +13,9 @@ import {
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 
-type AppSelectProps = SelectHTMLAttributes<HTMLSelectElement>;
+type AppSelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
+  header?: boolean;
+};
 
 type Option = {
   value: string;
@@ -54,6 +56,34 @@ const fieldStyle: CSSProperties = {
   ...menuFont,
 };
 
+const headerButtonStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "0.4rem",
+  width: "100%",
+  margin: 0,
+  padding: "0.5rem",
+  border: "none",
+  background: "transparent",
+  boxSizing: "border-box",
+  cursor: "pointer",
+  color: "inherit",
+  font: "inherit",
+  textAlign: "left",
+};
+
+const headerFieldStyle: CSSProperties = {
+  flex: "1 1 auto",
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  color: "inherit",
+  font: "inherit",
+  textAlign: "left",
+};
+
 const caretStyle: CSSProperties = {
   flex: "0 0 0.75rem",
   width: "0.75rem",
@@ -72,6 +102,8 @@ const menuItemSx = {
   fontSize: "10pt",
   letterSpacing: "normal",
   textTransform: "none",
+  whiteSpace: "normal",
+  overflowWrap: "anywhere",
 } as const;
 
 function readOptions(children: ReactNode): Option[] {
@@ -90,9 +122,11 @@ export function AppSelect({
   onChange,
   children,
   disabled,
+  header = false,
   "aria-label": ariaLabel,
 }: AppSelectProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [headerHovered, setHeaderHovered] = useState(false);
   const options = useMemo(() => readOptions(children), [children]);
   const selectedValue = String(value ?? "");
   const selected = options.find((option) => option.value === selectedValue) ?? options[0];
@@ -115,20 +149,27 @@ export function AppSelect({
         aria-haspopup="listbox"
         aria-expanded={anchor !== null}
         onClick={(event) => setAnchor(event.currentTarget)}
+        onMouseEnter={header ? () => setHeaderHovered(true) : undefined}
+        onMouseLeave={header ? () => setHeaderHovered(false) : undefined}
         style={{
-          ...wrapStyle,
+          ...(header ? headerButtonStyle : wrapStyle),
           ...style,
-          ...(fullWidth ? { display: "flex", width: "100%" } : {}),
+          ...(!header && fullWidth ? { display: "flex", width: "100%" } : {}),
+          ...(header ? { backgroundColor: headerHovered ? "#e5e7eb" : "transparent" } : {}),
           cursor: disabled ? "default" : "pointer",
         }}
       >
         <span
-          style={{
-            ...fieldStyle,
-            ...(fullWidth
-              ? { flex: "1 1 auto", width: "100%" }
-              : { flex: "0 1 auto", width: "auto" }),
-          }}
+          style={
+            header
+              ? headerFieldStyle
+              : {
+                  ...fieldStyle,
+                  ...(fullWidth
+                    ? { flex: "1 1 auto", width: "100%" }
+                    : { flex: "0 1 auto", width: "auto" }),
+                }
+          }
         >
           {selected?.label}
         </span>
@@ -140,6 +181,19 @@ export function AppSelect({
         onClose={() => setAnchor(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
         transformOrigin={{ vertical: "top", horizontal: "left" }}
+        slotProps={{
+          paper: {
+            sx: {
+              width: anchor?.offsetWidth,
+              minWidth: anchor?.offsetWidth,
+              maxWidth: anchor?.offsetWidth,
+              boxSizing: "border-box",
+            },
+          },
+          list: {
+            sx: { width: "100%", boxSizing: "border-box", paddingTop: 0, paddingBottom: 0 },
+          },
+        }}
         sx={{
           "& .MuiMenuItem-root": menuItemSx,
         }}

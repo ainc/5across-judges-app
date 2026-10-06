@@ -56,7 +56,6 @@ export function ResultsPodiums({
         display: "flex",
         alignItems: "flex-end",
         width: "100%",
-        minHeight: 392,
         gap: 8,
         overflow: "visible",
       }}

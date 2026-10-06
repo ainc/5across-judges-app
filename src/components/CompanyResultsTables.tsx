@@ -38,14 +38,16 @@ export function CompanyResultsTables({
         <StyledTable key={row.companyId} tableClassName="company-results-table text-sm">
             <thead>
               <tr>
-                <th className={`${thClass} font-semibold`}>
+                <th className="border-r border-b p-0 text-left font-normal">
                   <AppSelect
+                    header
                     aria-label="Company"
                     value={selectedCompanyId}
                     onChange={(event) => onSelectCompany(event.target.value)}
-                    className="w-full rounded border bg-white p-1 font-semibold"
                   >
-                    {rankings.map((option) => (
+                    {[...rankings]
+                      .sort((a, b) => a.pitch - b.pitch)
+                      .map((option) => (
                       <option key={option.companyId} value={option.companyId}>
                         Pitch {option.pitch} - {option.companyName}
                       </option>

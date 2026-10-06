@@ -674,15 +674,6 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
 
   const deleteIndividualJudgeMessage = useCallback(async (judge: Judge) => {
     if (!judge) return;
-    const response = await fetch(`/api/admin/judges/${judge.id}/message`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: null }),
-    });
-    if (!response.ok) {
-      showToast("Unable to delete message.");
-      return;
-    }
     setData((prev) =>
       prev
         ? {
@@ -691,7 +682,15 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
           }
         : prev,
     );
-  }, []);
+    const response = await fetch("/api/judges/message", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ judgeId: judge.id }),
+    });
+    if (!response.ok) {
+      showToast("Unable to delete message.");
+    }
+  }, [showToast]);
 
   useEffect(() => {
     if (!selectedJudge?.message) return;

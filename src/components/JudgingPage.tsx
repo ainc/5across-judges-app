@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormDialog } from "@/components/FormDialog";
 import { formatWeightedTotal } from "@/lib/judging-format";
@@ -14,6 +15,68 @@ import { AppSelect } from "@/components/AppSelect";
 import { StyledTable, tdClass, thClass } from "@/components/StyledTable";
 
 const COMPANY_STORAGE_PREFIX = "judging-selected-company:";
+
+const CONFETTI_COLORS = ["#C01824", "#E4303C", "#D0D0D0", "#B41824", "#F0F0F0", "#FC3C48"];
+
+type ConfettiPiece = {
+  id: number;
+  x: number;
+  y: number;
+  spin: number;
+  delay: number;
+  color: string;
+  width: number;
+  height: number;
+  radius: string;
+};
+
+function makeConfetti(): ConfettiPiece[] {
+  return Array.from({ length: 52 }, (_, id) => {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 240 + Math.random() * 320;
+    return {
+      id,
+      x: Math.cos(angle) * distance,
+      y: Math.sin(angle) * distance,
+      spin: (180 + Math.random() * 540) * (Math.random() < 0.5 ? -1 : 1),
+      delay: Math.random() * 0.06,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)] ?? CONFETTI_COLORS[0],
+      width: 16 + Math.random() * 14,
+      height: 8 + Math.random() * 5,
+      radius: `${6 + Math.random() * 8}px ${5 + Math.random() * 10}px ${5 + Math.random() * 8}px ${4 + Math.random() * 8}px`,
+    };
+  });
+}
+
+function ConfettiBurst({ pieces }: { pieces: ConfettiPiece[] }) {
+  const [burst, setBurst] = useState(false);
+
+  useEffect(() => {
+    const id = window.requestAnimationFrame(() => setBurst(true));
+    return () => window.cancelAnimationFrame(id);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden" aria-hidden>
+      {pieces.map((piece) => (
+        <span
+          key={piece.id}
+          className="confetti-ribbon"
+          style={{
+            backgroundColor: piece.color,
+            width: piece.width,
+            height: piece.height,
+            borderRadius: piece.radius,
+            transitionDelay: `${piece.delay}s`,
+            transform: burst
+              ? `translate(calc(-50% + ${piece.x}px), calc(-50% + ${piece.y}px)) rotate(${piece.spin}deg) scale(1)`
+              : "translate(-50%, -50%) rotate(0deg) scale(0.25)",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 function storedCompanyId(competitionId: string) {
   try {
@@ -165,6 +228,9 @@ type JudgingPageProps = {
 export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPageProps) {
   const isAdmin = showAdminLink;
   const [overrideEnabled, setOverrideEnabled] = useState(false);
+  const [showUnicorn, setShowUnicorn] = useState(false);
+  const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
+  const unicornTimerRef = useRef<number | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const [restoredCompetitionId, setRestoredCompetitionId] = useState("");
   const canEditScores = !isAdmin || overrideEnabled;
@@ -205,6 +271,22 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     setSelectedCompanyId(match ? stored : "");
     setRestoredCompetitionId(data.competition.id);
   }, [data, restoredCompetitionId]);
+
+  useEffect(() => {
+    return () => {
+      if (unicornTimerRef.current) window.clearTimeout(unicornTimerRef.current);
+    };
+  }, []);
+
+  function flashUnicorn() {
+    setConfetti(makeConfetti());
+    setShowUnicorn(true);
+    if (unicornTimerRef.current) window.clearTimeout(unicornTimerRef.current);
+    unicornTimerRef.current = window.setTimeout(() => {
+      setShowUnicorn(false);
+      setConfetti([]);
+    }, 1600);
+  }
 
   useEffect(() => {
     if (!data || restoredCompetitionId !== data.competition.id || !selectedCompanyId) return;
@@ -291,20 +373,20 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
       <div className="min-h-0 flex-1">
       <StyledTable className="h-full" tableClassName="table-fixed">
           <colgroup>
-            <col />
-            <col className="w-72" />
-            <col className="w-48" />
+            <col className="w-[31%]" />
+            <col className="w-[38%]" />
+            <col className="w-[31%]" />
           </colgroup>
           <thead className="sticky top-0 bg-white">
             <tr>
-              <th className={`${thClass} sticky left-0 bg-white`}>Category</th>
+              <th className={`${thClass} sticky left-0 w-[31%] bg-white`}>Category</th>
               {visibleCompanies.map((company) => (
-                <th key={company.id} className={`${thClass} w-72`}>
+                <th key={company.id} className="w-[38%] border-r border-b p-0 text-left">
                   <AppSelect
+                    header
                     aria-label="Company"
                     value={selectedId}
                     onChange={(event) => setSelectedCompanyId(event.target.value)}
-                    className="w-full rounded border bg-white p-1 font-semibold"
                   >
                     {data.companies.map((option, index) => (
                       <option key={option.id} value={option.id}>
@@ -314,7 +396,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                   </AppSelect>
                 </th>
               ))}
-              <th className={`${thClass} w-48 bg-white`}>Notes</th>
+              <th className={`${thClass} w-[31%] bg-white`}>Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -471,6 +553,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         onConfirm={() => {
           void handleConfirmDialog().then((companyId) => {
             if (!companyId) return;
+            flashUnicorn();
             const index = data.companies.findIndex((company) => company.id === companyId);
             const next = data.companies[index + 1];
             if (next) setSelectedCompanyId(next.id);
@@ -478,6 +561,21 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         }}
         onCancel={() => setPendingConfirm(null)}
       />
+      {showUnicorn
+        ? createPortal(
+            <div className="pointer-events-none fixed inset-0 z-[2000]">
+              <ConfettiBurst pieces={confetti} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <img
+                  src="/images/unicorn.png"
+                  alt=""
+                  className="unicorn-flash w-[min(22rem,70vw)] max-w-full"
+                />
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
       </main>
     </div>
   );
