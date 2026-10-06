@@ -111,13 +111,15 @@ function ScoreScaleGraphic() {
           position: "absolute",
           left: lineLeft,
           top: lineTop,
-          width: expanded ? lineWidth : 0,
+          width: lineWidth,
           height: 2.5,
           marginTop: -1.25,
           borderRadius: 999,
-          background: "#ee2524",
+          background:
+            "linear-gradient(to right, #F7AFB3 0%, #F7AFB3 5%, #F7AFB3 27%, #F4868D 50%, #F05E67 73%, #EC3641 95%, #EC3641 100%)",
           transformOrigin: "left",
-          transition: "width 0.85s cubic-bezier(0.22, 1, 0.36, 1)",
+          transform: expanded ? "scaleX(1)" : "scaleX(0)",
+          transition: "transform 0.85s cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       />
       <svg
@@ -134,9 +136,9 @@ function ScoreScaleGraphic() {
                 x={x}
                 y={SCORE_SCALE_LINE_Y - 8}
                 textAnchor="middle"
-                fill="#ee2524"
-                fontSize="11"
-                fontWeight="700"
+                fill="#000000"
+                fontSize="10"
+                fontWeight="400"
               >
                 {point.value}
               </text>
@@ -231,11 +233,11 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
       <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-6 pb-3">
 
       {selectedJudge?.message && (
-        <section className="rounded border border-blue-300 bg-blue-50 p-4">
+        <section className="rounded border border-[#DF666A] bg-[#DF666A] p-4">
           <div className="flex justify-between">
             <div>
-              <p className="text-sm font-semibold text-blue-900">Message for {selectedJudge.name}</p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-blue-950">{selectedJudge.message}</p>
+              <p className="text-sm font-semibold">Message for {selectedJudge.name}</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm">{selectedJudge.message}</p>
             </div>
             <button
               type="button"
@@ -402,7 +404,8 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           <button
             disabled={isSubmitting || isLoadingScores || !canEditScores}
             onClick={() => submitCompanyScores(selectedId)}
-            className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white disabled:opacity-50"
+            className="rounded border border-black px-3 py-2 text-black disabled:opacity-50"
+            style={{ backgroundColor: "#DF666A", color: "#000000" }}
           >
             Submit Company Scores
           </button>

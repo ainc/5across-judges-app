@@ -28,7 +28,6 @@ export function AdminDashboard() {
     isArchiving,
     isStarting,
     individualJudgeMessageStatus,
-    autoResultsSummary,
     criteriaWeightTotal,
     setPendingConfirm,
     setPendingPrompt,
@@ -63,6 +62,9 @@ export function AdminDashboard() {
             <section className="overflow-hidden rounded border p-4 space-y-3">
               <h2 className="text-xl font-semibold">Competition Actions</h2>
               <DashboardTextActions>
+              <DashboardTextButton onClick={() => router.push("/admin/archived")}>
+                  Open Archived Competitions
+                </DashboardTextButton>
                 <DashboardTextButton
                   onClick={() => setMessageOpen(true)}
                   disabled={!data || data.judges.length === 0}
@@ -83,83 +85,6 @@ export function AdminDashboard() {
                 </DashboardTextButton>
               </DashboardTextActions>
             </section>
-
-            <section className="overflow-hidden rounded border p-4 space-y-3">
-              <h2 className="text-xl font-semibold">Recent 5 Across Results</h2>
-              {resultsPreview ? (
-                <>
-                  <p className="text-sm">
-                    Winner: <span className="font-medium">{resultsPreview.winner ?? "TBD"}</span> ·{" "}
-                    {resultsPreview.finalJudgeCount} final judge submission
-                    {resultsPreview.finalJudgeCount === 1 ? "" : "s"}
-                  </p>
-                  <ol className="list-decimal pl-5 text-sm space-y-1">
-                    {resultsPreview.rankings.map((row) => (
-                      <li key={row.rank}>
-                        {row.companyName} — <strong>{row.finalScore.toFixed(2)}</strong>
-                      </li>
-                    ))}
-                  </ol>
-                </>
-              ) : (
-                <p className="text-sm text-gray-600">
-                  {data ? "No final submissions yet." : "No live competition. Start a new competition to begin scoring."}
-                </p>
-              )}
-              <DashboardTextActions>
-                <DashboardTextButton
-                  onClick={() => setPendingConfirm({ type: "save-results" })}
-                  disabled={isSavingResults || !data}
-                >
-                  Save & Copy Competition
-                </DashboardTextButton>
-              </DashboardTextActions>
-            </section>
-
-            {data ? (
-              <section className="overflow-hidden rounded border p-4 space-y-3">
-                <h2 className="text-xl font-semibold">{data.competition.name} Settings</h2>
-                <DashboardTextActions>
-                  <DashboardTextButton
-                    onClick={() => setPendingConfirm({ type: "save-details" })}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? "Saving..." : "Save Competition Details"}
-                  </DashboardTextButton>
-                </DashboardTextActions>
-                <label className="block text-sm">
-                  Competition Name
-                  <input
-                    className="mt-1 w-full rounded border p-2"
-                    value={data.competition.name}
-                    onChange={(event) => updateCompetitionField("name", event.target.value)}
-                  />
-                </label>
-                <label className="block text-sm">
-                  Competition Date
-                  <EventDateCalendar
-                    value={data.competition.eventDate.slice(0, 10)}
-                    onChange={(value) => updateCompetitionField("eventDate", value)}
-                  />
-                </label>
-                <label className="block text-sm">
-                  Competition Summary
-                  <textarea
-                    className="mt-1 w-full resize-none rounded border p-2 font-mono text-sm [field-sizing:fixed]"
-                    rows={6}
-                    value={autoResultsSummary}
-                    readOnly
-                  />
-                </label>
-              </section>
-            ) : (
-              <section className="rounded border p-4">
-                <p className="text-sm text-gray-600">No live competition. Use Start New Competition to create one.</p>
-              </section>
-            )}
-          </div>
-
-          <div className="flex min-w-0 flex-1 flex-col gap-10">
             <section className="overflow-hidden rounded border p-4 space-y-3">
               <h2 className="text-xl font-semibold">Settings</h2>
               <DashboardTextActions>
@@ -189,12 +114,62 @@ export function AdminDashboard() {
                 </DashboardTextButton>
               </DashboardTextActions>
             </section>
+          </div>
 
+          <div className="flex min-w-0 flex-1 flex-col gap-10">
             <section className="overflow-hidden rounded border p-4 space-y-3">
-              <h2 className="text-xl font-semibold">Archived Competitions</h2>
+              <h2 className="text-xl font-semibold">Competition Details</h2>
+              {data ? (
+                <>
+                  <label className="block text-sm">
+                    Competition Name
+                    <input
+                      className="mt-1 w-full rounded border p-2"
+                      value={data.competition.name}
+                      onChange={(event) => updateCompetitionField("name", event.target.value)}
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    Competition Date
+                    <EventDateCalendar
+                      value={data.competition.eventDate.slice(0, 10)}
+                      onChange={(value) => updateCompetitionField("eventDate", value)}
+                    />
+                  </label>
+                </>
+              ) : null}
+              {resultsPreview ? (
+                <>
+                  <p className="text-sm">
+                    Winner: <span className="font-medium">{resultsPreview.winner ?? "TBD"}</span> ·{" "}
+                    {resultsPreview.finalJudgeCount} final judge submission
+                    {resultsPreview.finalJudgeCount === 1 ? "" : "s"}
+                  </p>
+                  <ol className="list-decimal pl-5 text-sm space-y-1">
+                    {resultsPreview.rankings.map((row) => (
+                      <li key={row.rank}>
+                        {row.companyName} — <strong>{row.finalScore.toFixed(2)}</strong>
+                      </li>
+                    ))}
+                  </ol>
+                </>
+              ) : (
+                <p className="text-sm text-gray-600">
+                  {data ? "No final submissions yet." : "No live competition. Start a new competition to begin scoring."}
+                </p>
+              )}
               <DashboardTextActions>
-                <DashboardTextButton onClick={() => router.push("/admin/archived")}>
-                  Open Archived Competitions
+                <DashboardTextButton
+                  onClick={() => setPendingConfirm({ type: "save-results" })}
+                  disabled={isSavingResults || !data}
+                >
+                  Copy Competition into Archive
+                </DashboardTextButton>
+                <DashboardTextButton
+                  onClick={() => setPendingConfirm({ type: "save-details" })}
+                  disabled={isSaving || !data}
+                >
+                  {isSaving ? "Saving..." : "Save Competition Details"}
                 </DashboardTextButton>
               </DashboardTextActions>
             </section>
