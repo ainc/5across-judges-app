@@ -40,6 +40,7 @@ export function ArchivedCompetitionsPage() {
       </AppHeader>
       <main className="px-6 pb-6">
         <section className="overflow-hidden rounded border p-4 space-y-3">
+          <h2 className="text-xl font-semibold">Archived Competitions</h2>
           <DashboardTextActions>
             <DashboardTextButton
               onClick={() => {

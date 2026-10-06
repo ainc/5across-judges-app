@@ -119,6 +119,20 @@ export function AdminDashboard() {
           <div className="flex min-w-0 flex-1 flex-col gap-10">
             <section className="overflow-hidden rounded border p-4 space-y-3">
               <h2 className="text-xl font-semibold">Competition Details</h2>
+              <DashboardTextActions>
+                <DashboardTextButton
+                  onClick={() => setPendingConfirm({ type: "save-results" })}
+                  disabled={isSavingResults || !data}
+                >
+                  Copy Competition into Archive
+                </DashboardTextButton>
+                <DashboardTextButton
+                  onClick={() => setPendingConfirm({ type: "save-details" })}
+                  disabled={isSaving || !data}
+                >
+                  {isSaving ? "Saving..." : "Save Competition Details"}
+                </DashboardTextButton>
+              </DashboardTextActions>
               {data ? (
                 <>
                   <label className="block text-sm">
@@ -158,20 +172,6 @@ export function AdminDashboard() {
                   {data ? "No final submissions yet." : "No live competition. Start a new competition to begin scoring."}
                 </p>
               )}
-              <DashboardTextActions>
-                <DashboardTextButton
-                  onClick={() => setPendingConfirm({ type: "save-results" })}
-                  disabled={isSavingResults || !data}
-                >
-                  Copy Competition into Archive
-                </DashboardTextButton>
-                <DashboardTextButton
-                  onClick={() => setPendingConfirm({ type: "save-details" })}
-                  disabled={isSaving || !data}
-                >
-                  {isSaving ? "Saving..." : "Save Competition Details"}
-                </DashboardTextButton>
-              </DashboardTextActions>
             </section>
           </div>
         </div>
