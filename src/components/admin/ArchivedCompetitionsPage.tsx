@@ -38,7 +38,7 @@ export function ArchivedCompetitionsPage() {
       <AppHeader showAdminLink={true}>
         <h1>Archived Competitions</h1>
       </AppHeader>
-      <main className="px-6 pb-6">
+      <main className="flex flex-col gap-10 px-6 pb-6">
         <section className="overflow-hidden rounded border p-4 space-y-3">
           <h2 className="text-xl font-semibold">Archived Competitions</h2>
           <DashboardTextActions>
@@ -59,57 +59,44 @@ export function ArchivedCompetitionsPage() {
           </DashboardTextActions>
           {archived.length === 0 ? (
             <p className="text-sm text-gray-600">No competitions in archive.</p>
-          ) : (
-            <ul>
-              {archived.map((item, index) => (
-                <li key={item.id} className="space-y-3">
-                  {index > 0 ? (
-                    <div
-                      style={{
-                        height: 1,
-                        backgroundColor: "#d1d5db",
-                        marginTop: "1rem",
-                        marginBottom: "1rem",
-                      }}
-                    />
-                  ) : null}
-                  <div className="min-w-0 text-sm">
-                    <p className="font-medium leading-none">{item.name}</p>
-                    <p className="mt-1 text-gray-600 leading-none">
-                      {formatEventDate(item.eventDate)} · Winner: {item.winner ?? "TBD"} ·{" "}
-                      {item.finalSubmissionCount} final submission
-                      {item.finalSubmissionCount === 1 ? "" : "s"}
-                    </p>
-                  </div>
-                  <DashboardTextActions>
-                    <DashboardTextButton
-                      onClick={() => void makeArchivedCompetitionLive(item.id, item.name)}
-                      disabled={
-                        isActivatingArchived === item.id ||
-                        isDeletingArchived === item.id ||
-                        isCreatingArchived === item.id
-                      }
-                    >
-                      Make Competition Live
-                    </DashboardTextButton>
-                    <DashboardTextButton
-                      onClick={() => void openArchivedDetails(item.id)}
-                      disabled={isLoadingArchivedDetails}
-                    >
-                      View Competition Details
-                    </DashboardTextButton>
-                    <DashboardTextButton
-                      onClick={() => void deletePastCompetition(item.id, item.name)}
-                      disabled={isDeletingArchived === item.id}
-                    >
-                      Delete Competition
-                    </DashboardTextButton>
-                  </DashboardTextActions>
-                </li>
-              ))}
-            </ul>
-          )}
+          ) : null}
         </section>
+        {archived.map((item) => (
+          <section key={item.id} className="overflow-hidden rounded border p-4 space-y-3">
+            <div className="min-w-0">
+              <h2 className="text-xl font-semibold">{item.name}</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                {formatEventDate(item.eventDate)} · Winner: {item.winner ?? "TBD"} ·{" "}
+                {item.finalSubmissionCount} final submission
+                {item.finalSubmissionCount === 1 ? "" : "s"}
+              </p>
+            </div>
+            <DashboardTextActions>
+              <DashboardTextButton
+                onClick={() => void makeArchivedCompetitionLive(item.id, item.name)}
+                disabled={
+                  isActivatingArchived === item.id ||
+                  isDeletingArchived === item.id ||
+                  isCreatingArchived === item.id
+                }
+              >
+                Make Competition Live
+              </DashboardTextButton>
+              <DashboardTextButton
+                onClick={() => void openArchivedDetails(item.id)}
+                disabled={isLoadingArchivedDetails}
+              >
+                View Competition Details
+              </DashboardTextButton>
+              <DashboardTextButton
+                onClick={() => void deletePastCompetition(item.id, item.name)}
+                disabled={isDeletingArchived === item.id}
+              >
+                Delete Competition
+              </DashboardTextButton>
+            </DashboardTextActions>
+          </section>
+        ))}
       </main>
       <ArchivedDetailsModal details={viewingArchived} onClose={closeArchivedDetails} />
       <AdminConfirmDialogs

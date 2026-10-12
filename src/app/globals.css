@@ -27,26 +27,6 @@ body {
   text-transform: uppercase;
 }
 
-.event-date-calendar .rdp-dropdown_root {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  vertical-align: middle;
-  padding-right: 1.4rem;
-}
-
-.event-date-calendar .rdp-dropdown_root::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 0.35rem;
-  width: 0.75rem;
-  height: 0.75rem;
-  pointer-events: none;
-  transform: translateY(-50%);
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23323232' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M4 6.5 L8 10.5 L12 6.5'/%3E%3C/svg%3E") no-repeat center / contain;
-}
-
 .fiveacross-banner {
   display: block;
   height: auto;
@@ -143,47 +123,6 @@ body {
   }
 }
 
-
-.event-date-calendar-trigger:focus-visible {
-  outline: 2px solid #111827;
-  outline-offset: 2px;
-}
-
-.event-date-calendar-popover {
-  min-width: min(100%, 320px);
-}
-
-.event-date-calendar .rdp-root {
-  --rdp-accent-color: #111827;
-  --rdp-accent-background-color: #f3f4f6;
-  --rdp-day-height: 36px;
-  --rdp-day-width: 36px;
-  --rdp-day_button-height: 34px;
-  --rdp-day_button-width: 34px;
-  --rdp-day_button-border-radius: 6px;
-  --rdp-selected-border: 2px solid #111827;
-  --rdp-today-color: #111827;
-}
-
-.event-date-calendar .rdp-months {
-  justify-content: center;
-}
-
-.event-date-calendar .rdp-month {
-  width: 100%;
-}
-
-.event-date-calendar .rdp-month_caption {
-  font-weight: 600;
-}
-
-.event-date-calendar .rdp-dropdown_root select {
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 4px 8px;
-  padding-right: 1.5rem;
-  font-size: 0.875rem;
-}
 
 @layer components {
   #toast-container {

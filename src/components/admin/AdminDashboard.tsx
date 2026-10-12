@@ -9,13 +9,14 @@ import { CompaniesModal } from "@/components/admin/CompaniesModal";
 import { DashboardTextActions, DashboardTextButton } from "@/components/admin/DashboardTextButton";
 import { JudgesModal } from "@/components/admin/JudgesModal";
 import { SendJudgeMessageModal } from "@/components/admin/SendJudgeMessageModal";
-import { EventDateCalendar } from "@/components/EventDateCalendar";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
+import { formatEventDateInput, normalizeEventDate, parseEventDate } from "@/lib/competition-results";
 import { AppHeader } from "./AppHeader";
 
 export function AdminDashboard() {
   const router = useRouter();
   const [messageOpen, setMessageOpen] = useState(false);
+  const [eventDateError, setEventDateError] = useState("");
   const {
     data,
     resultsPreview,
@@ -25,6 +26,7 @@ export function AdminDashboard() {
     isSaving,
     isReady,
     isSavingResults,
+    toasts,
     isArchiving,
     isStarting,
     individualJudgeMessageStatus,
@@ -127,7 +129,14 @@ export function AdminDashboard() {
                   Copy Competition into Archive
                 </DashboardTextButton>
                 <DashboardTextButton
-                  onClick={() => setPendingConfirm({ type: "save-details" })}
+                  onClick={() => {
+                    if (!data || !parseEventDate(data.competition.eventDate)) {
+                      setEventDateError("Enter a valid date as MM/DD/YYYY.");
+                      return;
+                    }
+                    setEventDateError("");
+                    setPendingConfirm({ type: "save-details" });
+                  }}
                   disabled={isSaving || !data}
                 >
                   {isSaving ? "Saving..." : "Save Competition Details"}
@@ -143,12 +152,43 @@ export function AdminDashboard() {
                       onChange={(event) => updateCompetitionField("name", event.target.value)}
                     />
                   </label>
-                  <label className="block text-sm">
+                  <label className="block text-sm" htmlFor="competition-date">
                     Competition Date
-                    <EventDateCalendar
-                      value={data.competition.eventDate.slice(0, 10)}
-                      onChange={(value) => updateCompetitionField("eventDate", value)}
+                    <input
+                      id="competition-date"
+                      className={`mt-1 w-full rounded border p-2 ${eventDateError ? "border-red-600" : ""}`}
+                      type="text"
+                      autoComplete="off"
+                      spellCheck={false}
+                      placeholder="MM/DD/YYYY"
+                      maxLength={10}
+                      aria-invalid={eventDateError ? true : undefined}
+                      aria-describedby={eventDateError ? "competition-date-error" : undefined}
+                      value={formatEventDateInput(data.competition.eventDate)}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        updateCompetitionField("eventDate", value);
+                        if (value.length < 10 || normalizeEventDate(value)) {
+                          setEventDateError("");
+                          return;
+                        }
+                        setEventDateError("Enter a valid date as MM/DD/YYYY.");
+                      }}
+                      onBlur={(event) => {
+                        const normalized = normalizeEventDate(event.target.value);
+                        if (!normalized) {
+                          setEventDateError("Enter a valid date as MM/DD/YYYY.");
+                          return;
+                        }
+                        setEventDateError("");
+                        updateCompetitionField("eventDate", normalized);
+                      }}
                     />
+                    {eventDateError ? (
+                      <p id="competition-date-error" className="mt-1 text-sm text-red-700">
+                        {eventDateError}
+                      </p>
+                    ) : null}
                   </label>
                 </>
               ) : null}
@@ -242,6 +282,13 @@ export function AdminDashboard() {
           onSubmit={handlePromptSubmit}
           onCancel={() => setPendingPrompt(null)}
         />
+        <div id="toast-container">
+          {toasts.map((toast) => (
+            <div key={toast.id} className="toast">
+              {toast.message}
+            </div>
+          ))}
+        </div>
       </main>
     </>
   );

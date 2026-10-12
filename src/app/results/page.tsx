@@ -20,8 +20,11 @@ export default async function ResultsPage() {
         <h1>Current Results</h1>
       </AppHeader>
       <main className="min-w-0 space-y-4 px-6 pb-6">
-
-      <CurrentResults rankings={data.rankings} categories={data.categories} />
+        {data ? (
+          <CurrentResults rankings={data.rankings} categories={data.categories} />
+        ) : (
+          <p className="text-sm text-gray-600">No results yet.</p>
+        )}
       </main>
     </>
   );

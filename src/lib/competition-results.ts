@@ -108,15 +108,15 @@ export function winnerFromRankings(rankings: Array<{ companyName: string }>): st
 }
 
 export function normalizeEventDate(value: string): string | null {
-  const match = value.trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (!match) return null;
+  const trimmed = value.trim();
+  const us = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!us && !iso) return null;
 
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  if (!Number.isFinite(year) || month < 1 || month > 12 || day < 1) {
-    return null;
-  }
+  const year = Number(us ? us[3] : iso![1]);
+  const month = Number(us ? us[1] : iso![2]);
+  const day = Number(us ? us[2] : iso![3]);
+  if (year < 1000 || month < 1 || month > 12 || day < 1) return null;
 
   const lastDay = new Date(year, month, 0).getDate();
   if (day > lastDay) return null;
@@ -124,7 +124,7 @@ export function normalizeEventDate(value: string): string | null {
   return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-/** Parse a YYYY-MM-DD (or ISO) value as a local calendar date (noon, avoids TZ day-shift). */
+/** Parse a MM/DD/YYYY, YYYY-MM-DD, or ISO value as a local calendar date (noon, avoids TZ day-shift). */
 export function parseEventDate(value: string | Date): Date | null {
   if (value instanceof Date) {
     if (Number.isNaN(value.getTime())) return null;
@@ -141,6 +141,14 @@ export function parseEventDate(value: string | Date): Date | null {
 export function formatEventDate(value: string | Date): string {
   const date = parseEventDate(value);
   return date ? date.toLocaleDateString() : "";
+}
+
+/** Display value for the competition date field (MM/DD/YYYY). Invalid drafts are returned unchanged. */
+export function formatEventDateInput(value: string): string {
+  const normalized = normalizeEventDate(value.trim().slice(0, 10));
+  if (!normalized) return value;
+  const [year, month, day] = normalized.split("-");
+  return `${month}/${day}/${year}`;
 }
 
 export function formatResultsSummary(

@@ -67,6 +67,8 @@ export function ResultsPodiums({
 
         const hasSelection = selectedCompanyId !== "";
         const selected = hasSelection && row.companyId === selectedCompanyId;
+        const displayFace =
+          selected && rank === 3 ? FACE[2] : selected && rank === 5 ? FACE[4] : face;
         const hovered = hoveredCompanyId === row.companyId;
         const enlarged = selected || hovered;
         const dimmed = hasSelection && !enlarged;
@@ -143,8 +145,8 @@ export function ResultsPodiums({
                   width: "100%",
                   height: "100%",
                   paddingBottom: 10,
-                  background: dimmed ? lighten(face.background, 0.55) : face.background,
-                  color: dimmed ? "#323232" : face.color,
+                  background: dimmed ? lighten(face.background, 0.55) : displayFace.background,
+                  color: dimmed ? "#323232" : displayFace.color,
                   transition: "background 180ms ease, color 180ms ease",
                   fontSize: 14,
                   fontWeight: 600,
