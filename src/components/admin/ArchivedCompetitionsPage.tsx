@@ -35,9 +35,7 @@ export function ArchivedCompetitionsPage() {
 
   return (
     <>
-      <AppHeader showAdminLink={true}>
-        <h1>Archived Competitions</h1>
-      </AppHeader>
+      <AppHeader showAdminLink={true} />
       <main className="flex flex-col gap-10 px-6 pb-6">
         <section className="overflow-hidden rounded border p-4 space-y-3">
           <h2 className="text-xl font-semibold">Archived Competitions</h2>

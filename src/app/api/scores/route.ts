@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireScorer } from "@/lib/require-auth";
-import { getMissingCells, getWeightedTotalForCompany, normalizeScore, roundToHundredth } from "@/lib/scoring";
+import { getMissingCells, normalizeScore } from "@/lib/scoring";
 
 function canAccessJudge(
   session: { user: { role?: string; judgeId?: string | null } } | null,
@@ -138,29 +138,37 @@ export async function POST(request: Request) {
   }
 
   async function saveNotes() {
-    if (!notes) return;
-    await prisma.$transaction(
-      notes.map((note) =>
-        prisma.judgeNote.upsert({
-          where: {
-            competitionId_judgeId_companyId_categoryId: {
-              competitionId,
-              judgeId,
-              companyId: note.companyId,
-              categoryId: note.categoryId,
-            },
-          },
-          create: {
-            competitionId,
-            judgeId,
-            companyId: note.companyId,
-            categoryId: note.categoryId,
-            body: note.body,
-          },
-          update: { body: note.body },
-        }),
-      ),
+    if (!notes?.length) return;
+    const now = new Date();
+    const rows = notes.map(
+      (note) => Prisma.sql`(
+        ${crypto.randomUUID()},
+        ${competitionId},
+        ${judgeId},
+        ${note.companyId},
+        ${note.categoryId},
+        ${note.body},
+        ${now},
+        ${now}
+      )`,
     );
+    await prisma.$executeRaw`
+      INSERT INTO "JudgeNote" (
+        "id",
+        "competitionId",
+        "judgeId",
+        "companyId",
+        "categoryId",
+        "body",
+        "createdAt",
+        "updatedAt"
+      )
+      VALUES ${Prisma.join(rows)}
+      ON CONFLICT ("competitionId", "judgeId", "companyId", "categoryId")
+      DO UPDATE SET
+        "body" = EXCLUDED."body",
+        "updatedAt" = EXCLUDED."updatedAt"
+    `;
   }
 
   if (notesOnly) {
@@ -220,57 +228,55 @@ export async function POST(request: Request) {
     },
   });
 
-  await prisma.$transaction(
-    dedupedEntries.map((entry) => {
+  if (dedupedEntries.length > 0) {
+    const now = new Date();
+    const rows = dedupedEntries.map((entry) => {
       const publish = isFinal && entry.companyId === companyId;
-      return prisma.score.upsert({
-        where: {
-          competitionId_judgeId_companyId_categoryId: {
-            competitionId,
-            judgeId,
-            companyId: entry.companyId,
-            categoryId: entry.categoryId,
-          },
-        },
-        create: {
-          competitionId,
-          judgeId,
-          companyId: entry.companyId,
-          categoryId: entry.categoryId,
-          sessionId: session.id,
-          score: entry.score,
-          publishedScore: publish ? entry.score : null,
-        },
-        update: {
-          sessionId: session.id,
-          score: entry.score,
-          ...(publish ? { publishedScore: entry.score } : {}),
-        },
-      });
-    }),
-    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-  );
+      return Prisma.sql`(
+        ${crypto.randomUUID()},
+        ${competitionId},
+        ${judgeId},
+        ${entry.companyId},
+        ${entry.categoryId},
+        ${session.id},
+        ${entry.score},
+        ${publish ? entry.score : null},
+        ${now},
+        ${now}
+      )`;
+    });
+    await prisma.$executeRaw`
+      INSERT INTO "Score" (
+        "id",
+        "competitionId",
+        "judgeId",
+        "companyId",
+        "categoryId",
+        "sessionId",
+        "score",
+        "publishedScore",
+        "createdAt",
+        "updatedAt"
+      )
+      VALUES ${Prisma.join(rows)}
+      ON CONFLICT ("competitionId", "judgeId", "companyId", "categoryId")
+      DO UPDATE SET
+        "sessionId" = EXCLUDED."sessionId",
+        "score" = EXCLUDED."score",
+        "publishedScore" = CASE
+          WHEN EXCLUDED."publishedScore" IS NOT NULL THEN EXCLUDED."publishedScore"
+          ELSE "Score"."publishedScore"
+        END,
+        "updatedAt" = EXCLUDED."updatedAt"
+    `;
+  }
 
   await saveNotes();
-
-  const allScoresForJudge = await prisma.score.findMany({
-    where: { competitionId, judgeId },
-  });
-
-  const totalsByCompany = competition.companies.map((company) => {
-    const weighted = getWeightedTotalForCompany(company.id, competition.categories, allScoresForJudge);
-    return {
-      companyId: company.id,
-      companyName: company.name,
-      weightedTotal: roundToHundredth(weighted),
-    };
-  });
 
   return NextResponse.json({
     sessionId: session.id,
     status: session.status,
     submittedAt: session.submittedAt,
     updatedAt: session.updatedAt,
-    totalsByCompany,
   });
 }

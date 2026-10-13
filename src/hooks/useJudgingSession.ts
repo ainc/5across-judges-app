@@ -63,6 +63,15 @@ function notesFromRecord(notes: Record<string, string>) {
   });
 }
 
+function omitCompany<T>(record: Record<string, T>, companyId: string): Record<string, T> {
+  const prefix = `${companyId}:`;
+  const next: Record<string, T> = {};
+  for (const [key, value] of Object.entries(record)) {
+    if (!key.startsWith(prefix)) next[key] = value;
+  }
+  return next;
+}
+
 function notesDifferFromBaseline(
   baseline: Record<string, string> | undefined,
   current: Record<string, string>,
@@ -354,8 +363,29 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
 
       const currentScores = saveOptions.scoresSnapshot ?? scoresRef.current;
       const currentNotes = saveOptions.notesSnapshot ?? notesRef.current;
-      const entries = entriesFromScores(currentScores);
-      const noteEntries = notesFromRecord(currentNotes);
+      const allEntries = entriesFromScores(currentScores);
+      const allNotes = notesFromRecord(currentNotes);
+      const entries =
+        saveOptions.isFinal && companyId
+          ? allEntries.filter((entry) => entry.companyId === companyId)
+          : allEntries;
+      const noteEntries =
+        saveOptions.isFinal && companyId
+          ? allNotes.filter((note) => note.companyId === companyId)
+          : allNotes;
+      if (saveOptions.isFinal && companyId) {
+        const otherScoresDirty = scoresDifferFromBaseline(
+          omitCompany(baselineByJudge.current[judgeId] ?? {}, companyId),
+          omitCompany(currentScores, companyId),
+        );
+        const otherNotesDirty = notesDifferFromBaseline(
+          omitCompany(notesBaselineByJudge.current[judgeId] ?? {}, companyId),
+          omitCompany(currentNotes, companyId),
+        );
+        if (otherScoresDirty || otherNotesDirty) {
+          saveQueuedRef.current = true;
+        }
+      }
 
       saveInFlightRef.current = true;
       if (saveOptions.isFinal) setIsSubmitting(true);
@@ -423,13 +453,29 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
           setSubmissionStatus(payload.status ?? null);
           setSubmittedAt(payload.submittedAt ?? null);
           setSubmissionUpdatedAt(payload.updatedAt ?? null);
-          const savedScores: Record<string, number> = {};
-          for (const entry of entries) {
-            savedScores[`${entry.companyId}:${entry.categoryId}`] = entry.score;
+          if (saveOptions.isFinal && companyId) {
+            const savedScores = { ...(baselineByJudge.current[judgeId] ?? {}) };
+            for (const entry of entries) {
+              savedScores[`${entry.companyId}:${entry.categoryId}`] = entry.score;
+            }
+            baselineByJudge.current[judgeId] = savedScores;
+          } else {
+            const savedScores: Record<string, number> = {};
+            for (const entry of entries) {
+              savedScores[`${entry.companyId}:${entry.categoryId}`] = entry.score;
+            }
+            baselineByJudge.current[judgeId] = savedScores;
           }
-          baselineByJudge.current[judgeId] = savedScores;
         }
-        notesBaselineByJudge.current[judgeId] = { ...currentNotes };
+        if (saveOptions.isFinal && companyId) {
+          const savedNotes = { ...(notesBaselineByJudge.current[judgeId] ?? {}) };
+          for (const note of noteEntries) {
+            savedNotes[`${note.companyId}:${note.categoryId}`] = note.body;
+          }
+          notesBaselineByJudge.current[judgeId] = savedNotes;
+        } else {
+          notesBaselineByJudge.current[judgeId] = { ...currentNotes };
+        }
         if (!saveOptions.notesOnly) {
           setChangeLog((prev) => {
             const next = { ...prev };

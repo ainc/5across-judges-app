@@ -3,10 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import IconButton from "@mui/material/IconButton";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-import MenuIcon from "@mui/icons-material/Menu";
+import { usePathname } from "next/navigation";
 import { signOutAction } from "@/app/admin/actions";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
@@ -14,69 +11,47 @@ type AppNavProps = {
   showAdminLink?: boolean;
 };
 
+const pages = [
+  { href: "/", label: "Scoring" },
+  { href: "/results", label: "Current Results" },
+  { href: "/admin", label: "Admin Dashboard", admin: true },
+];
+
 export function AppNav({ showAdminLink = false }: AppNavProps) {
-  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const pathname = usePathname();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [canPortal, setCanPortal] = useState(false);
-  const open = menuAnchor !== null;
 
   useEffect(() => {
     setCanPortal(true);
   }, []);
 
-  function closeMenu() {
-    setMenuAnchor(null);
-  }
+  const links = pages.filter((page) => !page.admin || showAdminLink);
 
   return (
-    <nav>
-      <IconButton
-        aria-label="Open menu"
-        aria-controls={open ? "app-nav-menu" : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? "true" : undefined}
-        onClick={(event) => setMenuAnchor(event.currentTarget)}
-        size="large"
+    <nav className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-x-6 gap-y-1">
+      {links.map((page) => {
+        const active = pathname === page.href;
+        return (
+          <Link
+            key={page.href}
+            href={page.href}
+            aria-current={active ? "page" : undefined}
+            className="page-header origin-center text-right leading-tight transition-transform duration-150 hover:scale-110"
+            style={{ fontWeight: active ? 700 : 400, fontSize: "0.8125rem" }}
+          >
+            {page.label}
+          </Link>
+        );
+      })}
+      <button
+        type="button"
+        onClick={() => setConfirmOpen(true)}
+        className="page-header origin-center text-right leading-tight transition-transform duration-150 hover:scale-110"
+        style={{ fontWeight: 400, fontSize: "0.8125rem" }}
       >
-        <MenuIcon fontSize="large" />
-      </IconButton>
-      <Menu
-        id="app-nav-menu"
-        anchorEl={menuAnchor}
-        open={open}
-        onClose={closeMenu}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
-        sx={{
-          "& .MuiMenuItem-root": {
-            fontFamily: "var(--font-open-sans), \"Open Sans\", sans-serif",
-            fontWeight: 300,
-            fontSize: "10pt",
-            letterSpacing: "normal",
-            textTransform: "none",
-          },
-        }}
-      >
-        <MenuItem component={Link} href="/" onClick={closeMenu}>
-          Home
-        </MenuItem>
-        <MenuItem component={Link} href="/results" onClick={closeMenu}>
-          Current Results
-        </MenuItem>
-        {showAdminLink ? (
-          <MenuItem component={Link} href="/admin" onClick={closeMenu}>
-            Admin Dashboard
-          </MenuItem>
-        ) : null}
-        <MenuItem
-          onClick={() => {
-            closeMenu();
-            setConfirmOpen(true);
-          }}
-        >
-          Sign Out
-        </MenuItem>
-      </Menu>
+        Sign Out
+      </button>
       {canPortal
         ? createPortal(
             <ConfirmDialog

@@ -309,9 +309,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <AppHeader showAdminLink={isAdmin} className="mb-6 shrink-0">
-        <h1>Judge's Scoring Homepage</h1>
-      </AppHeader>
+      <AppHeader showAdminLink={isAdmin} className="mb-6 shrink-0" />
       <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-6 pb-3">
 
       {selectedJudge?.message && (
@@ -547,7 +545,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           const company = data.companies.find((item) => item.id === pendingConfirm?.companyId);
           const pitch = company ? data.companies.findIndex((item) => item.id === company.id) + 1 : 0;
           const label = company ? `Pitch ${pitch} - ${company.name}` : "this company";
-          return `Submit scores for ${label}. Every category needs a score. Submitted scores appear in Current Results. Later edits stay saved on this sheet, and Current Results updates when you submit this company again.`;
+          return `Submit scores for ${label}. Scores can be edited and resubmitted later. Submitted scores appear in Current Results.`;
         })()}
         confirmLabel="Submit"
         onConfirm={() => {

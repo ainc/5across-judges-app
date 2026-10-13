@@ -16,9 +16,7 @@ export default async function ResultsPage() {
 
   return (
     <>
-      <AppHeader showAdminLink={isAdmin} className="mb-4">
-        <h1>Current Results</h1>
-      </AppHeader>
+      <AppHeader showAdminLink={isAdmin} className="mb-4" />
       <main className="min-w-0 space-y-4 px-6 pb-6">
         {data ? (
           <CurrentResults rankings={data.rankings} categories={data.categories} />
