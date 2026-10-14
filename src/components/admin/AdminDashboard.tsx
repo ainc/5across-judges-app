@@ -223,7 +223,7 @@ export function AdminDashboard() {
               onClose={closeSectionModal}
               onAddJudge={addJudge}
               onJudgeNameChange={(id, name) => updateList("judges", id, "name", name)}
-              onJudgeCodeChange={(id, code) => updateList("judges", id, "code", code)}
+              onJudgeUsernameChange={(id, username) => updateList("judges", id, "username", username)}
               onJudgeMessageChange={(id, message) => {
                 updateList("judges", id, "message", message);
                 setIndividualJudgeMessageStatus((prev) => ({ ...prev, [id]: "" }));

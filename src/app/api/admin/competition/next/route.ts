@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { DEFAULT_CATEGORIES, DEFAULT_COMPANIES, DEFAULT_JUDGES } from "@/lib/competition-config";
+import { ensureJudgeLogins, JudgeLoginError } from "@/lib/judge-logins";
 import { parseEventDate } from "@/lib/competition-results";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-auth";
@@ -44,6 +45,15 @@ export async function POST(request: Request) {
     : latestArchived
       ? new Date(latestArchived.eventDate.getTime() + 7 * 24 * 60 * 60 * 1000)
       : new Date();
+
+  try {
+    await ensureJudgeLogins(DEFAULT_JUDGES.map((judge) => judge.username));
+  } catch (error) {
+    if (error instanceof JudgeLoginError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    throw error;
+  }
 
   const nextCompetition = await prisma.competition.create({
     data: {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { archivedCompetitionMatchesActive } from "@/lib/competition-snapshot";
+import { ensureJudgeLogins, JudgeLoginError } from "@/lib/judge-logins";
 import { buildRankings, countPublishedJudges, scoresFromFinalJudges, winnerFromRankings } from "@/lib/competition-results";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-auth";
@@ -52,7 +53,7 @@ export async function GET(_request: Request, context: RouteContext) {
     },
     judges: competition.judges.map((judge) => ({
       name: judge.name,
-      code: judge.code,
+      username: judge.username,
     })),
     companies: competition.companies.map((company) => ({
       name: company.name,
@@ -118,28 +119,35 @@ export async function POST(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Competition not found." }, { status: 404 });
   }
 
-  if (competition.isActive) {
-    return NextResponse.json({
-      ok: true,
-      activatedCompetitionId: id,
-      activatedCompetitionName: competition.name,
-    });
+  if (!competition.isActive) {
+    if (await archivedCompetitionMatchesActive(id)) {
+      return NextResponse.json({ error: "This competition cannot be made live due to current active competition sharing identical name." }, { status: 409 });
+    }
+
+    await prisma.$transaction([
+      prisma.competition.updateMany({
+        where: { isActive: true },
+        data: { isActive: false },
+      }),
+      prisma.competition.update({
+        where: { id },
+        data: { isActive: true },
+      }),
+    ]);
   }
 
-  if (await archivedCompetitionMatchesActive(id)) {
-    return NextResponse.json({ error: "This competition cannot be made live due to current active competition sharing identical name." }, { status: 409 });
+  const judges = await prisma.judge.findMany({
+    where: { competitionId: id },
+    select: { username: true },
+  });
+  try {
+    await ensureJudgeLogins(judges.map((judge) => judge.username));
+  } catch (error) {
+    if (error instanceof JudgeLoginError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    throw error;
   }
-
-  await prisma.$transaction([
-    prisma.competition.updateMany({
-      where: { isActive: true },
-      data: { isActive: false },
-    }),
-    prisma.competition.update({
-      where: { id },
-      data: { isActive: true },
-    }),
-  ]);
 
   return NextResponse.json({
     ok: true,

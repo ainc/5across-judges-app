@@ -28,7 +28,7 @@ export async function copyCompetitionToArchive(sourceId: string) {
         judges: {
           create: source.judges.map((judge) => ({
             name: judge.name,
-            code: judge.code,
+            username: judge.username,
             message: judge.message,
           })),
         },

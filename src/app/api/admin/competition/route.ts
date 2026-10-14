@@ -1,6 +1,7 @@
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
-import { withJudgeUsernames } from "@/lib/auth-users";
 import { parseEventDate } from "@/lib/competition-results";
+import { JudgeLoginError, sortJudgesByUsername, syncCompetitionJudges } from "@/lib/judge-logins";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-auth";
 
@@ -23,7 +24,7 @@ export async function GET() {
     return NextResponse.json({ error: "No active competition found." }, { status: 404 });
   }
 
-  const judges = await withJudgeUsernames(competition.judges);
+  const judges = sortJudgesByUsername(competition.judges);
 
   return NextResponse.json({
     competition,
@@ -74,70 +75,8 @@ export async function PUT(request: Request) {
   });
 
   if ("judges" in payload) {
-    const payloadJudges: Array<{ id?: string; name?: string; code?: string | null }> = payload.judges ?? [];
-
-    if (payloadJudges.length === 0) {
-      return NextResponse.json({ error: "At least one judge is required." }, { status: 400 });
-    }
-
-    if (payloadJudges.some((judge) => !judge.name?.trim())) {
-      return NextResponse.json({ error: "All judges must have a name." }, { status: 400 });
-    }
-
-    const judgeNames = payloadJudges.map((judge) => judge.name!.trim().toLowerCase());
-    if (new Set(judgeNames).size !== judgeNames.length) {
-      return NextResponse.json(
-        { error: "Judge names cannot be identical. Please try again." },
-        { status: 400 },
-      );
-    }
-
-    const payloadJudgeIds = new Set(
-      payloadJudges.map((judge) => judge.id).filter((id): id is string => Boolean(id)),
-    );
-
-    const judgesToDelete = competition.judges.filter((judge) => !payloadJudgeIds.has(judge.id));
-    if (judgesToDelete.length > 0) {
-      await prisma.judge.deleteMany({
-        where: { id: { in: judgesToDelete.map((judge) => judge.id) }, competitionId: competition.id },
-      });
-    }
-
-    const existingPayloadJudges = payloadJudges.filter(
-      (judge) =>
-        judge.id &&
-        !judge.id.startsWith("new-") &&
-        competition.judges.some((item) => item.id === judge.id),
-    );
-
-    for (const judge of existingPayloadJudges) {
-      await prisma.judge.updateMany({
-        where: { id: judge.id, competitionId: competition.id },
-        data: { name: `__tmp_${judge.id}` },
-      });
-    }
-
-    for (const judge of payloadJudges) {
-      const name = judge.name!.trim();
-      const isNew =
-        !judge.id || judge.id.startsWith("new-") || !competition.judges.some((item) => item.id === judge.id);
-
-      if (isNew) {
-        await prisma.judge.create({
-          data: {
-            competitionId: competition.id,
-            name,
-            code: judge.code?.trim() || null,
-          },
-        });
-        continue;
-      }
-
-      await prisma.judge.updateMany({
-        where: { id: judge.id, competitionId: competition.id },
-        data: { name, code: judge.code?.trim() || null },
-      });
-    }
+    const payloadJudges: Array<{ id?: string; name?: string; username?: string | null }> = payload.judges ?? [];
+    await syncCompetitionJudges(competition.id, competition.judges, payloadJudges);
   }
 
   if ("companies" in payload) {
@@ -268,7 +207,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Unable to reload competition." }, { status: 500 });
   }
 
-  const judges = await withJudgeUsernames(refreshed.judges);
+  const judges = sortJudgesByUsername(refreshed.judges);
 
   return NextResponse.json({
     ok: true,
@@ -278,6 +217,15 @@ export async function PUT(request: Request) {
     categories: refreshed.categories,
   });
   } catch (error) {
+    if (error instanceof JudgeLoginError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json(
+        { error: "A judge name or username is already in use." },
+        { status: 400 },
+      );
+    }
     console.error("Failed to save competition settings:", error);
     return NextResponse.json(
       { error: "Unable to save settings. Check for duplicate company or judge names." },

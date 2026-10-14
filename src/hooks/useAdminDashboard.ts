@@ -181,7 +181,7 @@ export function useAdminDashboard() {
       prev
         ? {
             ...prev,
-            judges: [...prev.judges, { id: newId, name: "", code: null, message: null }],
+            judges: [...prev.judges, { id: newId, name: "", username: "", message: null }],
           }
         : prev,
     );
@@ -375,6 +375,19 @@ export function useAdminDashboard() {
     }
     if (data.judges.some((judge) => !judge.name.trim())) {
       showToast("All judges must have a name before saving.");
+      return false;
+    }
+    if (data.judges.some((judge) => !judge.username.trim())) {
+      showToast("All judges must have a username before saving.");
+      return false;
+    }
+    if (data.judges.some((judge) => /\s/.test(judge.username.trim()))) {
+      showToast("Usernames cannot contain spaces.");
+      return false;
+    }
+    const usernames = data.judges.map((judge) => judge.username.trim().toLowerCase());
+    if (new Set(usernames).size !== usernames.length) {
+      showToast("Usernames must be unique.");
       return false;
     }
     return persistCompetition(
@@ -635,7 +648,7 @@ export function useAdminDashboard() {
         judges: DEFAULT_JUDGES.map((judge, index) => ({
           id: prev.judges[index]?.id ?? `new-judge-${index}`,
           name: judge.name,
-          code: judge.code,
+          username: prev.judges[index]?.username || judge.username,
           message: null,
         })),
         companies: prev.companies.map((company, index) => ({

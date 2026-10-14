@@ -1,7 +1,7 @@
 export const DEFAULT_JUDGES = [
-  { name: "Judge A", code: "JA" },
-  { name: "Judge B", code: "JB" },
-  { name: "Judge C", code: "JC" },
+  { name: "Judge A", username: "judge1" },
+  { name: "Judge B", username: "judge2" },
+  { name: "Judge C", username: "judge3" },
 ] as const;
 
 export const DEFAULT_COMPANIES = [
@@ -38,7 +38,7 @@ export const DEFAULT_CATEGORIES = [
 
 type ConfigRevisionInput = {
   updatedAt: Date | string;
-  judges: Array<{ id: string; name: string; code?: string | null; message?: string | null }>;
+  judges: Array<{ id: string; name: string; username: string; message?: string | null }>;
   categories: Array<{ id: string; name: string; description?: string | null; weight: number; maxScore?: number }>;
 };
 
@@ -51,7 +51,7 @@ export function buildCompetitionConfigRevision({
 
   return [
     updatedAtValue,
-    ...judges.map((judge) => `j:${judge.id}:${judge.name}:${judge.code ?? ""}:${judge.message ?? ""}`).sort(),
+    ...judges.map((judge) => `j:${judge.id}:${judge.name}:${judge.username}:${judge.message ?? ""}`).sort(),
     ...categories
       .map(
         (category) =>

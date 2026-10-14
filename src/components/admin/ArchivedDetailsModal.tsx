@@ -32,8 +32,7 @@ export function ArchivedDetailsModal({ details, onClose }: ArchivedDetailsModalP
             <ul className="mt-1 list-disc pl-5">
               {details.judges.map((judge) => (
                 <li key={judge.name}>
-                  {judge.name}
-                  {judge.code ? ` (${judge.code})` : ""}
+                  {judge.name} ({judge.username})
                 </li>
               ))}
             </ul>
