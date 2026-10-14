@@ -45,11 +45,6 @@ body {
   border-bottom-width: 0;
 }
 
-.goldmedal {
-  height: 25px;
-  width: 25px;
-}
-
 @keyframes unicorn-flash {
   0% {
     opacity: 0;

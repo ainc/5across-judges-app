@@ -4,6 +4,7 @@ import {
   Children,
   isValidElement,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
   type CSSProperties,
@@ -74,17 +75,6 @@ const headerButtonStyle: CSSProperties = {
   textAlign: "left",
 };
 
-const headerFieldStyle: CSSProperties = {
-  flex: "1 1 auto",
-  minWidth: 0,
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-  color: "inherit",
-  font: "inherit",
-  textAlign: "left",
-};
-
 const caretStyle: CSSProperties = {
   flex: "0 0 0.75rem",
   width: "0.75rem",
@@ -107,6 +97,22 @@ const menuItemSx = {
   overflowWrap: "anywhere",
 } as const;
 
+function PitchChevron({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.25" />
+      <path
+        d={direction === "left" ? "M13.25 8 L9.25 12 L13.25 16" : "M10.75 8 L14.75 12 L10.75 16"}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function readOptions(children: ReactNode): Option[] {
   return Children.toArray(children).flatMap((child) => {
     if (!isValidElement<{ value?: string | number; children?: ReactNode }>(child)) {
@@ -126,8 +132,9 @@ export function AppSelect({
   header = false,
   "aria-label": ariaLabel,
 }: AppSelectProps) {
+  const headerRef = useRef<HTMLDivElement>(null);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const [headerHovered, setHeaderHovered] = useState(false);
+  const [boxHovered, setBoxHovered] = useState(false);
   const options = useMemo(() => readOptions(children), [children]);
   const selectedValue = String(value ?? "");
   const selected = options.find((option) => option.value === selectedValue) ?? options[0];
@@ -140,8 +147,66 @@ export function AppSelect({
     } as ChangeEvent<HTMLSelectElement>);
   }
 
+  function step(direction: -1 | 1) {
+    if (disabled || options.length === 0) return;
+    const index = options.findIndex((option) => option.value === selectedValue);
+    const current = index >= 0 ? index : 0;
+    const nextIndex = (current + direction + options.length) % options.length;
+    choose(options[nextIndex].value);
+  }
+
+  const pitchButtonClass =
+    "inline-flex shrink-0 items-center justify-center border-0 bg-transparent p-0 text-[#323232] disabled:cursor-default disabled:opacity-40";
+
   return (
     <>
+      {header ? (
+        <div
+          ref={headerRef}
+          className={className}
+          onMouseEnter={() => setBoxHovered(true)}
+          onMouseLeave={() => setBoxHovered(false)}
+          style={{
+            ...headerButtonStyle,
+            ...style,
+            cursor: "default",
+            backgroundColor: boxHovered ? "#e5e7eb" : "#fff",
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Previous pitch"
+            disabled={disabled || options.length === 0}
+            onClick={() => step(-1)}
+            className={pitchButtonClass}
+          >
+            <PitchChevron direction="left" />
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            aria-label={ariaLabel}
+            aria-haspopup="listbox"
+            aria-expanded={anchor !== null}
+            onClick={() => {
+              if (headerRef.current) setAnchor(headerRef.current);
+            }}
+            className="flex min-w-0 flex-1 cursor-pointer items-center self-stretch border-0 bg-transparent p-0 text-left disabled:cursor-default"
+            style={{ font: "inherit", color: "inherit" }}
+          >
+            <span className="min-w-0 truncate">{selected?.label}</span>
+          </button>
+          <button
+            type="button"
+            aria-label="Next pitch"
+            disabled={disabled || options.length === 0}
+            onClick={() => step(1)}
+            className={pitchButtonClass}
+          >
+            <PitchChevron direction="right" />
+          </button>
+        </div>
+      ) : (
       <button
         type="button"
         className={className}
@@ -150,32 +215,26 @@ export function AppSelect({
         aria-haspopup="listbox"
         aria-expanded={anchor !== null}
         onClick={(event) => setAnchor(event.currentTarget)}
-        onMouseEnter={header ? () => setHeaderHovered(true) : undefined}
-        onMouseLeave={header ? () => setHeaderHovered(false) : undefined}
         style={{
-          ...(header ? headerButtonStyle : wrapStyle),
+          ...wrapStyle,
           ...style,
-          ...(!header && fullWidth ? { display: "flex", width: "100%" } : {}),
-          ...(header ? { backgroundColor: headerHovered ? "#e5e7eb" : "#fff" } : {}),
+          ...(fullWidth ? { display: "flex", width: "100%" } : {}),
           cursor: disabled ? "default" : "pointer",
         }}
       >
         <span
-          style={
-            header
-              ? headerFieldStyle
-              : {
-                  ...fieldStyle,
-                  ...(fullWidth
-                    ? { flex: "1 1 auto", width: "100%" }
-                    : { flex: "0 1 auto", width: "auto" }),
-                }
-          }
+          style={{
+            ...fieldStyle,
+            ...(fullWidth
+              ? { flex: "1 1 auto", width: "100%" }
+              : { flex: "0 1 auto", width: "auto" }),
+          }}
         >
           {selected?.label}
         </span>
         <span aria-hidden="true" style={caretStyle} />
       </button>
+      )}
       <Menu
         anchorEl={anchor}
         open={anchor !== null}

@@ -122,9 +122,6 @@ export function ResultsPodiums({
               <span style={{ width: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {row.companyName}
               </span>
-              {rank === 1 ? (
-                <img src="/images/goldmedal.png" alt="First Place Medal" className="goldmedal" style={{ marginTop: 4 }} />
-              ) : null}
             </div>
             <div
               className="podium-bar-clip"

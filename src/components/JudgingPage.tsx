@@ -120,35 +120,48 @@ function ScoreInput({
   const [draft, setDraft] = useState<string | null>(null);
 
   return (
-    <input
-      className={`score-input w-16 rounded border px-2 py-1 text-center disabled:bg-gray-50 ${
-        isMissing ? "border-red-500 bg-red-100" : ""
-      }`}
-      min={1}
-      max={5}
-      step={0.5}
-      type="number"
-      title="Whole or half points from 1 to 5"
-      disabled={disabled}
-      placeholder=""
-      value={draft ?? value ?? ""}
-      onChange={(event) => {
-        const raw = event.target.value;
-        if (raw === "" || (!isIncompleteScoreInput(raw) && Number.isFinite(Number(raw)))) {
+    <span className="relative inline-block">
+      <input
+        className={`score-input w-16 rounded border px-2 py-1 text-center disabled:bg-gray-50 ${
+          isMissing ? "border-red-500 bg-red-100" : ""
+        }`}
+        min={1}
+        max={5}
+        step={0.5}
+        type="number"
+        title="Whole or half points from 1 to 5"
+        disabled={disabled}
+        placeholder=""
+        value={draft ?? value ?? ""}
+        onChange={(event) => {
+          const raw = event.target.value;
+          if (raw === "" || (!isIncompleteScoreInput(raw) && Number.isFinite(Number(raw)))) {
+            setDraft(null);
+            onValue(raw);
+            return;
+          }
+          setDraft(raw);
+        }}
+        onBlur={() => {
+          if (draft !== null && Number.isFinite(Number(draft))) {
+            onValue(draft);
+          }
           setDraft(null);
-          onValue(raw);
-          return;
-        }
-        setDraft(raw);
-      }}
-      onBlur={() => {
-        if (draft !== null && Number.isFinite(Number(draft))) {
-          onValue(draft);
-        }
-        setDraft(null);
-        onBlur();
-      }}
-    />
+          onBlur();
+        }}
+      />
+      {isMissing ? (
+        <Tooltip title="Fill in score (1-5) before submitting company scores." arrow>
+          <button
+            type="button"
+            aria-label="Fill in score (1-5) before submitting company scores."
+            className="absolute top-0.5 right-0.5 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-500 hover:text-gray-800"
+          >
+            <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+          </button>
+        </Tooltip>
+      ) : null}
+    </span>
   );
 }
 
@@ -333,16 +346,18 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         </section>
       )}
       <div className="space-y-2">
-        <section className="flex flex-wrap items-center gap-3">
+        <section className="flex flex-wrap items-start gap-3">
           {isAdmin ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setOverrideEnabled((on) => !on)}
-                className="dark-button h-8 rounded border border-black bg-gray-900 px-3 py-1 text-white"
-              >
-                {overrideEnabled ? "Override On" : "Override"}
-              </button>
+            <button
+              type="button"
+              onClick={() => setOverrideEnabled((on) => !on)}
+              className="dark-button h-8 rounded border border-black bg-gray-900 px-3 py-1 text-white"
+            >
+              {overrideEnabled ? "Override On" : "Override"}
+            </button>
+          ) : null}
+          <div className="flex flex-col items-start gap-0.5">
+            {isAdmin ? (
               <AppSelect
                 aria-label="Judge"
                 className="h-8 rounded border px-2 py-1"
@@ -358,13 +373,11 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                   </option>
                 ))}
               </AppSelect>
-            </>
-          ) : (
-            <span>{selectedJudge?.name}</span>
-          )}
-          <span className="text-sm text-gray-600">
-            {saveStatusLabel}
-          </span>
+            ) : (
+              <span>{selectedJudge?.name}</span>
+            )}
+            <span className="text-xs text-gray-600">{saveStatusLabel}</span>
+          </div>
         </section>
       </div>
 
@@ -545,7 +558,15 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           const company = data.companies.find((item) => item.id === pendingConfirm?.companyId);
           const pitch = company ? data.companies.findIndex((item) => item.id === company.id) + 1 : 0;
           const label = company ? `Pitch ${pitch} - ${company.name}` : "this company";
-          return `Submit scores for ${label}. Scores can be edited and resubmitted later. Submitted scores appear in Current Results.`;
+          return (
+            <>
+              {`Submit scores for ${label}.`}
+              {"\n"}
+              <span className="text-xs">
+                Submitted scores appear in Current Results. Scores can still be edited and resubmitted from the Scoring page.
+              </span>
+            </>
+          );
         })()}
         confirmLabel="Submit"
         onConfirm={() => {

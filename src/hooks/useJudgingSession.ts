@@ -19,6 +19,15 @@ export { formatScoreValue, formatTimestamp };
 
 const AUTOSAVE_DELAY_MS = 700;
 
+function mergeMissingCells(
+  prev: Array<{ companyId: string; categoryId: string }>,
+  incoming: Array<{ companyId: string; categoryId: string }>,
+  companyId: string | undefined,
+) {
+  if (!companyId) return incoming;
+  return [...prev.filter((cell) => cell.companyId !== companyId), ...incoming];
+}
+
 type UseJudgingSessionOptions = {
   lockedJudgeId?: string;
 };
@@ -390,7 +399,6 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
       saveInFlightRef.current = true;
       if (saveOptions.isFinal) setIsSubmitting(true);
       if (!saveOptions.isFinal || saveOptions.notesOnly) setIsAutosaving(true);
-      setMissingCells([]);
       try {
         const response = await fetch("/api/scores", {
           method: "POST",
@@ -424,7 +432,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
             return false;
           }
           if (response.status === 400 && Array.isArray(payload.missingCells)) {
-            setMissingCells(payload.missingCells);
+            setMissingCells((prev) => mergeMissingCells(prev, payload.missingCells ?? [], companyId));
             showToast("All cells must be filled before submitting company scores.");
             return false;
           }
@@ -435,7 +443,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
               entries.filter((entry) => entry.companyId === saveOptions.companyId),
             );
             if (apiMissing.length > 0) {
-              setMissingCells(apiMissing);
+              setMissingCells((prev) => mergeMissingCells(prev, apiMissing, companyId));
               showToast("All cells must be filled before submitting company scores.");
               return false;
             }
@@ -448,7 +456,6 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
         } else if (!saveOptions.quiet) {
           showToast("Draft saved successfully.");
         }
-        setMissingCells([]);
         if (!saveOptions.notesOnly) {
           setSubmissionStatus(payload.status ?? null);
           setSubmittedAt(payload.submittedAt ?? null);
@@ -659,12 +666,14 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
         scoresRef.current = next;
         setScores(next);
         syncChangeLog(judgeId, companyId, categoryId, undefined);
-        setMissingCells((prev) => {
-          if (prev.some((cell) => cell.companyId === companyId && cell.categoryId === categoryId)) {
-            return prev;
-          }
-          return [...prev, { companyId, categoryId }];
-        });
+        if (typeof previous === "number") {
+          setMissingCells((prev) => {
+            if (prev.some((cell) => cell.companyId === companyId && cell.categoryId === categoryId)) {
+              return prev;
+            }
+            return [...prev, { companyId, categoryId }];
+          });
+        }
         return true;
       }
 
