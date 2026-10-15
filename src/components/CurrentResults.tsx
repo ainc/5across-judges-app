@@ -30,6 +30,7 @@ export function CurrentResults({
           companyName: row.companyName,
           finalScore: row.finalScore,
           rank: row.rank,
+          pitch: row.pitch,
         }))}
         selectedCompanyId={podiumCompanyId}
         onSelectCompany={selectCompany}

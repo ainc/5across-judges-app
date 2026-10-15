@@ -8,6 +8,7 @@ type PodiumRow = {
   companyName: string;
   finalScore: number;
   rank: number;
+  pitch: number;
 };
 
 const HEIGHT_PX: Record<number, number> = {
@@ -26,8 +27,6 @@ const FACE: Record<number, { background: string; color: string }> = {
   5: { background: "#D1D2D4", color: "#323232" },
 };
 
-const VISUAL_ORDER = [4, 2, 1, 3, 5];
-
 function lighten(hex: string, amount: number): string {
   const value = Number.parseInt(hex.slice(1), 16);
   const mix = (channel: number) => Math.round(channel + (255 - channel) * amount);
@@ -44,6 +43,7 @@ export function ResultsPodiums({
   onSelectCompany: (companyId: string) => void;
 }) {
   const [hoveredCompanyId, setHoveredCompanyId] = useState<string | null>(null);
+  const ordered = [...rankings].sort((a, b) => a.pitch - b.pitch);
 
   if (rankings.length === 0) {
     return <p className="text-sm text-gray-600">No results yet.</p>;
@@ -60,9 +60,8 @@ export function ResultsPodiums({
         overflow: "visible",
       }}
     >
-      {rankings.map((row) => {
+      {ordered.map((row) => {
         const rank = Number(row.rank);
-        const visual = VISUAL_ORDER.indexOf(rank);
         const face = FACE[rank] ?? FACE[5];
 
         const hasSelection = selectedCompanyId !== "";
@@ -78,7 +77,7 @@ export function ResultsPodiums({
             key={row.companyId}
             type="button"
             aria-pressed={selected}
-            aria-label={`${row.companyName}, rank ${rank}`}
+            aria-label={`Pitch ${row.pitch}, ${row.companyName}, rank ${rank}`}
             onClick={() => onSelectCompany(row.companyId)}
             onMouseEnter={() => setHoveredCompanyId(row.companyId)}
             onMouseLeave={() => setHoveredCompanyId((current) => (current === row.companyId ? null : current))}
@@ -90,7 +89,6 @@ export function ResultsPodiums({
               alignItems: "center",
               flex: "1 1 0%",
               minWidth: 0,
-              order: visual === -1 ? rank + 10 : visual,
               margin: 0,
               padding: 0,
               border: "none",
@@ -119,7 +117,7 @@ export function ResultsPodiums({
                 width: "100%",
               }}
             >
-              <span style={{ width: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span style={{ width: "100%", overflow: "hidden", textOverflow: "ellipsis"}}>
                 {row.companyName}
               </span>
             </div>
@@ -149,6 +147,8 @@ export function ResultsPodiums({
                   fontWeight: 600,
                 }}
               >
+                Pitch {row.pitch} 
+                <br />
                 Score: {formatWeightedTotal(row.finalScore)}
               </div>
             </div>
