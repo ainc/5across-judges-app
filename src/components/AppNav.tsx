@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOutAction } from "@/app/admin/actions";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { submitSignOut } from "@/components/submit-sign-out";
 
 type AppNavProps = {
   showAdminLink?: boolean;
@@ -61,7 +61,7 @@ export function AppNav({ showAdminLink = false }: AppNavProps) {
               confirmLabel="Sign Out"
               onConfirm={() => {
                 setConfirmOpen(false);
-                void signOutAction();
+                submitSignOut();
               }}
               onCancel={() => setConfirmOpen(false)}
             />,

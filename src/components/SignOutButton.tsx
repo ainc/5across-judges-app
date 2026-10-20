@@ -1,7 +1,7 @@
 "use client";
 
-import { signOutAction } from "@/app/admin/actions";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { submitSignOut } from "@/components/submit-sign-out";
 import { useState } from "react";
 
 export function SignOutButton() {
@@ -18,7 +18,7 @@ export function SignOutButton() {
         confirmLabel="Sign Out"
         onConfirm={() => {
           setConfirmOpen(false);
-          void signOutAction();
+          submitSignOut();
         }}
         onCancel={() => setConfirmOpen(false)}
       />
