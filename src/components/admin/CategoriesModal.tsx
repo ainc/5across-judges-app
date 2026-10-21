@@ -9,8 +9,11 @@ type CategoriesModalProps = {
   onClose: () => void;
   onAddCategory: () => void;
   onCategoryNameChange: (id: string, name: string) => void;
+  onCategoryDescriptionChange: (id: string, description: string) => void;
   onCategoryWeightChange: (id: string, weight: number | "") => void;
   onRequestRemoveCategory: (id: string, name: string) => void;
+  onSave: () => void;
+  isSaving?: boolean;
 };
 
 export function CategoriesModal({
@@ -20,8 +23,11 @@ export function CategoriesModal({
   onClose,
   onAddCategory,
   onCategoryNameChange,
+  onCategoryDescriptionChange,
   onCategoryWeightChange,
   onRequestRemoveCategory,
+  onSave,
+  isSaving = false,
 }: CategoriesModalProps) {
   const weightsValid = criteriaWeightTotal === 100;
 
@@ -30,23 +36,16 @@ export function CategoriesModal({
       open={open}
       title="Manage Scoring Criteria"
       onClose={onClose}
+      onSave={onSave}
+      saveDisabled={!weightsValid}
+      isSaving={isSaving}
       panelClassName="max-h-[90vh] max-w-2xl overflow-y-auto"
-      footer={
-        <div className="flex w-full flex-wrap items-center justify-end gap-3">
-          {!weightsValid ? (
-            <p className="rounded border border-[#EE2524] bg-red-300 text-black px-2 py-2">
-              Criteria weights must total 100% (currently {criteriaWeightTotal}%).
-            </p>
-          ) : null}
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={!weightsValid}
-            className="dark-button rounded border border-black bg-gray-900 px-4 py-2 text-white"
-          >
-            Done
-          </button>
-        </div>
+      footerExtra={
+        !weightsValid ? (
+          <p className="rounded border border-[#EE2524] bg-red-300 px-2 py-2 text-black">
+            Criteria weights must total 100% (currently {criteriaWeightTotal}%).
+          </p>
+        ) : null
       }
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -78,6 +77,16 @@ export function CategoriesModal({
               aria-label={`Remove ${category.name || "category"}`}
             />
           </div>
+          <label className="block text-sm">
+            Description
+            <textarea
+              className="mt-1 w-full resize-none rounded border p-2"
+              rows={2}
+              value={category.description ?? ""}
+              placeholder="Shown in the info tab"
+              onChange={(event) => onCategoryDescriptionChange(category.id, event.target.value)}
+            />
+          </label>
           <label className="block text-sm">
             Weight (%)
             <input

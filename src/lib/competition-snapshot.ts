@@ -9,6 +9,7 @@ export async function copyCompetitionToArchive(sourceId: string) {
       categories: true,
       sessions: true,
       scores: true,
+      notes: true,
     },
   });
 
@@ -27,7 +28,7 @@ export async function copyCompetitionToArchive(sourceId: string) {
         judges: {
           create: source.judges.map((judge) => ({
             name: judge.name,
-            code: judge.code,
+            username: judge.username,
             message: judge.message,
           })),
         },
@@ -40,6 +41,7 @@ export async function copyCompetitionToArchive(sourceId: string) {
         categories: {
           create: source.categories.map((category) => ({
             name: category.name,
+            description: category.description,
             weight: category.weight,
             maxScore: category.maxScore,
           })),
@@ -78,32 +80,62 @@ export async function copyCompetitionToArchive(sourceId: string) {
       sessionIdMap.set(session.id, newSession.id);
     }
 
-    for (const score of source.scores) {
+    const notes = source.notes.flatMap((note) => {
+      const judgeName = judgeNameById.get(note.judgeId);
+      const companyName = companyNameById.get(note.companyId);
+      const categoryName = categoryNameById.get(note.categoryId);
+      if (!judgeName || !companyName || !categoryName) return [];
+      const newJudgeId = judgeIdByName.get(judgeName);
+      const newCompanyId = companyIdByName.get(companyName);
+      const newCategoryId = categoryIdByName.get(categoryName);
+      if (!newJudgeId || !newCompanyId || !newCategoryId) return [];
+
+      return [
+        {
+          competitionId: archived.id,
+          judgeId: newJudgeId,
+          companyId: newCompanyId,
+          categoryId: newCategoryId,
+          body: note.body,
+        },
+      ];
+    });
+    if (notes.length > 0) {
+      await tx.judgeNote.createMany({ data: notes });
+    }
+
+    const scores = source.scores.flatMap((score) => {
       const judgeName = judgeNameById.get(score.judgeId);
       const companyName = companyNameById.get(score.companyId);
       const categoryName = categoryNameById.get(score.categoryId);
       const newSessionId = sessionIdMap.get(score.sessionId);
-      if (!judgeName || !companyName || !categoryName || !newSessionId) continue;
+      if (!judgeName || !companyName || !categoryName || !newSessionId) return [];
 
       const newJudgeId = judgeIdByName.get(judgeName);
       const newCompanyId = companyIdByName.get(companyName);
       const newCategoryId = categoryIdByName.get(categoryName);
-      if (!newJudgeId || !newCompanyId || !newCategoryId) continue;
+      if (!newJudgeId || !newCompanyId || !newCategoryId) return [];
 
-      await tx.score.create({
-        data: {
+      return [
+        {
           competitionId: archived.id,
           judgeId: newJudgeId,
           companyId: newCompanyId,
           categoryId: newCategoryId,
           sessionId: newSessionId,
           score: score.score,
+          publishedScore: score.publishedScore,
         },
-      });
+      ];
+    });
+    if (scores.length > 0) {
+      await tx.score.createMany({ data: scores });
     }
 
     return archived;
-  });
+  },
+  { timeout: 20000 },
+  );
 }
 
 export async function archivedCompetitionMatchesActive(archivedId: string): Promise<boolean> {

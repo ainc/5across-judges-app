@@ -9,11 +9,13 @@ type JudgesModalProps = {
   onClose: () => void;
   onAddJudge: () => void;
   onJudgeNameChange: (id: string, name: string) => void;
-  onJudgeCodeChange: (id: string, code: string) => void;
+  onJudgeUsernameChange: (id: string, username: string) => void;
   onJudgeMessageChange: (id: string, message: string) => void;
   onRequestRemoveJudge: (id: string, name: string) => void;
   onSendMessage: (id: string) => void;
   onRequestDeleteMessage: (id: string, name: string) => void;
+  onSave: () => void;
+  isSaving?: boolean;
 };
 
 export function JudgesModal({
@@ -23,19 +25,28 @@ export function JudgesModal({
   onClose,
   onAddJudge,
   onJudgeNameChange,
-  onJudgeCodeChange,
+  onJudgeUsernameChange,
   onJudgeMessageChange,
   onRequestRemoveJudge,
   onSendMessage,
   onRequestDeleteMessage,
+  onSave,
+  isSaving = false,
 }: JudgesModalProps) {
   return (
     <FormDialog
       open={open}
       title="Manage Judges"
       onClose={onClose}
+      onSave={onSave}
+      isSaving={isSaving}
       panelClassName="max-h-[90vh] max-w-2xl overflow-y-auto"
     >
+      <p className="text-sm text-gray-600">
+        Each judge needs a username. Saving a new judge creates a login with that username and the shared judge
+        password. Changing a judge&apos;s name leaves their username as it is. Edit the username to change that
+        login.
+      </p>
       <button
         type="button"
         onClick={onAddJudge}
@@ -58,12 +69,16 @@ export function JudgesModal({
               aria-label={`Remove ${judge.name || "judge"}`}
             />
           </div>
-          <input
-            className="min-w-0 flex-1 rounded border p-2"
-            value={judge.code ?? ""}
-            placeholder="Code (optional)"
-            onChange={(event) => onJudgeCodeChange(judge.id, event.target.value)}
-          />
+          <label className="block text-xs font-medium text-gray-600">
+            Username
+            <input
+              className="mt-1 w-full rounded border p-2 text-sm"
+              value={judge.username}
+              placeholder="Username (required)"
+              aria-label={`Username for ${judge.name || "new judge"}`}
+              onChange={(event) => onJudgeUsernameChange(judge.id, event.target.value)}
+            />
+          </label>
         </div>
       ))}
     </FormDialog>

@@ -3,6 +3,7 @@ import { DEFAULT_COMPANIES, DEFAULT_JUDGES } from "@/lib/competition-config";
 import {
   buildRankings,
   parseEventDate,
+  countPublishedJudges,
   scoresFromFinalJudges,
   winnerFromRankings,
 } from "@/lib/competition-results";
@@ -30,7 +31,7 @@ export async function GET() {
   });
 
   const payload = competitions.map((competition) => {
-    const finalScores = scoresFromFinalJudges(competition.scores, competition.sessions);
+    const finalScores = scoresFromFinalJudges(competition.scores);
     const rankings = buildRankings(
       competition.companies,
       competition.judges,
@@ -44,7 +45,7 @@ export async function GET() {
       eventDate: competition.eventDate,
       isActive: competition.isActive,
       winner: winnerFromRankings(rankings),
-      finalSubmissionCount: competition.sessions.filter((session) => session.status === "FINAL").length,
+      finalSubmissionCount: countPublishedJudges(competition.scores),
     };
   });
 
@@ -93,11 +94,14 @@ export async function POST(request: Request) {
         create: DEFAULT_COMPANIES.map((company) => ({ ...company })),
       },
       categories: {
-        create: (template?.categories ?? [{ name: "Criterion 1", weight: 100, maxScore: 5 }]).map((category) => ({
-          name: category.name,
-          weight: category.weight,
-          maxScore: category.maxScore,
-        })),
+        create: (template?.categories ?? [{ name: "Criterion 1", description: "", weight: 100, maxScore: 5 }]).map(
+          (category) => ({
+            name: category.name,
+            description: category.description,
+            weight: category.weight,
+            maxScore: category.maxScore,
+          }),
+        ),
       },
     },
     select: { id: true, name: true },

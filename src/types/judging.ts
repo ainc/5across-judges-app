@@ -1,6 +1,6 @@
-export type Judge = { id: string; name: string; code: string | null; message: string | null };
+export type Judge = { id: string; name: string; username: string; message: string | null };
 export type Company = { id: string; name: string; presenter?: string | null };
-export type Category = { id: string; name: string; weight: number; maxScore: number };
+export type Category = { id: string; name: string; description: string; weight: number; maxScore: number };
 
 export type ActiveCompetitionResponse = {
   competition: {
@@ -18,17 +18,23 @@ export type ActiveCompetitionResponse = {
 
 export type SubmissionStatus = "DRAFT" | "FINAL";
 
+export type JudgeNoteEntry = { companyId: string; categoryId: string; body: string };
+
 export type JudgeScoresResponse = {
   status: SubmissionStatus | null;
   submittedAt: string | null;
   updatedAt: string | null;
   entries: Array<{ companyId: string; categoryId: string; score: number }>;
+  notes: JudgeNoteEntry[];
 };
 
-export type PendingConfirm =
-  | { type: "restore-draft" }
-  | { type: "submit-final" }
-  | null;
+export type PendingConfirm = { type: "submit-company"; companyId: string } | null;
+
+export type ScoreUndo = {
+  companyId: string;
+  categoryId: string;
+  previous: number | undefined;
+};
 
 export type ScoreChange = {
   companyId: string;

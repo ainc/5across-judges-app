@@ -21,13 +21,22 @@ export function AdminConfirmDialogs({ pendingConfirm, onConfirm, onCancel }: Adm
         onCancel={onCancel}
       />
       <ConfirmDialog
-        open={pendingConfirm?.type === "start-next"}
+        open={pendingConfirm?.type === "save-details"}
+        title="Save Competition Details?"
+        message={
+          "Save the competition name, date, and summary to the live competition?\n\nJudges, companies, and scoring criteria are saved from their Manage windows. This does not end the competition or archive results."
+        }
+        confirmLabel="Save"
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+      <ConfirmDialog
+        open={pendingConfirm?.type === "end-current"}
         title="End Current Competition?"
         message={
-          "End this competition and archive its results? Competition can be made live again to edit settings.\n\nEnding current competition will require the creation and naming of a new competition."
+          "Compute this competition's results and move it to the archive?\n\nThis does not start a new live competition. Use Start New Competition after ending."
         }
-        confirmLabel="End Current / Create New Competition"
-        variant="danger"
+        confirmLabel="End and Archive"
         onConfirm={onConfirm}
         onCancel={onCancel}
       />
@@ -44,7 +53,6 @@ export function AdminConfirmDialogs({ pendingConfirm, onConfirm, onCancel }: Adm
         title="Delete Competition?"
         message={`Delete "${pendingConfirm?.type === "delete" ? pendingConfirm.name : ""}"? Archived competitions cannot be restored upon deletion.`}
         confirmLabel="Delete"
-        variant="danger"
         onConfirm={onConfirm}
         onCancel={onCancel}
       />
@@ -53,7 +61,6 @@ export function AdminConfirmDialogs({ pendingConfirm, onConfirm, onCancel }: Adm
         title="Delete Category?"
         message={`Delete "${pendingConfirm?.type === "remove-category" ? pendingConfirm.name : ""}"? Remaining category weights must equal 100%.`}
         confirmLabel="Delete"
-        variant="danger"
         onConfirm={onConfirm}
         onCancel={onCancel}
       />
@@ -62,7 +69,6 @@ export function AdminConfirmDialogs({ pendingConfirm, onConfirm, onCancel }: Adm
         title="Delete Judge?"
         message={`"${pendingConfirm?.type === "remove-judge" ? pendingConfirm.name : ""}" will be deleted from this competition.\n\nJudges can be readded at any time.`}
         confirmLabel="Remove"
-        variant="danger"
         onConfirm={onConfirm}
         onCancel={onCancel}
       />
@@ -71,7 +77,6 @@ export function AdminConfirmDialogs({ pendingConfirm, onConfirm, onCancel }: Adm
         title="Delete Judge Message?"
         message={`Message to "${pendingConfirm?.type === "delete-message" ? pendingConfirm.name : ""}" will be deleted.`}
         confirmLabel="Delete"
-        variant="danger"
         onConfirm={onConfirm}
         onCancel={onCancel}
       />

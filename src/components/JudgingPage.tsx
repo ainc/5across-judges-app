@@ -1,12 +1,237 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormDialog } from "@/components/FormDialog";
-import { SignOutButton } from "@/components/SignOutButton";
+import { formatWeightedTotal } from "@/lib/judging-format";
 import { formatScoreValue, formatTimestamp, useJudgingSession } from "@/hooks/useJudgingSession";
 import CancelIcon from '@mui/icons-material/Cancel';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import Tooltip from "@mui/material/Tooltip";
+import { AppHeader } from "./admin/AppHeader";
+import { AppSelect } from "@/components/AppSelect";
+import { StyledTable, tdClass, thClass } from "@/components/StyledTable";
+
+const COMPANY_STORAGE_PREFIX = "judging-selected-company:";
+
+const CONFETTI_COLORS = ["#C01824", "#E4303C", "#D0D0D0", "#B41824", "#F0F0F0", "#FC3C48"];
+
+type ConfettiPiece = {
+  id: number;
+  x: number;
+  y: number;
+  spin: number;
+  delay: number;
+  color: string;
+  width: number;
+  height: number;
+  radius: string;
+};
+
+function makeConfetti(): ConfettiPiece[] {
+  return Array.from({ length: 52 }, (_, id) => {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 240 + Math.random() * 320;
+    return {
+      id,
+      x: Math.cos(angle) * distance,
+      y: Math.sin(angle) * distance,
+      spin: (180 + Math.random() * 540) * (Math.random() < 0.5 ? -1 : 1),
+      delay: Math.random() * 0.06,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)] ?? CONFETTI_COLORS[0],
+      width: 16 + Math.random() * 14,
+      height: 8 + Math.random() * 5,
+      radius: `${6 + Math.random() * 8}px ${5 + Math.random() * 10}px ${5 + Math.random() * 8}px ${4 + Math.random() * 8}px`,
+    };
+  });
+}
+
+function ConfettiBurst({ pieces }: { pieces: ConfettiPiece[] }) {
+  const [burst, setBurst] = useState(false);
+
+  useEffect(() => {
+    const id = window.requestAnimationFrame(() => setBurst(true));
+    return () => window.cancelAnimationFrame(id);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden" aria-hidden>
+      {pieces.map((piece) => (
+        <span
+          key={piece.id}
+          className="confetti-ribbon"
+          style={{
+            backgroundColor: piece.color,
+            width: piece.width,
+            height: piece.height,
+            borderRadius: piece.radius,
+            transitionDelay: `${piece.delay}s`,
+            transform: burst
+              ? `translate(calc(-50% + ${piece.x}px), calc(-50% + ${piece.y}px)) rotate(${piece.spin}deg) scale(1)`
+              : "translate(-50%, -50%) rotate(0deg) scale(0.25)",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function storedCompanyId(competitionId: string) {
+  try {
+    return window.localStorage.getItem(`${COMPANY_STORAGE_PREFIX}${competitionId}`) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+const SCORE_SCALE = [
+  { value: 1, label: ["Weak"] },
+  { value: 2, label: ["Needs", "Improvement"] },
+  { value: 3, label: ["Competent"] },
+  { value: 4, label: ["Above", "Expectations"] },
+  { value: 5, label: ["Excellent"] },
+] as const;
+
+const SCORE_SCALE_WIDTH = 360;
+const SCORE_SCALE_NUMBER_PAD = 32;
+const SCORE_SCALE_LINE_PAD = 16;
+const SCORE_SCALE_LINE_Y = 22;
+const SCORE_SCALE_SPAN = SCORE_SCALE_WIDTH - SCORE_SCALE_NUMBER_PAD * 2;
+
+function isIncompleteScoreInput(raw: string): boolean {
+  return raw === "." || raw === "-" || raw === "-." || raw.endsWith(".");
+}
+
+function ScoreInput({
+  value,
+  disabled,
+  isMissing,
+  onValue,
+  onBlur,
+}: {
+  value: number | undefined;
+  disabled: boolean;
+  isMissing: boolean;
+  onValue: (raw: string) => void;
+  onBlur: () => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  return (
+    <span className="relative inline-block">
+      <input
+        className={`score-input w-16 rounded border px-2 py-1 text-center disabled:bg-gray-50 ${
+          isMissing ? "border-red-500 bg-red-100" : ""
+        }`}
+        min={1}
+        max={5}
+        step={0.5}
+        type="number"
+        title="Whole or half points from 1 to 5"
+        disabled={disabled}
+        placeholder=""
+        value={draft ?? value ?? ""}
+        onChange={(event) => {
+          const raw = event.target.value;
+          if (raw === "" || (!isIncompleteScoreInput(raw) && Number.isFinite(Number(raw)))) {
+            setDraft(null);
+            onValue(raw);
+            return;
+          }
+          setDraft(raw);
+        }}
+        onBlur={() => {
+          if (draft !== null && Number.isFinite(Number(draft))) {
+            onValue(draft);
+          }
+          setDraft(null);
+          onBlur();
+        }}
+      />
+      {isMissing ? (
+        <Tooltip title="Fill in score (1-5) before submitting company scores." arrow>
+          <button
+            type="button"
+            aria-label="Fill in score (1-5) before submitting company scores."
+            className="absolute top-0.5 right-0.5 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-500 hover:text-gray-800"
+          >
+            <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+          </button>
+        </Tooltip>
+      ) : null}
+    </span>
+  );
+}
+
+function ScoreScaleGraphic() {
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setExpanded(true));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  const lineLeft = `${(SCORE_SCALE_LINE_PAD / SCORE_SCALE_WIDTH) * 100}%`;
+  const lineWidth = `${((SCORE_SCALE_WIDTH - SCORE_SCALE_LINE_PAD * 2) / SCORE_SCALE_WIDTH) * 100}%`;
+  const lineTop = `${(SCORE_SCALE_LINE_Y / 68) * 100}%`;
+
+  return (
+    <div className="score-scale-graphic" style={{ position: "relative" }}>
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: lineLeft,
+          top: lineTop,
+          width: lineWidth,
+          height: 2.5,
+          marginTop: -1.25,
+          borderRadius: 999,
+          background:
+            "linear-gradient(to right, #F7AFB3 0%, #F7AFB3 5%, #F7AFB3 27%, #F4868D 50%, #F05E67 73%, #EC3641 95%, #EC3641 100%)",
+          transformOrigin: "left",
+          transform: expanded ? "scaleX(1)" : "scaleX(0)",
+          transition: "transform 0.85s cubic-bezier(0.22, 1, 0.36, 1)",
+        }}
+      />
+      <svg
+        viewBox={`0 0 ${SCORE_SCALE_WIDTH} 68`}
+        style={{ display: "block", width: "100%" }}
+        role="img"
+        aria-label="Scoring range 1 to 5: 1 Weak, 2 Needs Improvement, 3 Competent, 4 Above Expectations, 5 Excellent"
+      >
+        {SCORE_SCALE.map((point, index) => {
+          const x = SCORE_SCALE_NUMBER_PAD + (SCORE_SCALE_SPAN * index) / (SCORE_SCALE.length - 1);
+          return (
+            <g key={point.value}>
+              <text
+                x={x}
+                y={SCORE_SCALE_LINE_Y - 8}
+                textAnchor="middle"
+                fill="#000000"
+                fontSize="10"
+                fontWeight="400"
+              >
+                {point.value}
+              </text>
+              <text x={x} y={SCORE_SCALE_LINE_Y + 16} textAnchor="middle" fill="#323232" fontSize="8">
+                {point.label.map((line, lineIndex) => (
+                  <tspan key={line} x={x} dy={lineIndex === 0 ? 0 : 10}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
 
 type JudgingPageProps = {
   lockedJudgeId?: string;
@@ -15,15 +240,20 @@ type JudgingPageProps = {
 
 export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPageProps) {
   const isAdmin = showAdminLink;
+  const [overrideEnabled, setOverrideEnabled] = useState(false);
+  const [showUnicorn, setShowUnicorn] = useState(false);
+  const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
+  const unicornTimerRef = useRef<number | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState("");
+  const [restoredCompetitionId, setRestoredCompetitionId] = useState("");
+  const canEditScores = !isAdmin || overrideEnabled;
   const {
 
     data,
     selectedJudgeId,
-    setSelectedJudgeId,
+    selectJudge,
     scores,
-    submissionStatus,
-    submittedAt,
-    submissionUpdatedAt,
+    notes,
     isSubmitting,
     isLoadingScores,
     toasts,
@@ -33,62 +263,74 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     changeLogOpen,
     setChangeLogOpen,
     selectedJudge,
-    scoreLegend,
     totals,
-    entryCount,
     missingCellKeys,
     hasChangeLog,
-    hasSavedScores,
+    canUndo,
+    saveStatusLabel,
     updateScore,
-    restoreSavedDraft,
-    submitScores,
+    updateNote,
+    undoLastScore,
+    flushAutosave,
+    submitCompanyScores,
     handleConfirmDialog,
     deleteIndividualJudgeMessage,
   } = useJudgingSession({ lockedJudgeId });
 
-  if (!data) {
+  useEffect(() => {
+    if (!data || restoredCompetitionId === data.competition.id) return;
+    const stored = storedCompanyId(data.competition.id);
+    const match = data.companies.some((company) => company.id === stored);
+    setSelectedCompanyId(match ? stored : "");
+    setRestoredCompetitionId(data.competition.id);
+  }, [data, restoredCompetitionId]);
+
+  useEffect(() => {
+    return () => {
+      if (unicornTimerRef.current) window.clearTimeout(unicornTimerRef.current);
+    };
+  }, []);
+
+  function flashUnicorn() {
+    setConfetti(makeConfetti());
+    setShowUnicorn(true);
+    if (unicornTimerRef.current) window.clearTimeout(unicornTimerRef.current);
+    unicornTimerRef.current = window.setTimeout(() => {
+      setShowUnicorn(false);
+      setConfetti([]);
+    }, 1600);
+  }
+
+  useEffect(() => {
+    if (!data || restoredCompetitionId !== data.competition.id || !selectedCompanyId) return;
+    try {
+      window.localStorage.setItem(`${COMPANY_STORAGE_PREFIX}${data.competition.id}`, selectedCompanyId);
+    } catch {
+      // Storage can be unavailable in private browsing.
+    }
+  }, [data, restoredCompetitionId, selectedCompanyId]);
+
+  if (!data || restoredCompetitionId !== data.competition.id) {
     return <main className="p-6"></main>;
   }
 
+  const selectedId =
+    selectedCompanyId && data.companies.some((company) => company.id === selectedCompanyId)
+      ? selectedCompanyId
+      : data.companies[0]?.id ?? "";
+  const visibleCompanies = data.companies.filter((company) => company.id === selectedId);
+
   return (
-    <main className="p-6 space-y-4">
-      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-        <div id="toast-container">
-          {toasts.map((toast) => (
-            <div key={toast.id} className="toast">
-              {toast.message}
-            </div>
-          ))}
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">Awesome Inc</p>
-          <h1 className="text-2xl font-semibold">{data.competition.name}</h1>
-          <p className="text-sm text-gray-600">Judge Scoring Homepage</p>
-        </div>
-        <img
-          src="/images/5acrossbanner.png"
-          alt="5 Across Banner"
-          className="fiveacross-banner justify-self-center"
-        />
-        <div className="w-48 flex flex-col items-end gap-2 justify-self-end">
-          {showAdminLink ? (
-            <Link href="/admin" className="underline">
-              Admin Dashboard
-            </Link>
-          ) : null}
-          <Link href="/results" className="underline">
-            Current Results
-          </Link>
-          <SignOutButton />
-        </div>
-      </header>
+    <div className="flex h-dvh flex-col overflow-hidden">
+      <AppHeader showAdminLink={isAdmin} className="mb-6 shrink-0" />
+      <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-6 pb-3">
 
       {selectedJudge?.message && (
-        <section className="rounded border border-blue-300 bg-blue-50 p-4">
+        <section className="rounded border border-[#DF666A] bg-[#DF666A] p-4">
           <div className="flex justify-between">
             <div>
-              <p className="text-sm font-semibold text-blue-900">Message for {selectedJudge.name}</p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-blue-950">{selectedJudge.message}</p>
+              <p className="text-sm font-semibold">Message for {selectedJudge.name}</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm">{selectedJudge.message}</p>
             </div>
             <button
               type="button"
@@ -104,146 +346,171 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         </section>
       )}
       <div className="space-y-2">
-        <section className="flex flex-wrap items-center gap-3">
+        <section className="flex flex-wrap items-start gap-3">
           {isAdmin ? (
-            <span className="inline-flex h-8 rounded border border-green-900 bg-green-100 px-3 py-1 text-medium font-medium text-green-900">
-              Admin
-            </span>
-          ) : null}
-          <span className="font-medium">{isAdmin ? "Editing Judge:" : "Judge:"}</span>
-          {isAdmin ? (
-            <select
-              className="h-8 rounded border px-2 py-1"
-              value={selectedJudgeId}
-              onChange={(event) => setSelectedJudgeId(event.target.value)}
-            >
-              {data.judges.map((judge) => (
-                <option key={judge.id} value={judge.id}>
-                  {judge.name}
-                  {judge.code ? ` (${judge.code})` : ""}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span>
-              {selectedJudge?.name}
-              {selectedJudge?.code ? ` (${selectedJudge.code})` : ""}
-            </span>
-          )}
-          {submissionStatus === "FINAL" ? (
-            <span className="inline-flex h-8 rounded border border-green-900 bg-green-100 px-2 py-1 text-sm font-medium text-green-900">
-              Final scores submitted at: {submittedAt ? `${formatTimestamp(submittedAt)}` : ""}
-            </span>
-          ) : submissionStatus === "DRAFT" ? (
-            <span className="inline-flex h-8 rounded border border-amber-900 bg-amber-100 px-2 py-1 text-sm font-medium text-amber-900">
-              Draft{submissionUpdatedAt ? ` last saved at: ${formatTimestamp(submissionUpdatedAt)}` : ""}
-            </span>
-          ) : (
-            <span className="inline-flex h-8 rounded border border-gray-400 bg-gray-100 px-2 py-1 text-sm text-gray-600">No saved scores</span>
-          )}
-        </section>
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="inline-flex h-8 rounded border border-gray-400 bg-gray-100 px-2 py-1 text-sm text-gray-600">
-            {scoreLegend}
-          </p>
-          <div className="ml-auto shrink-0">
             <button
               type="button"
-              onClick={() => setChangeLogOpen(true)}
-              className="dark-button rounded border border-black bg-gray-900 px-3 py-1 text-white"
+              onClick={() => setOverrideEnabled((on) => !on)}
+              className="dark-button h-8 rounded border border-black bg-gray-900 px-3 py-1 text-white"
             >
-              View Change History
+              {overrideEnabled ? "Override On" : "Override"}
             </button>
+          ) : null}
+          <div className="flex flex-col items-start gap-0.5">
+            {isAdmin ? (
+              <AppSelect
+                aria-label="Judge"
+                className="h-8 rounded border px-2 py-1"
+                value={selectedJudgeId}
+                onChange={(event) => {
+                  setOverrideEnabled(false);
+                  selectJudge(event.target.value);
+                }}
+              >
+                {data.judges.map((judge) => (
+                  <option key={judge.id} value={judge.id}>
+                    {judge.name}
+                  </option>
+                ))}
+              </AppSelect>
+            ) : (
+              <span>{selectedJudge?.name}</span>
+            )}
+            <span className="text-xs text-gray-600">{saveStatusLabel}</span>
           </div>
-        </div>
+        </section>
       </div>
 
-      <section className="overflow-auto border rounded">
-        <table className="min-w-full border-collapse">
+      <div className="min-h-0 flex-1">
+      <StyledTable className="h-full" tableClassName="table-fixed">
+          <colgroup>
+            <col className="w-[31%]" />
+            <col className="w-[38%]" />
+            <col className="w-[31%]" />
+          </colgroup>
           <thead className="sticky top-0 bg-white">
             <tr>
-              <th className="sticky left-0 bg-white border p-2 text-left">Category <span className="text-sm font-medium text-gray-600">(Weight)</span></th>
-              {data.companies.map((company) => (
-                <th key={company.id} className="border p-2 min-w-40">
-                  {company.name}
+              <th className={`${thClass} sticky left-0 w-[31%] bg-white`}>Category</th>
+              {visibleCompanies.map((company) => (
+                <th key={company.id} className="w-[38%] border-r border-b p-0 text-left">
+                  <AppSelect
+                    header
+                    aria-label="Company"
+                    value={selectedId}
+                    onChange={(event) => setSelectedCompanyId(event.target.value)}
+                  >
+                    {data.companies.map((option, index) => (
+                      <option key={option.id} value={option.id}>
+                        Pitch {index + 1} - {option.name}
+                      </option>
+                    ))}
+                  </AppSelect>
                 </th>
               ))}
+              <th className={`${thClass} w-[31%] bg-white`}>Notes</th>
             </tr>
           </thead>
           <tbody>
             {data.categories.map((category) => (
-              <tr key={category.id}>
-                <td className="sticky left-0 bg-white border p-2 text-medium">
-                  {category.name} <span className="text-sm font-medium text-gray-600">({category.weight}%)</span>
+              <tr key={category.id} className="h-px">
+                <td className={`${tdClass} sticky left-0 bg-white text-medium`}>
+                  <span className="inline-flex items-center gap-1">
+                    {category.name}
+                    {category.description?.trim() ? (
+                      <Tooltip title={category.description} arrow>
+                        <button
+                          type="button"
+                          aria-label={`Full description: ${category.description}`}
+                          className="inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-500 hover:text-gray-800"
+                        >
+                          <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+                        </button>
+                      </Tooltip>
+                    ) : null}
+                    <span className="text-sm font-medium text-gray-600">({category.weight}%)</span>
+                  </span>
                 </td>
-                {data.companies.map((company) => {
+                {visibleCompanies.map((company) => {
                   const key = `${company.id}:${category.id}`;
                   const isMissing = missingCellKeys.has(key);
                   return (
-                    <td key={key} className={`border p-1 text-center ${isMissing ? "bg-red-50" : ""}`}>
-                      <input
-                        className={`w-16 rounded border px-2 py-1 text-center disabled:bg-gray-50 ${
-                          isMissing ? "border-red-500 bg-red-100" : ""
-                        }`}
-                        min={1}
-                        max={5}
-                        step={0.1}
-                        type="number"
-                        disabled={isLoadingScores}
-                        placeholder=""
-                        value={scores[key] ?? ""}
-                        onChange={(event) => {
-                          updateScore(company.id, category.id, event.target.value);
+                    <td key={key} className={`${tdClass} p-1 text-center ${isMissing ? "bg-red-50" : ""}`}>
+                      <ScoreInput
+                        value={scores[key]}
+                        disabled={isLoadingScores || !canEditScores}
+                        isMissing={isMissing}
+                        onValue={(raw) => updateScore(company.id, category.id, raw)}
+                        onBlur={() => {
+                          void flushAutosave();
                         }}
                       />
                     </td>
                   );
                 })}
+                {visibleCompanies.map((company) => (
+                  <td key={`${company.id}:${category.id}:note`} className={`${tdClass} h-px p-1 align-top`}>
+                    <textarea
+                      aria-label={`Notes for ${category.name}`}
+                      className="block h-full w-full resize-none rounded border px-2 py-1 text-sm"
+                      rows={1}
+                      disabled={isLoadingScores || !canEditScores}
+                      value={notes[`${company.id}:${category.id}`] ?? ""}
+                      onChange={(event) => updateNote(company.id, category.id, event.target.value)}
+                      onBlur={() => {
+                        void flushAutosave();
+                      }}
+                    />
+                  </td>
+                ))}
               </tr>
             ))}
-            <tr className="bg-gray-50">
-              <td className="sticky left-0 bg-gray-50 border p-2 font-semibold">Weighted Total</td>
-              {data.companies.map((company) => {
+            <tr className="h-0 bg-gray-50">
+              <td className={`${tdClass} sticky left-0 bg-gray-50 py-1 font-semibold`}>Weighted Total</td>
+              {visibleCompanies.map((company) => {
                 const hasScores = data.categories.some(
                   (category) => typeof scores[`${company.id}:${category.id}`] === "number",
                 );
                 return (
-                  <td key={company.id} className="border p-2 text-center font-semibold">
-                    {hasScores ? totals[company.id]?.toFixed(1) ?? "0.0" : ""}
+                  <td key={company.id} className={`${tdClass} py-1 text-center font-semibold`}>
+                    {hasScores ? formatWeightedTotal(totals[company.id] ?? 0) : ""}
                   </td>
                 );
               })}
+              <td className={`${tdClass} py-1`} />
             </tr>
           </tbody>
-        </table>
-      </section>
+      </StyledTable>
+      </div>
 
-      <section className="flex flex-wrap items-center gap-3">
-        <button
-          disabled={isSubmitting || isLoadingScores}
-          onClick={() => submitScores(false)}
-          className="dark-button rounded border border-black bg-gray-900 text-white px-3 py-2 disabled:opacity-50"
-        >
-          Save Draft
-        </button>
-        <button
-          type="button"
-          disabled={isSubmitting || isLoadingScores || !hasSavedScores}
-          onClick={restoreSavedDraft}
-          className="white-button rounded border border-black bg-white text-black px-3 py-2 disabled:opacity-50"
-        >
-          Restore Saved Draft
-        </button>
-        <button
-          disabled={isSubmitting || isLoadingScores}
-          onClick={() => submitScores(true)}
-          className="red-button rounded border border-black bg-[#EE2524] px-3 py-2 text-white disabled:opacity-50"
-        >
-          Submit Final Scores
-        </button>
-        <p className="text-sm text-gray-600">
-          {Object.keys(scores).length}/{entryCount} cells scored
-        </p>
+      <section className="flex shrink-0 flex-wrap items-center gap-3">
+        <ScoreScaleGraphic />
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+          {isAdmin ? (
+            <button
+              type="button"
+              onClick={() => setChangeLogOpen(true)}
+              className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white"
+            >
+              View Change History
+            </button>
+          ) : null}
+          <button
+            disabled={isSubmitting || isLoadingScores || !canEditScores}
+            onClick={() => submitCompanyScores(selectedId)}
+            className="rounded border border-black px-3 py-2 text-black disabled:opacity-50"
+            style={{ backgroundColor: "#DF666A", color: "#000000" }}
+          >
+            Submit Company Scores
+          </button>
+          <button
+            type="button"
+            disabled={isSubmitting || isLoadingScores || !canUndo || !canEditScores}
+            onClick={undoLastScore}
+            className="white-button rounded border border-black bg-white text-black px-3 py-2 disabled:opacity-50"
+          >
+            Undo
+          </button>
+        </div>
       </section>
 
       <FormDialog
@@ -285,23 +552,50 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         )}
       </FormDialog>
       <ConfirmDialog
-        open={pendingConfirm?.type === "restore-draft"}
-        title="Restore Saved Draft?"
-        message="This will overwrite any scores currently in the form for this judge and replace them with those contained in most recent save."
-        confirmLabel="Restore"
-        onConfirm={handleConfirmDialog}
-        onCancel={() => setPendingConfirm(null)}
-      />
-      <ConfirmDialog
-        open={pendingConfirm?.type === "submit-final"}
-        title="Submit Final Scores?"
-        message={
-          "These can be revised at any time by simply re-submitting with updated scores.\n\nCurrently submitted scores can be viewed in 'Current Results'."
-        }
+        open={pendingConfirm?.type === "submit-company"}
+        title="Submit Company Scores?"
+        message={(() => {
+          const company = data.companies.find((item) => item.id === pendingConfirm?.companyId);
+          const pitch = company ? data.companies.findIndex((item) => item.id === company.id) + 1 : 0;
+          const label = company ? `Pitch ${pitch} - ${company.name}` : "this company";
+          return (
+            <>
+              {`Submit scores for ${label}.`}
+              {"\n"}
+              <span className="text-xs">
+                Submitted scores appear in Current Results. Scores can still be edited and resubmitted from the Scoring page.
+              </span>
+            </>
+          );
+        })()}
         confirmLabel="Submit"
-        onConfirm={handleConfirmDialog}
+        onConfirm={() => {
+          void handleConfirmDialog().then((companyId) => {
+            if (!companyId) return;
+            flashUnicorn();
+            const index = data.companies.findIndex((company) => company.id === companyId);
+            const next = data.companies[index + 1];
+            if (next) setSelectedCompanyId(next.id);
+          });
+        }}
         onCancel={() => setPendingConfirm(null)}
       />
-    </main>
+      {showUnicorn
+        ? createPortal(
+            <div className="pointer-events-none fixed inset-0 z-[2000]">
+              <ConfettiBurst pieces={confetti} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <img
+                  src="/images/unicorn.png"
+                  alt=""
+                  className="unicorn-flash w-[min(22rem,70vw)] max-w-full"
+                />
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+      </main>
+    </div>
   );
 }

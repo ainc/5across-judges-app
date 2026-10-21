@@ -1,4 +1,4 @@
-import { buildRankings, scoresFromFinalJudges, winnerFromRankings } from "@/lib/competition-results";
+import { buildRankings, countPublishedJudges, scoresFromFinalJudges, winnerFromRankings } from "@/lib/competition-results";
 import { prisma } from "@/lib/prisma";
 
 export type ResultPayload = {
@@ -9,13 +9,14 @@ export type ResultPayload = {
     winner: string | null;
   };
   finalJudgeCount: number;
-  categories: Array<{ id: string; name: string; weight: number }>;
+  categories: Array<{ id: string; name: string; description: string; weight: number }>;
   rankings: Array<{
     companyId: string;
     companyName: string;
     companyPresenter: string;
     finalScore: number;
     judgeCount: number;
+    pitch: number;
     rank: number;
     byJudge: Array<{
       judgeId: string;
@@ -26,32 +27,44 @@ export type ResultPayload = {
   }>;
 };
 
-export async function getResults(competitionId?: string): Promise<ResultPayload> {
-  const competition = await prisma.competition.findFirst({
-    where: competitionId ? { id: competitionId } : { isActive: true },
-    include: {
-      companies: { orderBy: { name: "asc" } },
-      judges: { orderBy: { name: "asc" } },
-      categories: { orderBy: { createdAt: "asc" } },
-      sessions: true,
-      scores: {
-        include: { category: true, judge: true },
-      },
-    },
-  });
+const resultsInclude = {
+  companies: { orderBy: { createdAt: "asc" as const } },
+  judges: { orderBy: { name: "asc" as const } },
+  categories: { orderBy: { createdAt: "asc" as const } },
+  sessions: true,
+  scores: {
+    include: { category: true, judge: true },
+  },
+};
+
+export async function getResults(competitionId?: string): Promise<ResultPayload | null> {
+  const competition = competitionId
+    ? await prisma.competition.findFirst({
+        where: { id: competitionId },
+        include: resultsInclude,
+      })
+    : (await prisma.competition.findFirst({
+        where: { isActive: true },
+        include: resultsInclude,
+      })) ??
+      (await prisma.competition.findFirst({
+        where: { isActive: false },
+        orderBy: { updatedAt: "desc" },
+        include: resultsInclude,
+      }));
 
   if (!competition) {
-    throw new Error("Failed to fetch results");
+    return null;
   }
 
-  const finalScores = scoresFromFinalJudges(competition.scores, competition.sessions);
+  const finalScores = scoresFromFinalJudges(competition.scores);
   const rankings = buildRankings(
     competition.companies,
     competition.judges,
     competition.categories,
     finalScores,
   );
-  const finalJudgeCount = competition.sessions.filter((session) => session.status === "FINAL").length;
+  const finalJudgeCount = countPublishedJudges(competition.scores);
 
   return {
     competition: {
@@ -64,6 +77,7 @@ export async function getResults(competitionId?: string): Promise<ResultPayload>
     categories: competition.categories.map((category) => ({
       id: category.id,
       name: category.name,
+      description: category.description,
       weight: category.weight,
     })),
     rankings,

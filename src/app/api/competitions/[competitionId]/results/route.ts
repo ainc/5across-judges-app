@@ -18,7 +18,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
   const competition = await prisma.competition.findUnique({
     where: { id: competitionId },
     include: {
-      companies: { orderBy: { name: "asc" } },
+      companies: { orderBy: { createdAt: "asc" } },
       judges: { orderBy: { name: "asc" } },
       categories: { orderBy: { createdAt: "asc" } },
       sessions: true,
@@ -32,7 +32,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Competition not found." }, { status: 404 });
   }
 
-  const finalScores = scoresFromFinalJudges(competition.scores, competition.sessions);
+  const finalScores = scoresFromFinalJudges(competition.scores);
   const rankings = buildRankings(
     competition.companies,
     competition.judges,

@@ -1,4 +1,5 @@
-import { roundScore } from "@/lib/scoring";
+import { formatWeightedTotal } from "@/lib/judging-format";
+import { roundToHundredth } from "@/lib/scoring";
 
 type CategoryRef = { name: string; weight: number };
 type JudgeRef = { id: string; name: string };
@@ -11,16 +12,21 @@ export type StoredScore = {
   judge: JudgeRef;
 };
 
-export function finalJudgeIds(sessions: Array<{ judgeId: string; status: string }>): Set<string> {
-  return new Set(sessions.filter((session) => session.status === "FINAL").map((session) => session.judgeId));
+type PublishableScore = {
+  judgeId: string;
+  score: number;
+  publishedScore: number | null;
+};
+
+export function scoresFromFinalJudges<T extends PublishableScore>(scores: T[]): T[] {
+  return scores.flatMap((entry) => {
+    if (entry.publishedScore == null) return [];
+    return [{ ...entry, score: entry.publishedScore }];
+  });
 }
 
-export function scoresFromFinalJudges<T extends { judgeId: string }>(
-  scores: T[],
-  sessions: Array<{ judgeId: string; status: string }>,
-): T[] {
-  const allowed = finalJudgeIds(sessions);
-  return scores.filter((score) => allowed.has(score.judgeId));
+export function countPublishedJudges(scores: Array<{ judgeId: string; publishedScore: number | null }>): number {
+  return new Set(scores.filter((score) => score.publishedScore != null).map((score) => score.judgeId)).size;
 }
 
 export type RankingRow = {
@@ -29,6 +35,7 @@ export type RankingRow = {
   companyPresenter: string;
   finalScore: number;
   judgeCount: number;
+  pitch: number;
   rank: number;
   byJudge: Array<{
     judgeId: string;
@@ -48,7 +55,7 @@ export function buildRankings(
   const categoryWeightByName = new Map(categories.map((category) => [category.name, category.weight]));
 
   return companies
-    .map((company) => {
+    .map((company, index) => {
       const judgeTotals = new Map<string, number>();
       const categoryByJudge = new Map<string, Record<string, number>>();
 
@@ -69,22 +76,26 @@ export function buildRankings(
         current[categoryName] = score.score;
       }
 
+      for (const [judgeId, total] of judgeTotals) {
+        judgeTotals.set(judgeId, roundToHundredth(total));
+      }
+
       const totals = Array.from(judgeTotals.values());
       const finalScore =
-        totals.length > 0 ? roundScore(totals.reduce((sum, value) => sum + value, 0) / totals.length) : 0;
+        totals.length > 0 ? roundToHundredth(totals.reduce((sum, value) => sum + value, 0) / totals.length) : 0;
 
       return {
         companyId: company.id,
         companyName: company.name,
         companyPresenter: company.presenter?.trim() ?? "",
+        pitch: index + 1,
         finalScore,
         judgeCount: judgeTotals.size,
         byJudge: judges.map((judge) => ({
           judgeId: judge.id,
           judgeName: judge.name,
           categories: categoryByJudge.get(judge.id) ?? {},
-          judgeTotal:
-            judgeTotals.has(judge.id) ? roundScore(judgeTotals.get(judge.id)!) : null,
+          judgeTotal: judgeTotals.has(judge.id) ? judgeTotals.get(judge.id)! : null,
         })),
       };
     })
@@ -97,15 +108,15 @@ export function winnerFromRankings(rankings: Array<{ companyName: string }>): st
 }
 
 export function normalizeEventDate(value: string): string | null {
-  const match = value.trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (!match) return null;
+  const trimmed = value.trim();
+  const us = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!us && !iso) return null;
 
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  if (!Number.isFinite(year) || month < 1 || month > 12 || day < 1) {
-    return null;
-  }
+  const year = Number(us ? us[3] : iso![1]);
+  const month = Number(us ? us[1] : iso![2]);
+  const day = Number(us ? us[2] : iso![3]);
+  if (year < 1000 || month < 1 || month > 12 || day < 1) return null;
 
   const lastDay = new Date(year, month, 0).getDate();
   if (day > lastDay) return null;
@@ -113,7 +124,7 @@ export function normalizeEventDate(value: string): string | null {
   return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-/** Parse a YYYY-MM-DD (or ISO) value as a local calendar date (noon, avoids TZ day-shift). */
+/** Parse a MM/DD/YYYY, YYYY-MM-DD, or ISO value as a local calendar date (noon, avoids TZ day-shift). */
 export function parseEventDate(value: string | Date): Date | null {
   if (value instanceof Date) {
     if (Number.isNaN(value.getTime())) return null;
@@ -132,6 +143,14 @@ export function formatEventDate(value: string | Date): string {
   return date ? date.toLocaleDateString() : "";
 }
 
+/** Display value for the competition date field (MM/DD/YYYY). Invalid drafts are returned unchanged. */
+export function formatEventDateInput(value: string): string {
+  const normalized = normalizeEventDate(value.trim().slice(0, 10));
+  if (!normalized) return value;
+  const [year, month, day] = normalized.split("-");
+  return `${month}/${day}/${year}`;
+}
+
 export function formatResultsSummary(
   competitionName: string,
   eventDate: string | Date,
@@ -148,7 +167,7 @@ export function formatResultsSummary(
     "Rankings:",
     ...rankings.map(
       (row) =>
-        `${row.rank}. ${row.companyName} — ${row.finalScore.toFixed(1)} (from ${row.judgeCount} judge${row.judgeCount === 1 ? "" : "s"})`,
+        `${row.rank}. ${row.companyName} — ${formatWeightedTotal(row.finalScore)} (from ${row.judgeCount} judge${row.judgeCount === 1 ? "" : "s"})`,
     ),
   ];
   return lines.join("\n");
@@ -159,7 +178,7 @@ export async function getCompetitionResults(competitionId: string) {
   const competition = await prisma.competition.findUnique({
     where: { id: competitionId },
     include: {
-      companies: { orderBy: { name: "asc" } },
+      companies: { orderBy: { createdAt: "asc" } },
       judges: { orderBy: { name: "asc" } },
       categories: { orderBy: { createdAt: "asc" } },
       sessions: true,
@@ -171,14 +190,14 @@ export async function getCompetitionResults(competitionId: string) {
 
   if (!competition) return null;
 
-  const finalScores = scoresFromFinalJudges(competition.scores, competition.sessions);
+  const finalScores = scoresFromFinalJudges(competition.scores);
   const rankings = buildRankings(
     competition.companies,
     competition.judges,
     competition.categories,
     finalScores,
   );
-  const finalJudgeCount = competition.sessions.filter((session) => session.status === "FINAL").length;
+  const finalJudgeCount = countPublishedJudges(competition.scores);
 
   return {
     competition,

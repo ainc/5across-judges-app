@@ -32,8 +32,7 @@ export function ArchivedDetailsModal({ details, onClose }: ArchivedDetailsModalP
             <ul className="mt-1 list-disc pl-5">
               {details.judges.map((judge) => (
                 <li key={judge.name}>
-                  {judge.name}
-                  {judge.code ? ` (${judge.code})` : ""}
+                  {judge.name} ({judge.username})
                 </li>
               ))}
             </ul>
@@ -65,7 +64,7 @@ export function ArchivedDetailsModal({ details, onClose }: ArchivedDetailsModalP
               <ol className="mt-1 list-decimal pl-5">
                 {details.rankings.map((row) => (
                   <li key={row.rank}>
-                    {row.companyName} — {row.finalScore.toFixed(1)} ({row.judgeCount} judge
+                    {row.companyName} — {row.finalScore.toFixed(2)} ({row.judgeCount} judge
                     {row.judgeCount === 1 ? "" : "s"})
                   </li>
                 ))}

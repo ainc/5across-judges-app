@@ -10,6 +10,7 @@ export async function POST() {
     return authResult.response;
   }
 
+  try {
   const competition = await prisma.competition.findFirst({
     where: { isActive: true },
   });
@@ -43,4 +44,8 @@ export async function POST() {
       judgeCount: row.judgeCount,
     })),
   });
+  } catch (error) {
+    console.error("Failed to copy competition into archive:", error);
+    return NextResponse.json({ error: "Unable to copy competition into the archive." }, { status: 500 });
+  }
 }

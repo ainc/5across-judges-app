@@ -29,16 +29,24 @@ export function getWeightedTotalForCompany(
   }, 0);
 }
 
+export function roundToHundredth(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 export function roundScore(value: number): number {
-  return Math.round(value * 10) / 10;
+  return Math.round(value * 2) / 2;
 }
 
 export function normalizeScore(value: number): number {
-  return roundScore(value);
+  return Math.min(5, Math.max(1, roundScore(value)));
+}
+
+function isHalfPoint(value: number): boolean {
+  return Math.abs(value * 2 - Math.round(value * 2)) < 1e-9;
 }
 
 export function isScoreInRange(value: number): boolean {
-  return Number.isFinite(value) && value >= 1 && value <= 5;
+  return Number.isFinite(value) && value >= 1 && value <= 5 && isHalfPoint(value);
 }
 
 export function getMissingCells(

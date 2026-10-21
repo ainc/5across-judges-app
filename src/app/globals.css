@@ -8,76 +8,116 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-open-sans);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-open-sans), "Open Sans", sans-serif;
+  min-width: 0;
+}
+
+.page-header,
+.page-header h1 {
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.15px;
+  line-height: 1.3;
+  text-transform: uppercase;
 }
 
 .fiveacross-banner {
   display: block;
   height: auto;
-  width: 400px;
+  width: min(400px, 45vw);
 }
 
 .company-results-table {
-  table-layout: fixed;
+  table-layout: auto;
 }
 
-.company-results-table th:first-child,
-.company-results-table td:first-child {
-  width: 55%;
+.styled-table tr > :last-child {
+  border-right-width: 0;
 }
 
-.goldmedal {
-  height: 25px;
-  width: 25px;
+.styled-table tbody tr:last-child > * {
+  border-bottom-width: 0;
 }
 
-.event-date-calendar-trigger:focus-visible {
-  outline: 2px solid #111827;
-  outline-offset: 2px;
+@keyframes unicorn-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
 }
 
-.event-date-calendar-popover {
-  min-width: min(100%, 320px);
+.unicorn-flash {
+  position: relative;
+  z-index: 1;
+  animation: unicorn-flash 1.6s ease both;
 }
 
-.event-date-calendar .rdp-root {
-  --rdp-accent-color: #111827;
-  --rdp-accent-background-color: #f3f4f6;
-  --rdp-day-height: 36px;
-  --rdp-day-width: 36px;
-  --rdp-day_button-height: 34px;
-  --rdp-day_button-width: 34px;
-  --rdp-day_button-border-radius: 6px;
-  --rdp-selected-border: 2px solid #111827;
-  --rdp-today-color: #111827;
+.confetti-ribbon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(176, 24, 36, 0.2);
+  animation: confetti-fade 1.6s ease-out both;
+  transition: transform 1.35s cubic-bezier(0.12, 0.72, 0.2, 1);
 }
 
-.event-date-calendar .rdp-months {
-  justify-content: center;
+@keyframes confetti-fade {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  68% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
-.event-date-calendar .rdp-month {
-  width: 100%;
+@keyframes podium-bar-rise {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
-.event-date-calendar .rdp-month_caption {
-  font-weight: 600;
+.podium-bar-clip {
+  overflow: hidden;
 }
 
-.event-date-calendar .rdp-dropdown_root select {
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 0.875rem;
-  background-color: #fff;
+.podium-bar {
+  animation: podium-bar-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .podium-bar {
+    animation: none;
+  }
+}
+
 
 @layer components {
   #toast-container {
@@ -118,52 +158,6 @@ body {
  * MUI icon overlays: position/opacity/display use !important so Emotion
  * cannot leave both filled + outline layers visible in production (Netlify).
  */
-button.newcompetitionbutton {
-  display: block;
-  height: 1.75rem;
-  width: 1.75rem;
-  aspect-ratio: 1;
-  padding: 0;
-  border: none;
-  background: transparent;
-  line-height: 0;
-  color: inherit;
-}
-
-.newcompetition-container {
-  position: relative !important;
-  display: block;
-  height: 100%;
-  width: 100%;
-  overflow: visible;
-}
-
-.newcompetition-container .newcompetitionbutton,
-.newcompetition-container .graynewcompetitionbutton {
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  display: block !important;
-  aspect-ratio: 1;
-  height: calc(100% * 24 / 20) !important;
-  width: auto !important;
-  font-size: inherit !important;
-  transform: translate(-50%, -50%) !important;
-}
-
-.graynewcompetitionbutton {
-  color: #6b7280;
-  opacity: 0 !important;
-}
-
-.newcompetition-container:hover svg:first-child {
-  opacity: 0 !important;
-}
-
-.newcompetition-container:hover svg:last-child {
-  opacity: 1 !important;
-}
-
 .archived-row-actions > .makelivebutton,
 .archived-row-actions > .viewbutton,
 .archived-row-actions > .archivedeletebutton {
@@ -330,8 +324,14 @@ button.messagedelete:disabled {
   opacity: 1 !important;
 }
 
+.dark-button:not(:disabled) {
+  background-color: #7b8290;
+  color: #111827;
+}
+
 .dark-button:not(:disabled):hover {
-  background-color: #30303a;
+  background-color: #636a76;
+  color: #ffffff;
 }
 
 .white-button:not(:disabled):hover {
@@ -339,14 +339,15 @@ button.messagedelete:disabled {
 }
 
 .red-button:not(:disabled):hover {
-  background-color: #d75151;
+  background-color: #30303a;
 }
 
 .dark-button:disabled,
 .dark-button:disabled:hover {
-  background-color: #111827 !important;
+  background-color: #c5c9d0 !important;
+  color: #6b7280;
   pointer-events: none !important;
-  opacity: 0.5;
+  opacity: 1;
   cursor: not-allowed;
 }
 
@@ -360,10 +361,31 @@ button.messagedelete:disabled {
 
 .red-button:disabled,
 .red-button:disabled:hover {
-  background-color: #ee2524 !important;
+  background-color: #111827 !important;
   pointer-events: none !important;
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.score-scale-graphic {
+  display: block;
+  width: 32rem;
+  max-width: 100%;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  font-family: inherit;
+}
+
+.score-input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
 }
 
 .signoutbutton {

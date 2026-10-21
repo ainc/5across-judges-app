@@ -1,4 +1,12 @@
-type CategoryRef = { name: string; weight: number };
+"use client";
+
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import Tooltip from "@mui/material/Tooltip";
+import { AppSelect } from "@/components/AppSelect";
+import { StyledTable, tdClass, thClass } from "@/components/StyledTable";
+import { formatWeightedTotal } from "@/lib/judging-format";
+
+type CategoryRef = { name: string; description?: string | null; weight: number };
 type JudgeScore = {
   judgeId: string;
   judgeName: string;
@@ -8,26 +16,46 @@ type JudgeScore = {
 type CompanyRanking = {
   companyId: string;
   companyName: string;
+  pitch: number;
   byJudge: JudgeScore[];
 };
 
 export function CompanyResultsTables({
   rankings,
   categories,
+  selectedCompanyId,
+  onSelectCompany,
 }: {
   rankings: CompanyRanking[];
   categories: CategoryRef[];
+  selectedCompanyId: string;
+  onSelectCompany: (companyId: string) => void;
 }) {
+  const visibleRankings = rankings.filter((row) => row.companyId === selectedCompanyId);
   return (
     <section className="space-y-8">
-      {rankings.map((row) => (
-        <div key={row.companyId} className="overflow-auto">
-          <table className="company-results-table w-full border-collapse border border-black text-sm">
+      {visibleRankings.map((row) => (
+        <StyledTable key={row.companyId} tableClassName="company-results-table text-sm">
             <thead>
               <tr>
-                <th className="border border-black p-2 text-left font-semibold">{row.companyName}</th>
+                <th className="border-r border-b p-0 text-left font-normal">
+                  <AppSelect
+                    header
+                    aria-label="Company"
+                    value={selectedCompanyId}
+                    onChange={(event) => onSelectCompany(event.target.value)}
+                  >
+                    {[...rankings]
+                      .sort((a, b) => a.pitch - b.pitch)
+                      .map((option) => (
+                      <option key={option.companyId} value={option.companyId}>
+                        Pitch {option.pitch} - {option.companyName}
+                      </option>
+                    ))}
+                  </AppSelect>
+                </th>
                 {row.byJudge.map((judge) => (
-                  <th key={judge.judgeId} className="border border-black p-2 text-center font-normal">
+                  <th key={judge.judgeId} className={`${thClass} text-center font-normal`}>
                     {judge.judgeName}
                   </th>
                 ))}
@@ -36,9 +64,25 @@ export function CompanyResultsTables({
             <tbody>
               {categories.map((category) => (
                 <tr key={category.name}>
-                  <td className="border border-black p-2 text-left">{category.name} <span className="text-xs text-gray-600">({category.weight}%)</span></td>
+                  <td className={tdClass}>
+                    <span className="inline-flex items-center gap-1">
+                      {category.name}
+                      {category.description?.trim() ? (
+                        <Tooltip title={category.description} arrow>
+                          <button
+                            type="button"
+                            aria-label={`Full description: ${category.description}`}
+                            className="inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-500 hover:text-gray-800"
+                          >
+                            <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+                          </button>
+                        </Tooltip>
+                      ) : null}
+                      <span className="text-xs text-gray-600">({category.weight}%)</span>
+                    </span>
+                  </td>
                   {row.byJudge.map((judge) => (
-                    <td key={judge.judgeId} className="border border-black p-2 text-center">
+                    <td key={judge.judgeId} className={`${tdClass} text-center`}>
                       {judge.categories[category.name] !== undefined
                         ? judge.categories[category.name].toFixed(1)
                         : ""}
@@ -47,16 +91,15 @@ export function CompanyResultsTables({
                 </tr>
               ))}
               <tr>
-                <td className="border border-black p-2 text-left font-semibold">Average Per Judge</td>
+                <td className={`${tdClass} font-semibold`}>Average Per Judge</td>
                 {row.byJudge.map((judge) => (
-                  <td key={judge.judgeId} className="border border-black p-2 text-center font-semibold">
-                    {judge.judgeTotal !== null ? judge.judgeTotal.toFixed(1) : ""}
+                  <td key={judge.judgeId} className={`${tdClass} text-center font-semibold`}>
+                    {judge.judgeTotal !== null ? formatWeightedTotal(judge.judgeTotal) : ""}
                   </td>
                 ))}
               </tr>
             </tbody>
-          </table>
-        </div>
+        </StyledTable>
       ))}
     </section>
   );

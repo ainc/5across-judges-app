@@ -1,26 +1,20 @@
 import { PrismaClient } from "@prisma/client";
+import { DEFAULT_CATEGORIES } from "../src/lib/competition-config";
 import { saltAndHashPassword } from "../src/utils/password";
 
 const prisma = new PrismaClient();
 
-async function seedUser(
-  username: string,
-  password: string,
-  role: "ADMIN" | "JUDGE",
-  judgeCode?: string,
-) {
+async function seedUser(username: string, password: string, role: "ADMIN" | "JUDGE") {
   await prisma.user.upsert({
     where: { username },
     update: {
       passwordHash: await saltAndHashPassword(password),
       role,
-      judgeCode: judgeCode ?? null,
     },
     create: {
       username,
       passwordHash: await saltAndHashPassword(password),
       role,
-      judgeCode: judgeCode ?? null,
     },
   });
 }
@@ -37,9 +31,9 @@ async function main() {
   }
 
   await seedUser(adminUsername, adminPassword, "ADMIN");
-  await seedUser(process.env.JUDGE1_USERNAME ?? "judge1", judgePassword, "JUDGE", "JA");
-  await seedUser(process.env.JUDGE2_USERNAME ?? "judge2", judgePassword, "JUDGE", "JB");
-  await seedUser(process.env.JUDGE3_USERNAME ?? "judge3", judgePassword, "JUDGE", "JC");
+  await seedUser(process.env.JUDGE1_USERNAME ?? "judge1", judgePassword, "JUDGE");
+  await seedUser(process.env.JUDGE2_USERNAME ?? "judge2", judgePassword, "JUDGE");
+  await seedUser(process.env.JUDGE3_USERNAME ?? "judge3", judgePassword, "JUDGE");
 
   await prisma.score.deleteMany();
   await prisma.submissionSession.deleteMany();
@@ -55,9 +49,9 @@ async function main() {
       isActive: true,
       judges: {
         create: [
-          { name: "Judge A", code: "JA" },
-          { name: "Judge B", code: "JB" },
-          { name: "Judge C", code: "JC" },
+          { name: "Judge A", username: process.env.JUDGE1_USERNAME ?? "judge1" },
+          { name: "Judge B", username: process.env.JUDGE2_USERNAME ?? "judge2" },
+          { name: "Judge C", username: process.env.JUDGE3_USERNAME ?? "judge3" },
         ],
       },
       companies: {
@@ -70,26 +64,7 @@ async function main() {
         ],
       },
       categories: {
-        create: [
-          {
-            name: "Strength / Creativity / Uniqueness of idea / Technology",
-            weight: 15,
-            maxScore: 5,
-          },
-          {
-            name: "Description / Knowledge of the target market",
-            weight: 20,
-            maxScore: 5,
-          },
-          { name: "Traction / Growth", weight: 25, maxScore: 5 },
-          { name: "Revenue Model", weight: 20, maxScore: 5 },
-          { name: "Team / Advisors", weight: 15, maxScore: 5 },
-          {
-            name: "Quality of overall pitch / Presentation",
-            weight: 5,
-            maxScore: 5,
-          },
-        ],
+        create: DEFAULT_CATEGORIES.map((category) => ({ ...category })),
       },
     },
     select: { id: true, name: true },
@@ -100,12 +75,17 @@ async function main() {
       name: "5 Across",
       eventDate: new Date("2025-11-20"),
       isActive: false,
-      judges: { create: [{ name: "Archived Judge 1" }, { name: "Archived Judge 2" }] },
+      judges: {
+        create: [
+          { name: "Archived Judge 1", username: "archived1" },
+          { name: "Archived Judge 2", username: "archived2" },
+        ],
+      },
       companies: { create: [{ name: "Legacy Co A" }, { name: "Legacy Co B" }] },
       categories: {
         create: [
-          { name: "Idea", weight: 50, maxScore: 5 },
-          { name: "Execution", weight: 50, maxScore: 5 },
+          { name: "Idea", description: "Idea", weight: 50, maxScore: 5 },
+          { name: "Execution", description: "Execution", weight: 50, maxScore: 5 },
         ],
       },
     },
@@ -114,7 +94,7 @@ async function main() {
   console.log(`Seeded active competition: ${competition.name}`);
   console.log(`Seeded admin user: ${adminUsername}`);
   console.log(
-    "Seeded judge logins: judge1/judge2/judge3 (linked by code JA/JB/JC, or by judge order if codes change)",
+    "Seeded judge logins: judge1/judge2/judge3 (username matches the judge on the active competition)",
   );
 }
 
