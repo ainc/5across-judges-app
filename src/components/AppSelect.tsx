@@ -36,7 +36,8 @@ const wrapStyle: CSSProperties = {
   alignItems: "center",
   gap: "0.4rem",
   verticalAlign: "middle",
-  backgroundColor: "#fff",
+  backgroundColor: "var(--surface)",
+  color: "var(--foreground)",
   boxSizing: "border-box",
   appearance: "none",
   cursor: "pointer",
@@ -65,9 +66,9 @@ const headerButtonStyle: CSSProperties = {
   width: "calc(100% - 0.7rem)",
   margin: "0.35rem",
   padding: "0.5rem",
-  border: "1px solid #323232",
+  border: "1px solid var(--border)",
   borderRadius: "4px",
-  background: "#fff",
+  background: "var(--surface)",
   boxSizing: "border-box",
   cursor: "pointer",
   color: "inherit",
@@ -75,17 +76,20 @@ const headerButtonStyle: CSSProperties = {
   textAlign: "left",
 };
 
-const caretStyle: CSSProperties = {
-  flex: "0 0 0.75rem",
-  width: "0.75rem",
-  height: "0.75rem",
-  pointerEvents: "none",
-  backgroundRepeat: "no-repeat",
-  backgroundPosition: "center",
-  backgroundSize: "contain",
-  backgroundImage:
-    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23323232' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M4 6.5 L8 10.5 L12 6.5'/%3E%3C/svg%3E\")",
-};
+function SelectCaret() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style={{ flex: "0 0 0.75rem" }}>
+      <path
+        d="M4 6.5 L8 10.5 L12 6.5"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
 
 const menuItemSx = {
   fontFamily: "var(--font-open-sans), \"Open Sans\", sans-serif",
@@ -156,7 +160,7 @@ export function AppSelect({
   }
 
   const pitchButtonClass =
-    "inline-flex shrink-0 items-center justify-center border-0 bg-transparent p-0 text-[#323232] disabled:cursor-default disabled:opacity-40";
+    "inline-flex shrink-0 items-center justify-center border-0 bg-transparent p-0 text-foreground disabled:cursor-default disabled:opacity-40";
 
   return (
     <>
@@ -170,7 +174,7 @@ export function AppSelect({
             ...headerButtonStyle,
             ...style,
             cursor: "default",
-            backgroundColor: boxHovered ? "#e5e7eb" : "#fff",
+            backgroundColor: boxHovered ? "var(--hover)" : "var(--surface)",
           }}
         >
           <button
@@ -232,7 +236,7 @@ export function AppSelect({
         >
           {selected?.label}
         </span>
-        <span aria-hidden="true" style={caretStyle} />
+        <SelectCaret />
       </button>
       )}
       <Menu
@@ -248,6 +252,8 @@ export function AppSelect({
               minWidth: anchor?.offsetWidth,
               maxWidth: anchor?.offsetWidth,
               boxSizing: "border-box",
+              backgroundColor: "var(--surface)",
+              color: "var(--foreground)",
             },
           },
           list: {

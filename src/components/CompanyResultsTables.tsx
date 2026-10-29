@@ -72,13 +72,13 @@ export function CompanyResultsTables({
                           <button
                             type="button"
                             aria-label={`Full description: ${category.description}`}
-                            className="inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-500 hover:text-gray-800"
+                            className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted hover:text-foreground"
                           >
                             <InfoOutlinedIcon sx={{ fontSize: 16 }} />
                           </button>
                         </Tooltip>
                       ) : null}
-                      <span className="text-xs text-gray-600">({category.weight}%)</span>
+                      <span className="text-xs text-muted">({category.weight}%)</span>
                     </span>
                   </td>
                   {row.byJudge.map((judge) => (

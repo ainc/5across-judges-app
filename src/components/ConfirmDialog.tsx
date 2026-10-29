@@ -24,7 +24,7 @@ export function ConfirmDialog({
   if (!open) return null;
 
   const confirmClassName =
-    "dark-button rounded border border-black bg-gray-900 px-2 py-1 text-white";
+    "dark-button rounded border border-border bg-gray-900 px-2 py-1 text-white";
 
   return (
     <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4">
@@ -38,18 +38,18 @@ export function ConfirmDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
-        className="relative w-full max-w-md rounded border bg-white p-6 shadow-lg"
+        className="relative w-full max-w-md rounded border bg-surface p-6 shadow-lg"
       >
         <img src="/images/5acrossbanner.png" alt="5 Across Banner" className="fiveacross-banner mx-auto mb-4 h-20 w-20 object-contain" />
         <h2 id="confirm-dialog-title" className="text-lg font-semibold">
           {title}
         </h2>
-        <p className="mt-3 whitespace-pre-wrap text-sm text-gray-600">{message}</p>
+        <p className="mt-3 whitespace-pre-wrap text-sm text-muted">{message}</p>
         <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="white-button rounded border border-black bg-white px-4 py-2"
+            className="white-button rounded border border-border bg-surface px-4 py-2"
           >
             {cancelLabel}
           </button>

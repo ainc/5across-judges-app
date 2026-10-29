@@ -46,7 +46,7 @@ export function ResultsPodiums({
   const ordered = [...rankings].sort((a, b) => a.pitch - b.pitch);
 
   if (rankings.length === 0) {
-    return <p className="text-sm text-gray-600">No results yet.</p>;
+    return <p className="text-sm text-muted">No results yet.</p>;
   }
 
   return (

@@ -28,7 +28,7 @@ export function CompaniesModal({
       panelClassName="max-h-[90vh] max-w-2xl overflow-y-auto"
     >
       {companies.map((company, index) => (
-        <div key={company.id} className="space-y-2 rounded bg-white p-3">
+        <div key={company.id} className="space-y-2 rounded bg-surface p-3">
           <label className="block text-sm">
             Pitch {index + 1}
             <input

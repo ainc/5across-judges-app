@@ -154,7 +154,7 @@ export function AdminDashboard() {
                     Competition Date
                     <input
                       id="competition-date"
-                      className={`mt-1 w-full rounded border p-2 ${eventDateError ? "border-red-600" : ""}`}
+                      className={`mt-1 w-full rounded border p-2 ${eventDateError ? "border-danger" : ""}`}
                       type="text"
                       autoComplete="off"
                       spellCheck={false}
@@ -183,7 +183,7 @@ export function AdminDashboard() {
                       }}
                     />
                     {eventDateError ? (
-                      <p id="competition-date-error" className="mt-1 text-sm text-red-700">
+                      <p id="competition-date-error" className="mt-1 text-sm text-danger">
                         {eventDateError}
                       </p>
                     ) : null}
@@ -206,7 +206,7 @@ export function AdminDashboard() {
                   </ol>
                 </>
               ) : (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted">
                   {data ? "No final submissions yet." : "No live competition. Start a new competition to begin scoring."}
                 </p>
               )}

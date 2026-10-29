@@ -90,7 +90,7 @@ function ScoreRing({ score, color }: { score: number; color: string }) {
           alignItems: "center",
           justifyContent: "center",
           lineHeight: 1,
-          color: "#323232",
+          color: "var(--foreground)",
         }}
       >
         <span
@@ -122,7 +122,7 @@ export function ResultsScoreCircles({
   const scoresHighToLow = [...new Set(rankings.map((row) => row.finalScore))].sort((a, b) => b - a);
 
   if (rankings.length === 0) {
-    return <p className="text-sm text-gray-600">No results yet.</p>;
+    return <p className="text-sm text-muted">No results yet.</p>;
   }
 
   return (

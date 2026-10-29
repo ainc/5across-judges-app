@@ -42,7 +42,7 @@ export function CategoriesModal({
       panelClassName="max-h-[90vh] max-w-2xl overflow-y-auto"
       footerExtra={
         !weightsValid ? (
-          <p className="rounded border border-[#EE2524] bg-red-300 px-2 py-2 text-black">
+          <p className="rounded border border-danger bg-danger-bg px-2 py-2 text-foreground">
             Criteria weights must total 100% (currently {criteriaWeightTotal}%).
           </p>
         ) : null
@@ -52,18 +52,18 @@ export function CategoriesModal({
         <button
           type="button"
           onClick={onAddCategory}
-          className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white"
+          className="dark-button rounded border border-border bg-gray-900 px-3 py-2 text-white"
         >
           Add Category
         </button>
         <span
-          className={`text-sm font-medium ${weightsValid ? "text-green-700" : "text-red-700"}`}
+          className={`text-sm font-medium ${weightsValid ? "text-success" : "text-danger"}`}
         >
           Weights: {criteriaWeightTotal}%
         </span>
       </div>
       {categories.map((category) => (
-        <div key={category.id} className="space-y-2 rounded bg-white p-3">
+        <div key={category.id} className="space-y-2 rounded bg-surface p-3">
           <div className="flex items-center gap-2">
             <input
               className="min-w-0 flex-1 rounded border p-2"

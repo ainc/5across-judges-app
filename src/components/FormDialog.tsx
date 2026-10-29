@@ -43,7 +43,7 @@ export function FormDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="form-dialog-title"
-        className={`relative w-full rounded border bg-white p-6 shadow-lg ${panelClassName}`}
+        className={`relative w-full rounded border bg-surface p-6 shadow-lg ${panelClassName}`}
       >
         <img
           src="/images/5acrossbanner.png"
@@ -64,7 +64,7 @@ export function FormDialog({
                     type="button"
                     onClick={onClose}
                     disabled={isSaving}
-                    className="white-button rounded border border-black bg-white px-4 py-2"
+                    className="white-button rounded border border-border bg-surface px-4 py-2"
                   >
                     Cancel
                   </button>
@@ -72,7 +72,7 @@ export function FormDialog({
                     type="button"
                     onClick={onSave}
                     disabled={saveDisabled || isSaving}
-                    className="dark-button rounded border border-black bg-gray-900 px-4 py-2 text-white"
+                    className="dark-button rounded border border-border bg-gray-900 px-4 py-2 text-white"
                   >
                     {isSaving ? "Saving..." : saveLabel}
                   </button>
@@ -81,7 +81,7 @@ export function FormDialog({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="dark-button rounded border border-black bg-gray-900 px-4 py-2 text-white"
+                  className="dark-button rounded border border-border bg-gray-900 px-4 py-2 text-white"
                 >
                   {closeLabel}
                 </button>

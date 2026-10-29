@@ -43,7 +43,7 @@ export function SendJudgeMessageModal({
           <button
             type="button"
             onClick={onClose}
-            className="white-button rounded border border-black bg-white px-4 py-2"
+            className="white-button rounded border border-border bg-surface px-4 py-2"
           >
             Cancel
           </button>
@@ -51,7 +51,7 @@ export function SendJudgeMessageModal({
             type="button"
             disabled={!message.trim() || !judgeId || alreadySent}
             onClick={() => onSend(judgeId, message.trim())}
-            className="dark-button rounded border border-black bg-gray-900 px-4 py-2 text-white disabled:opacity-50"
+            className="dark-button rounded border border-border bg-gray-900 px-4 py-2 text-white disabled:opacity-50"
           >
             Send Message
           </button>
@@ -63,7 +63,7 @@ export function SendJudgeMessageModal({
         <div className="mt-1">
           <AppSelect
             aria-label="Judge"
-            className="h-9 w-full rounded border bg-white px-2 py-1"
+            className="h-9 w-full rounded border bg-surface px-2 py-1"
             value={judgeId}
             onChange={(event) => setJudgeId(event.target.value)}
           >
@@ -77,7 +77,7 @@ export function SendJudgeMessageModal({
         </div>
       </label>
       {alreadySent ? (
-        <p className="text-sm text-gray-600">A message has already been sent to {judgeName}.</p>
+        <p className="text-sm text-muted">A message has already been sent to {judgeName}.</p>
       ) : (
         <label className="block text-sm">
           Message

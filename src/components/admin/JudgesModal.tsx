@@ -42,7 +42,7 @@ export function JudgesModal({
       isSaving={isSaving}
       panelClassName="max-h-[90vh] max-w-2xl overflow-y-auto"
     >
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-muted">
         Each judge needs a username. Saving a new judge creates a login with that username and the shared judge
         password. Changing a judge&apos;s name leaves their username as it is. Edit the username to change that
         login.
@@ -50,12 +50,12 @@ export function JudgesModal({
       <button
         type="button"
         onClick={onAddJudge}
-        className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white"
+        className="dark-button rounded border border-border bg-gray-900 px-3 py-2 text-white"
       >
         Add Judge
       </button>
       {judges.map((judge) => (
-        <div key={judge.id} className="space-y-2 rounded bg-white p-3">
+        <div key={judge.id} className="space-y-2 rounded bg-surface p-3">
           <div className="flex items-center gap-2">
             <input
               className="min-w-0 flex-1 rounded border p-2"
@@ -69,7 +69,7 @@ export function JudgesModal({
               aria-label={`Remove ${judge.name || "judge"}`}
             />
           </div>
-          <label className="block text-xs font-medium text-gray-600">
+          <label className="block text-xs font-medium text-muted">
             Username
             <input
               className="mt-1 w-full rounded border p-2 text-sm"

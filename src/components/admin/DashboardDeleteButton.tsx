@@ -44,7 +44,7 @@ export function DashboardDeleteButton({
             <DeleteForeverOutlinedIcon
               className="archivedeletebutton"
               fontSize="inherit"
-              style={{ color: "#6b7280" }}
+              style={{ color: "var(--muted)" }}
             />
           ) : (
             <DeleteForeverIcon className="archivedeletebutton" fontSize="inherit" />
@@ -70,7 +70,7 @@ export function DashboardDeleteButton({
           <DeleteForeverOutlinedIcon
             className="messagedelete"
             fontSize="inherit"
-            style={{ color: "#6b7280" }}
+            style={{ color: "var(--muted)" }}
           />
         ) : (
           <DeleteForeverIcon className="messagedelete" fontSize="inherit" />

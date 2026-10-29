@@ -39,7 +39,7 @@ export function DashboardTextActions({ children }: { children: ReactNode }) {
             <div
               style={{
                 height: 1,
-                backgroundColor: "#d1d5db",
+                backgroundColor: "var(--line)",
                 marginLeft: "1rem",
                 marginRight: "1rem",
               }}
@@ -71,7 +71,7 @@ export function DashboardTextButton({
       onMouseLeave={() => setHovered(false)}
       style={{
         ...buttonStyle,
-        backgroundColor: !disabled && hovered ? "#e5e7eb" : "transparent",
+        backgroundColor: !disabled && hovered ? "var(--hover)" : "transparent",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.45 : 1,
         ...style,
