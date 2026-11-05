@@ -103,13 +103,12 @@ const menuItemSx = {
 
 function PitchChevron({ direction }: { direction: "left" | "right" }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.25" />
+    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
       <path
-        d={direction === "left" ? "M13.25 8 L9.25 12 L13.25 16" : "M10.75 8 L14.75 12 L10.75 16"}
+        d={direction === "left" ? "M14 6 L8 12 L14 18" : "M10 6 L16 12 L10 18"}
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.25"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -160,7 +159,7 @@ export function AppSelect({
   }
 
   const pitchButtonClass =
-    "inline-flex shrink-0 items-center justify-center border-0 bg-transparent p-0 text-foreground disabled:cursor-default disabled:opacity-40";
+    "inline-flex shrink-0 items-center justify-center gap-1 rounded border border-border bg-transparent px-2 py-1 text-xs font-medium leading-none text-foreground disabled:cursor-default disabled:opacity-40";
 
   return (
     <>
@@ -173,7 +172,10 @@ export function AppSelect({
           style={{
             ...headerButtonStyle,
             ...style,
+            display: "grid",
+            gridTemplateColumns: "1fr minmax(0, auto) 1fr",
             cursor: "default",
+            textAlign: "center",
             backgroundColor: boxHovered ? "var(--hover)" : "var(--surface)",
           }}
         >
@@ -182,9 +184,10 @@ export function AppSelect({
             aria-label="Previous pitch"
             disabled={disabled || options.length === 0}
             onClick={() => step(-1)}
-            className={pitchButtonClass}
+            className={`${pitchButtonClass} justify-self-start`}
           >
             <PitchChevron direction="left" />
+            PREV
           </button>
           <button
             type="button"
@@ -195,7 +198,7 @@ export function AppSelect({
             onClick={() => {
               if (headerRef.current) setAnchor(headerRef.current);
             }}
-            className="flex min-w-0 flex-1 cursor-pointer items-center self-stretch border-0 bg-transparent p-0 text-left disabled:cursor-default"
+            className="flex min-w-0 w-full cursor-pointer items-center justify-center self-stretch overflow-hidden border-0 bg-transparent p-0 text-center disabled:cursor-default"
             style={{ font: "inherit", color: "inherit" }}
           >
             <span className="min-w-0 truncate">{selected?.label}</span>
@@ -205,8 +208,9 @@ export function AppSelect({
             aria-label="Next pitch"
             disabled={disabled || options.length === 0}
             onClick={() => step(1)}
-            className={pitchButtonClass}
+            className={`${pitchButtonClass} justify-self-end`}
           >
+            NEXT
             <PitchChevron direction="right" />
           </button>
         </div>

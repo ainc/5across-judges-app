@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormDialog } from "@/components/FormDialog";
@@ -110,12 +110,14 @@ function ScoreInput({
   isMissing,
   onValue,
   onBlur,
+  onKeyDown,
 }: {
   value: number | undefined;
   disabled: boolean;
   isMissing: boolean;
   onValue: (raw: string) => void;
   onBlur: () => void;
+  onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
 
@@ -149,6 +151,7 @@ function ScoreInput({
           setDraft(null);
           onBlur();
         }}
+        onKeyDown={onKeyDown}
       />
       {isMissing ? (
         <Tooltip title="Fill in score (1-5) before submitting company scores." arrow>
@@ -245,6 +248,27 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
   const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
   const unicornTimerRef = useRef<number | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
+  const scoreTableRef = useRef<HTMLDivElement>(null);
+
+  function onColumnTab(
+    event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+    selector: string,
+  ) {
+    if (event.key !== "Tab" || event.altKey || event.ctrlKey || event.metaKey) return;
+    const fields = [
+      ...(scoreTableRef.current?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(selector) ?? []),
+    ];
+    const index = fields.indexOf(event.currentTarget);
+    if (index < 0 || fields.length === 0) return;
+    if (event.shiftKey) {
+      if (index === 0) return;
+      event.preventDefault();
+      fields[index - 1]?.focus();
+      return;
+    }
+    event.preventDefault();
+    fields[(index + 1) % fields.length]?.focus();
+  }
   const [restoredCompetitionId, setRestoredCompetitionId] = useState("");
   const canEditScores = !isAdmin || overrideEnabled;
   const {
@@ -269,6 +293,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     canUndo,
     saveStatusLabel,
     updateScore,
+    resetCompanyScores,
     updateNote,
     undoLastScore,
     flushAutosave,
@@ -381,7 +406,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         </section>
       </div>
 
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1" ref={scoreTableRef}>
       <StyledTable className="h-full" tableClassName="table-fixed">
           <colgroup>
             <col className="w-[31%]" />
@@ -443,6 +468,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                         onBlur={() => {
                           void flushAutosave();
                         }}
+                        onKeyDown={(event) => onColumnTab(event, "input.score-input:not(:disabled)")}
                       />
                     </td>
                   );
@@ -451,7 +477,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                   <td key={`${company.id}:${category.id}:note`} className={`${tdClass} h-px p-1 align-top`}>
                     <textarea
                       aria-label={`Notes for ${category.name}`}
-                      className="block h-full w-full resize-none rounded border px-2 py-1 text-sm"
+                      className="note-input block h-full w-full resize-none rounded border px-2 py-1 text-sm"
                       rows={1}
                       disabled={isLoadingScores || !canEditScores}
                       value={notes[`${company.id}:${category.id}`] ?? ""}
@@ -459,6 +485,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                       onBlur={() => {
                         void flushAutosave();
                       }}
+                      onKeyDown={(event) => onColumnTab(event, "textarea.note-input:not(:disabled)")}
                     />
                   </td>
                 ))}
@@ -485,6 +512,19 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
       <section className="flex shrink-0 flex-wrap items-center gap-3">
         <ScoreScaleGraphic />
         <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+          <button
+            type="button"
+            disabled={
+              isSubmitting ||
+              isLoadingScores ||
+              !canEditScores ||
+              !data.categories.some((category) => typeof scores[`${selectedId}:${category.id}`] === "number")
+            }
+            onClick={() => resetCompanyScores(selectedId)}
+            className="dark-button rounded border border-border bg-gray-900 px-3 py-2 text-white disabled:opacity-50"
+          >
+            Reset Scores
+          </button>
           {isAdmin ? (
             <button
               type="button"
