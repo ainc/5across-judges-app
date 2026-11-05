@@ -89,7 +89,8 @@ select {
 }
 
 .company-results-table {
-  table-layout: auto;
+  table-layout: fixed;
+  width: 100%;
 }
 
 .styled-table tr > :last-child {

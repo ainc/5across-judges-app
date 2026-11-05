@@ -28,13 +28,11 @@ export function CurrentResults({
   rankings: RankingRow[];
   categories: CategoryRef[];
 }) {
-  const [tableCompanyId, setTableCompanyId] = useState(rankings[0]?.companyId ?? "");
-  const [podiumCompanyId, setPodiumCompanyId] = useState("");
+  const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const [graphicView, setGraphicView] = useState<GraphicView>("podiums");
 
   function selectCompany(companyId: string) {
-    setTableCompanyId(companyId);
-    setPodiumCompanyId(companyId);
+    setSelectedCompanyId(companyId);
   }
 
   return (
@@ -57,27 +55,26 @@ export function CurrentResults({
       {graphicView === "podiums" ? (
         <ResultsPodiums
           rankings={rankings.map(toGraphicRow)}
-          selectedCompanyId={podiumCompanyId}
+          selectedCompanyId={selectedCompanyId}
           onSelectCompany={selectCompany}
         />
       ) : graphicView === "circles" ? (
         <ResultsScoreCircles
           rankings={rankings.map(toGraphicRow)}
-          selectedCompanyId={podiumCompanyId}
+          selectedCompanyId={selectedCompanyId}
           onSelectCompany={selectCompany}
         />
       ) : (
         <ResultsScores
           rankings={rankings.map(toGraphicRow)}
-          selectedCompanyId={podiumCompanyId}
+          selectedCompanyId={selectedCompanyId}
           onSelectCompany={selectCompany}
         />
       )}
       <CompanyResultsTables
         rankings={rankings}
         categories={categories}
-        selectedCompanyId={tableCompanyId}
-        onSelectCompany={selectCompany}
+        selectedCompanyId={selectedCompanyId}
       />
     </div>
   );
