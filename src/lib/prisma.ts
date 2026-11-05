@@ -11,7 +11,10 @@ function createPrismaClient() {
 function getPrismaClient() {
   const existing = globalForPrisma.prisma ?? createPrismaClient();
   // HMR keeps the old client after `prisma generate`; recreate if new models are missing.
-  if (process.env.NODE_ENV !== "production" && typeof existing.judgeNote === "undefined") {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    (typeof existing.judgeNote === "undefined" || typeof existing.previousJudge === "undefined")
+  ) {
     void existing.$disconnect();
     const next = createPrismaClient();
     globalForPrisma.prisma = next;

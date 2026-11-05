@@ -188,6 +188,32 @@ export function useAdminDashboard() {
     showToast("Judge added.");
   }
 
+  function addPreviousJudges(entries: Array<{ name: string; username: string }>) {
+    const taken = new Set((data?.judges ?? []).map((judge) => judge.username.trim().toLowerCase()).filter(Boolean));
+    const additions: Judge[] = [];
+    for (const entry of entries) {
+      const username = entry.username.trim();
+      const key = username.toLowerCase();
+      if (!username || taken.has(key)) continue;
+      taken.add(key);
+      additions.push({
+        id: `new-${crypto.randomUUID()}`,
+        name: entry.name.trim(),
+        username,
+        message: null,
+      });
+    }
+    if (additions.length === 0) return;
+    setData((prev) => {
+      if (!prev) return prev;
+      const current = new Set(prev.judges.map((judge) => judge.username.trim().toLowerCase()).filter(Boolean));
+      const next = additions.filter((judge) => !current.has(judge.username.toLowerCase()));
+      if (next.length === 0) return prev;
+      return { ...prev, judges: [...prev.judges, ...next] };
+    });
+    showToast(additions.length === 1 ? "Judge added." : `${additions.length} judges added.`);
+  }
+
   function requestRemoveJudge(id: string, name: string) {
     setPendingConfirm({ type: "remove-judge", id, name: name.trim() || "this judge" });
   }
@@ -707,6 +733,7 @@ export function useAdminDashboard() {
     openArchivedDetails,
     closeArchivedDetails,
     addJudge,
+    addPreviousJudges,
     requestRemoveJudge,
     addCategory,
     requestRemoveCategory,

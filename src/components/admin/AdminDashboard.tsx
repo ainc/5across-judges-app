@@ -40,6 +40,7 @@ export function AdminDashboard() {
     closeSectionModal,
     saveOpenSection,
     addJudge,
+    addPreviousJudges,
     requestRemoveJudge,
     addCategory,
     requestRemoveCategory,
@@ -222,6 +223,7 @@ export function AdminDashboard() {
               messageStatus={individualJudgeMessageStatus}
               onClose={closeSectionModal}
               onAddJudge={addJudge}
+              onAddPreviousJudges={addPreviousJudges}
               onJudgeNameChange={(id, name) => updateList("judges", id, "name", name)}
               onJudgeUsernameChange={(id, username) => updateList("judges", id, "username", username)}
               onJudgeMessageChange={(id, message) => {

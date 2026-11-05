@@ -1,5 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { FormDialog } from "@/components/FormDialog";
 import { ModalDeleteButton } from "@/components/admin/ModalDeleteButton";
+import { PreviousJudgesModal } from "@/components/admin/PreviousJudgesModal";
 import type { Judge } from "@/components/admin/types";
 
 type JudgesModalProps = {
@@ -8,6 +12,7 @@ type JudgesModalProps = {
   messageStatus: Record<string, string>;
   onClose: () => void;
   onAddJudge: () => void;
+  onAddPreviousJudges: (judges: Array<{ name: string; username: string }>) => void;
   onJudgeNameChange: (id: string, name: string) => void;
   onJudgeUsernameChange: (id: string, username: string) => void;
   onJudgeMessageChange: (id: string, message: string) => void;
@@ -24,6 +29,7 @@ export function JudgesModal({
   messageStatus,
   onClose,
   onAddJudge,
+  onAddPreviousJudges,
   onJudgeNameChange,
   onJudgeUsernameChange,
   onJudgeMessageChange,
@@ -33,6 +39,12 @@ export function JudgesModal({
   onSave,
   isSaving = false,
 }: JudgesModalProps) {
+  const [previousOpen, setPreviousOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) setPreviousOpen(false);
+  }, [open]);
+
   return (
     <FormDialog
       open={open}
@@ -47,13 +59,22 @@ export function JudgesModal({
         password. Changing a judge&apos;s name leaves their username as it is. Edit the username to change that
         login.
       </p>
-      <button
-        type="button"
-        onClick={onAddJudge}
-        className="dark-button rounded border border-border bg-gray-900 px-3 py-2 text-white"
-      >
-        Add Judge
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onAddJudge}
+          className="dark-button rounded border border-border bg-gray-900 px-3 py-2 text-white"
+        >
+          Add Judge
+        </button>
+        <button
+          type="button"
+          onClick={() => setPreviousOpen(true)}
+          className="white-button rounded border border-border bg-surface px-3 py-2"
+        >
+          Select from Previous Judges
+        </button>
+      </div>
       {judges.map((judge) => (
         <div key={judge.id} className="space-y-2 rounded bg-surface p-3">
           <div className="flex items-center gap-2">
@@ -81,6 +102,12 @@ export function JudgesModal({
           </label>
         </div>
       ))}
+      <PreviousJudgesModal
+        open={previousOpen}
+        currentUsernames={judges.map((judge) => judge.username)}
+        onClose={() => setPreviousOpen(false)}
+        onAdd={onAddPreviousJudges}
+      />
     </FormDialog>
   );
 }

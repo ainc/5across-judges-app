@@ -9,10 +9,41 @@ export class JudgeLoginError extends Error {
   }
 }
 
-type ExistingJudge = { id: string; username: string };
+type ExistingJudge = { id: string; name: string; username: string };
 type PayloadJudge = { id?: string; name?: string; username?: string | null };
 
 type JudgeDb = Prisma.TransactionClient | typeof prisma;
+
+export function previousJudgeKey(username: string) {
+  return username.trim().toLowerCase();
+}
+
+async function rememberPreviousJudge(
+  tx: Prisma.TransactionClient,
+  entry: { name: string; username: string; reveal: boolean },
+) {
+  const username = entry.username.trim();
+  const name = entry.name.trim();
+  const usernameKey = previousJudgeKey(username);
+  if (!username || !name || !usernameKey) return;
+
+  const existing = await tx.previousJudge.findUnique({ where: { usernameKey } });
+  if (!existing) {
+    await tx.previousJudge.create({
+      data: { name, username, usernameKey, hidden: false },
+    });
+    return;
+  }
+
+  await tx.previousJudge.update({
+    where: { usernameKey },
+    data: {
+      name,
+      username,
+      hidden: entry.reveal ? false : existing.hidden,
+    },
+  });
+}
 
 export function sortJudgesByUsername<T extends { username: string }>(judges: T[]) {
   return [...judges].sort((a, b) => a.username.localeCompare(b.username, undefined, { numeric: true }));
@@ -269,6 +300,22 @@ export async function syncCompetitionJudges(
             data: { username: judge.username, passwordHash, role: "JUDGE" },
           });
         }
+      }
+    }
+
+    for (const judge of planned) {
+      await rememberPreviousJudge(tx, {
+        name: judge.name,
+        username: judge.username,
+        reveal: judge.isNew || (judge.previousUsername ?? "") !== judge.username,
+      });
+      if (judge.previousUsername && judge.previousUsername !== judge.username) {
+        const previous = judge.id ? existingById.get(judge.id) : undefined;
+        await rememberPreviousJudge(tx, {
+          name: previous?.name?.trim() || judge.name,
+          username: judge.previousUsername,
+          reveal: false,
+        });
       }
     }
   });

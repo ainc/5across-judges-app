@@ -9,6 +9,8 @@ type ConfirmDialogProps = {
   variant?: "default" | "danger";
   onConfirm: () => void;
   onCancel: () => void;
+  layerClassName?: string;
+  titleId?: string;
 };
 
 export function ConfirmDialog({
@@ -20,6 +22,8 @@ export function ConfirmDialog({
   variant = "default",
   onConfirm,
   onCancel,
+  layerClassName = "z-[1100]",
+  titleId = "confirm-dialog-title",
 }: ConfirmDialogProps) {
   if (!open) return null;
 
@@ -27,7 +31,7 @@ export function ConfirmDialog({
     "dark-button rounded border border-border bg-gray-900 px-2 py-1 text-white";
 
   return (
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4">
+    <div className={`fixed inset-0 flex items-center justify-center p-4 ${layerClassName}`}>
       <button
         type="button"
         aria-label="Close dialog"
@@ -37,11 +41,11 @@ export function ConfirmDialog({
       <div
         role="dialog"
         aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
+        aria-labelledby={titleId}
         className="relative w-full max-w-md rounded border bg-surface p-6 shadow-lg"
       >
         <img src="/images/5acrossbanner.png" alt="5 Across Banner" className="fiveacross-banner mx-auto mb-4 h-20 w-20 object-contain" />
-        <h2 id="confirm-dialog-title" className="text-lg font-semibold">
+        <h2 id={titleId} className="text-lg font-semibold">
           {title}
         </h2>
         <p className="mt-3 whitespace-pre-wrap text-sm text-muted">{message}</p>
