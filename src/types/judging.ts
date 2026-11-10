@@ -31,9 +31,11 @@ export type JudgeScoresResponse = {
 export type PendingConfirm = { type: "submit-company"; companyId: string } | null;
 
 export type ScoreUndo = {
-  companyId: string;
-  categoryId: string;
-  previous: number | undefined;
+  cells: Array<{
+    companyId: string;
+    categoryId: string;
+    previous: number | undefined;
+  }>;
 };
 
 export type ScoreChange = {

@@ -55,7 +55,7 @@ export function ModalDeleteButton({
         opacity: disabled ? 0.4 : 1,
         cursor: disabled ? "not-allowed" : "pointer",
         pointerEvents: disabled ? "none" : "auto",
-        color: showOutline ? "#6b7280" : "#111827",
+        color: showOutline ? "var(--muted)" : "var(--foreground)",
         overflow: "hidden",
       }}
     >

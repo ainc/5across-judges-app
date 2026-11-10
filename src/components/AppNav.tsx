@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { DarkModeButton } from "@/components/ThemeMode";
 import { submitSignOut } from "@/components/submit-sign-out";
 
 type AppNavProps = {
@@ -30,6 +31,7 @@ export function AppNav({ showAdminLink = false }: AppNavProps) {
 
   return (
     <nav className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-x-6 gap-y-1">
+      <DarkModeButton />
       {links.map((page) => {
         const active = pathname === page.href;
         return (

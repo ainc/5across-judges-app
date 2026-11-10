@@ -27,7 +27,7 @@ export function SignIn({ action }: SignInProps) {
       </label>
       <button
         type="submit"
-        className="dark-button w-full rounded border border-black bg-gray-900 px-4 py-2 text-white"
+        className="dark-button w-full rounded border border-border bg-gray-900 px-4 py-2 text-white"
       >
         Sign In
       </button>

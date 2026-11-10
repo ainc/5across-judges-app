@@ -23,6 +23,7 @@ export function AdminDashboard() {
     pendingConfirm,
     pendingPrompt,
     openSection,
+    savedJudgeUsernames,
     isSaving,
     isReady,
     isSavingResults,
@@ -40,6 +41,7 @@ export function AdminDashboard() {
     closeSectionModal,
     saveOpenSection,
     addJudge,
+    addPreviousJudges,
     requestRemoveJudge,
     addCategory,
     requestRemoveCategory,
@@ -154,7 +156,7 @@ export function AdminDashboard() {
                     Competition Date
                     <input
                       id="competition-date"
-                      className={`mt-1 w-full rounded border p-2 ${eventDateError ? "border-red-600" : ""}`}
+                      className={`mt-1 w-full rounded border p-2 ${eventDateError ? "border-danger" : ""}`}
                       type="text"
                       autoComplete="off"
                       spellCheck={false}
@@ -183,7 +185,7 @@ export function AdminDashboard() {
                       }}
                     />
                     {eventDateError ? (
-                      <p id="competition-date-error" className="mt-1 text-sm text-red-700">
+                      <p id="competition-date-error" className="mt-1 text-sm text-danger">
                         {eventDateError}
                       </p>
                     ) : null}
@@ -206,7 +208,7 @@ export function AdminDashboard() {
                   </ol>
                 </>
               ) : (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted">
                   {data ? "No final submissions yet." : "No live competition. Start a new competition to begin scoring."}
                 </p>
               )}
@@ -219,9 +221,11 @@ export function AdminDashboard() {
             <JudgesModal
               open={openSection === "judges"}
               judges={data.judges}
+              savedUsernames={savedJudgeUsernames}
               messageStatus={individualJudgeMessageStatus}
               onClose={closeSectionModal}
               onAddJudge={addJudge}
+              onAddPreviousJudges={addPreviousJudges}
               onJudgeNameChange={(id, name) => updateList("judges", id, "name", name)}
               onJudgeUsernameChange={(id, username) => updateList("judges", id, "username", username)}
               onJudgeMessageChange={(id, message) => {

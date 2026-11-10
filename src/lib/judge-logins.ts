@@ -1,5 +1,6 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { usernameKey } from "@/lib/judge-usernames";
 import { saltAndHashPassword } from "@/utils/password";
 
 export class JudgeLoginError extends Error {
@@ -9,10 +10,46 @@ export class JudgeLoginError extends Error {
   }
 }
 
-type ExistingJudge = { id: string; username: string };
-type PayloadJudge = { id?: string; name?: string; username?: string | null };
+type ExistingJudge = { id: string; name: string; username: string };
+type PayloadJudge = {
+  id?: string;
+  name?: string;
+  username?: string | null;
+  reusedUsername?: string | null;
+};
 
 type JudgeDb = Prisma.TransactionClient | typeof prisma;
+
+export function previousJudgeKey(username: string) {
+  return usernameKey(username);
+}
+
+async function rememberPreviousJudge(
+  tx: Prisma.TransactionClient,
+  entry: { name: string; username: string; reveal: boolean },
+) {
+  const username = entry.username.trim();
+  const name = entry.name.trim();
+  const usernameKey = previousJudgeKey(username);
+  if (!username || !name || !usernameKey) return;
+
+  const existing = await tx.previousJudge.findUnique({ where: { usernameKey } });
+  if (!existing) {
+    await tx.previousJudge.create({
+      data: { name, username, usernameKey, hidden: false },
+    });
+    return;
+  }
+
+  await tx.previousJudge.update({
+    where: { usernameKey },
+    data: {
+      name,
+      username,
+      hidden: entry.reveal ? false : existing.hidden,
+    },
+  });
+}
 
 export function sortJudgesByUsername<T extends { username: string }>(judges: T[]) {
   return [...judges].sort((a, b) => a.username.localeCompare(b.username, undefined, { numeric: true }));
@@ -146,6 +183,7 @@ export async function syncCompetitionJudges(
       name: judge.name!.trim(),
       username,
       previousUsername: existing?.username,
+      reusedUsername: judge.reusedUsername?.trim() || undefined,
       isNew,
     };
   });
@@ -163,14 +201,29 @@ export async function syncCompetitionJudges(
     throw new JudgeLoginError("Usernames must be unique.");
   }
 
-  const admins = await prisma.user.findMany({
-    where: { role: "ADMIN" },
-    select: { username: true },
-  });
-  const adminNames = new Set(admins.map((admin) => admin.username.toLowerCase()));
-  const takenByAdmin = planned.find((judge) => adminNames.has(judge.username.toLowerCase()));
-  if (takenByAdmin) {
-    throw new JudgeLoginError(`Username "${takenByAdmin.username}" is already used by an admin account.`);
+  const [accounts, previousJudges] = await Promise.all([
+    prisma.user.findMany({ select: { username: true, role: true } }),
+    prisma.previousJudge.findMany({ where: { hidden: false }, select: { usernameKey: true } }),
+  ]);
+  const previousKeys = new Set(previousJudges.map((judge) => judge.usernameKey));
+  for (const judge of planned) {
+    const key = previousJudgeKey(judge.username);
+    const ownKey = judge.previousUsername ? previousJudgeKey(judge.previousUsername) : "";
+    if (ownKey && ownKey === key) continue;
+
+    const accountRole: UserRole | undefined = accounts.find(
+      (account) => previousJudgeKey(account.username) === key,
+    )?.role;
+    const inPrevious = previousKeys.has(key);
+    if (accountRole === "ADMIN") {
+      throw new JudgeLoginError(`Username "${judge.username}" is already used by an admin account.`);
+    }
+
+    const reusedKey = previousJudgeKey(judge.reusedUsername ?? "");
+    if (judge.isNew && reusedKey === key && inPrevious) continue;
+    if (accountRole || inPrevious) {
+      throw new JudgeLoginError(`Username "${judge.username}" is already in use.`);
+    }
   }
 
   const keptIds = new Set(planned.map((judge) => judge.id).filter((id): id is string => Boolean(id)));
@@ -269,6 +322,22 @@ export async function syncCompetitionJudges(
             data: { username: judge.username, passwordHash, role: "JUDGE" },
           });
         }
+      }
+    }
+
+    for (const judge of planned) {
+      await rememberPreviousJudge(tx, {
+        name: judge.name,
+        username: judge.username,
+        reveal: judge.isNew || (judge.previousUsername ?? "") !== judge.username,
+      });
+      if (judge.previousUsername && judge.previousUsername !== judge.username) {
+        const previous = judge.id ? existingById.get(judge.id) : undefined;
+        await rememberPreviousJudge(tx, {
+          name: previous?.name?.trim() || judge.name,
+          username: judge.previousUsername,
+          reveal: false,
+        });
       }
     }
   });

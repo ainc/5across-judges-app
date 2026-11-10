@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FormDialog } from "@/components/FormDialog";
@@ -110,20 +110,22 @@ function ScoreInput({
   isMissing,
   onValue,
   onBlur,
+  onKeyDown,
 }: {
   value: number | undefined;
   disabled: boolean;
   isMissing: boolean;
   onValue: (raw: string) => void;
   onBlur: () => void;
+  onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
 
   return (
     <span className="relative inline-block">
       <input
-        className={`score-input w-16 rounded border px-2 py-1 text-center disabled:bg-gray-50 ${
-          isMissing ? "border-red-500 bg-red-100" : ""
+        className={`score-input w-16 rounded border px-2 py-1 text-center disabled:bg-muted-bg ${
+          isMissing ? "border-danger bg-danger-bg" : ""
         }`}
         min={1}
         max={5}
@@ -149,13 +151,14 @@ function ScoreInput({
           setDraft(null);
           onBlur();
         }}
+        onKeyDown={onKeyDown}
       />
       {isMissing ? (
         <Tooltip title="Fill in score (1-5) before submitting company scores." arrow>
           <button
             type="button"
             aria-label="Fill in score (1-5) before submitting company scores."
-            className="absolute top-0.5 right-0.5 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-500 hover:text-gray-800"
+            className="absolute top-0.5 right-0.5 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full text-muted hover:text-foreground"
           >
             <InfoOutlinedIcon sx={{ fontSize: 16 }} />
           </button>
@@ -212,13 +215,13 @@ function ScoreScaleGraphic() {
                 x={x}
                 y={SCORE_SCALE_LINE_Y - 8}
                 textAnchor="middle"
-                fill="#000000"
+                fill="currentColor"
                 fontSize="10"
                 fontWeight="400"
               >
                 {point.value}
               </text>
-              <text x={x} y={SCORE_SCALE_LINE_Y + 16} textAnchor="middle" fill="#323232" fontSize="8">
+              <text x={x} y={SCORE_SCALE_LINE_Y + 16} textAnchor="middle" fill="var(--muted)" fontSize="8">
                 {point.label.map((line, lineIndex) => (
                   <tspan key={line} x={x} dy={lineIndex === 0 ? 0 : 10}>
                     {line}
@@ -245,6 +248,27 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
   const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
   const unicornTimerRef = useRef<number | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
+  const scoreTableRef = useRef<HTMLDivElement>(null);
+
+  function onColumnTab(
+    event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+    selector: string,
+  ) {
+    if (event.key !== "Tab" || event.altKey || event.ctrlKey || event.metaKey) return;
+    const fields = [
+      ...(scoreTableRef.current?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(selector) ?? []),
+    ];
+    const index = fields.indexOf(event.currentTarget);
+    if (index < 0 || fields.length === 0) return;
+    if (event.shiftKey) {
+      if (index === 0) return;
+      event.preventDefault();
+      fields[index - 1]?.focus();
+      return;
+    }
+    event.preventDefault();
+    fields[(index + 1) % fields.length]?.focus();
+  }
   const [restoredCompetitionId, setRestoredCompetitionId] = useState("");
   const canEditScores = !isAdmin || overrideEnabled;
   const {
@@ -269,6 +293,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     canUndo,
     saveStatusLabel,
     updateScore,
+    resetCompanyScores,
     updateNote,
     undoLastScore,
     flushAutosave,
@@ -351,7 +376,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
             <button
               type="button"
               onClick={() => setOverrideEnabled((on) => !on)}
-              className="dark-button h-8 rounded border border-black bg-gray-900 px-3 py-1 text-white"
+              className="dark-button h-8 rounded border border-border bg-gray-900 px-3 py-1 text-white"
             >
               {overrideEnabled ? "Override On" : "Override"}
             </button>
@@ -376,21 +401,21 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
             ) : (
               <span>{selectedJudge?.name}</span>
             )}
-            <span className="text-xs text-gray-600">{saveStatusLabel}</span>
+            <span className="text-xs text-muted">{saveStatusLabel}</span>
           </div>
         </section>
       </div>
 
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1" ref={scoreTableRef}>
       <StyledTable className="h-full" tableClassName="table-fixed">
           <colgroup>
             <col className="w-[31%]" />
             <col className="w-[38%]" />
             <col className="w-[31%]" />
           </colgroup>
-          <thead className="sticky top-0 bg-white">
+          <thead className="sticky top-0 bg-background">
             <tr>
-              <th className={`${thClass} sticky left-0 w-[31%] bg-white`}>Category</th>
+              <th className={`${thClass} sticky left-0 w-[31%] bg-background`}>Category</th>
               {visibleCompanies.map((company) => (
                 <th key={company.id} className="w-[38%] border-r border-b p-0 text-left">
                   <AppSelect
@@ -407,13 +432,13 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                   </AppSelect>
                 </th>
               ))}
-              <th className={`${thClass} w-[31%] bg-white`}>Notes</th>
+              <th className={`${thClass} w-[31%] bg-background`}>Notes</th>
             </tr>
           </thead>
           <tbody>
             {data.categories.map((category) => (
               <tr key={category.id} className="h-px">
-                <td className={`${tdClass} sticky left-0 bg-white text-medium`}>
+                <td className={`${tdClass} sticky left-0 bg-background text-medium`}>
                   <span className="inline-flex items-center gap-1">
                     {category.name}
                     {category.description?.trim() ? (
@@ -421,20 +446,20 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                         <button
                           type="button"
                           aria-label={`Full description: ${category.description}`}
-                          className="inline-flex h-4 w-4 items-center justify-center rounded-full text-gray-500 hover:text-gray-800"
+                          className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted hover:text-foreground"
                         >
                           <InfoOutlinedIcon sx={{ fontSize: 16 }} />
                         </button>
                       </Tooltip>
                     ) : null}
-                    <span className="text-sm font-medium text-gray-600">({category.weight}%)</span>
+                    <span className="text-sm font-medium text-muted">({category.weight}%)</span>
                   </span>
                 </td>
                 {visibleCompanies.map((company) => {
                   const key = `${company.id}:${category.id}`;
                   const isMissing = missingCellKeys.has(key);
                   return (
-                    <td key={key} className={`${tdClass} p-1 text-center ${isMissing ? "bg-red-50" : ""}`}>
+                    <td key={key} className={`${tdClass} p-1 text-center ${isMissing ? "bg-danger-bg" : ""}`}>
                       <ScoreInput
                         value={scores[key]}
                         disabled={isLoadingScores || !canEditScores}
@@ -443,6 +468,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                         onBlur={() => {
                           void flushAutosave();
                         }}
+                        onKeyDown={(event) => onColumnTab(event, "input.score-input:not(:disabled)")}
                       />
                     </td>
                   );
@@ -451,7 +477,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                   <td key={`${company.id}:${category.id}:note`} className={`${tdClass} h-px p-1 align-top`}>
                     <textarea
                       aria-label={`Notes for ${category.name}`}
-                      className="block h-full w-full resize-none rounded border px-2 py-1 text-sm"
+                      className="note-input block h-full w-full resize-none rounded border px-2 py-1 text-sm"
                       rows={1}
                       disabled={isLoadingScores || !canEditScores}
                       value={notes[`${company.id}:${category.id}`] ?? ""}
@@ -459,13 +485,14 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                       onBlur={() => {
                         void flushAutosave();
                       }}
+                      onKeyDown={(event) => onColumnTab(event, "textarea.note-input:not(:disabled)")}
                     />
                   </td>
                 ))}
               </tr>
             ))}
-            <tr className="h-0 bg-gray-50">
-              <td className={`${tdClass} sticky left-0 bg-gray-50 py-1 font-semibold`}>Weighted Total</td>
+            <tr className="h-0 bg-muted-bg">
+              <td className={`${tdClass} sticky left-0 bg-muted-bg py-1 font-semibold`}>Weighted Total</td>
               {visibleCompanies.map((company) => {
                 const hasScores = data.categories.some(
                   (category) => typeof scores[`${company.id}:${category.id}`] === "number",
@@ -485,11 +512,24 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
       <section className="flex shrink-0 flex-wrap items-center gap-3">
         <ScoreScaleGraphic />
         <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+          <button
+            type="button"
+            disabled={
+              isSubmitting ||
+              isLoadingScores ||
+              !canEditScores ||
+              !data.categories.some((category) => typeof scores[`${selectedId}:${category.id}`] === "number")
+            }
+            onClick={() => resetCompanyScores(selectedId)}
+            className="dark-button rounded border border-border bg-gray-900 px-3 py-2 text-white disabled:opacity-50"
+          >
+            Reset Scores
+          </button>
           {isAdmin ? (
             <button
               type="button"
               onClick={() => setChangeLogOpen(true)}
-              className="dark-button rounded border border-black bg-gray-900 px-3 py-2 text-white"
+              className="dark-button rounded border border-border bg-gray-900 px-3 py-2 text-white"
             >
               View Change History
             </button>
@@ -497,7 +537,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           <button
             disabled={isSubmitting || isLoadingScores || !canEditScores}
             onClick={() => submitCompanyScores(selectedId)}
-            className="rounded border border-black px-3 py-2 text-black disabled:opacity-50"
+            className="rounded border border-border px-3 py-2 text-black disabled:opacity-50"
             style={{ backgroundColor: "#DF666A", color: "#000000" }}
           >
             Submit Company Scores
@@ -506,7 +546,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
             type="button"
             disabled={isSubmitting || isLoadingScores || !canUndo || !canEditScores}
             onClick={undoLastScore}
-            className="white-button rounded border border-black bg-white text-black px-3 py-2 disabled:opacity-50"
+            className="white-button rounded border border-border bg-surface px-3 py-2 text-foreground disabled:opacity-50"
           >
             Undo
           </button>
@@ -519,9 +559,9 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         onClose={() => setChangeLogOpen(false)}
         panelClassName="max-h-[90vh] max-w-2xl overflow-y-auto"
       >
-        <p className="text-sm text-gray-600">Unsaved edits of <strong>{selectedJudge?.name}'s</strong> most recent saved draft or final submission.</p>
+        <p className="text-sm text-muted">Unsaved edits of <strong>{selectedJudge?.name}'s</strong> most recent saved draft or final submission.</p>
         {!hasChangeLog ? (
-          <p className="text-sm text-gray-600">No unsaved changes.</p>
+          <p className="text-sm text-muted">No unsaved changes.</p>
         ) : (
           <>
             {data.judges.map((judge) => {
@@ -529,7 +569,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
               if (!changes?.length) return null;
               return (
                 <div key={judge.id} className="space-y-1">
-                  <ul className="list-disc space-y-1 pl-5 text-sm text-gray-600">
+                  <ul className="list-disc space-y-1 pl-5 text-sm text-muted">
                     {changes.map((change) => {
                       const companyName =
                         data.companies.find((company) => company.id === change.companyId)?.name ?? change.companyId;

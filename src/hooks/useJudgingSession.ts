@@ -659,7 +659,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
 
       if (raw === "") {
         if (recordUndo) {
-          setUndoStack((prev) => [...prev, { companyId, categoryId, previous }]);
+          setUndoStack((prev) => [...prev, { cells: [{ companyId, categoryId, previous }] }]);
         }
         const next = { ...scoresRef.current };
         delete next[key];
@@ -682,7 +682,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
 
       const normalized = normalizeScore(numeric);
       if (recordUndo) {
-        setUndoStack((prev) => [...prev, { companyId, categoryId, previous }]);
+        setUndoStack((prev) => [...prev, { cells: [{ companyId, categoryId, previous }] }]);
       }
       const next = { ...scoresRef.current, [key]: normalized };
       scoresRef.current = next;
@@ -703,6 +703,21 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     scheduleAutosave();
   }
 
+  function resetCompanyScores(companyId: string) {
+    if (!selectedJudgeId || !data) return;
+    const cells = data.categories.flatMap((category) => {
+      const previous = scoresRef.current[`${companyId}:${category.id}`];
+      if (typeof previous !== "number") return [];
+      return [{ companyId, categoryId: category.id, previous }];
+    });
+    if (cells.length === 0) return;
+    for (const cell of cells) {
+      applyScoreValue(selectedJudgeId, cell.companyId, cell.categoryId, "", false);
+    }
+    setUndoStack((prev) => [...prev, { cells }]);
+    scheduleAutosave();
+  }
+
   function updateScore(companyId: string, categoryId: string, raw: string) {
     if (!selectedJudgeId) return;
     if (!applyScoreValue(selectedJudgeId, companyId, categoryId, raw, true)) return;
@@ -713,13 +728,15 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     const last = undoStack[undoStack.length - 1];
     if (!last || !selectedJudgeId) return;
     setUndoStack((prev) => prev.slice(0, -1));
-    applyScoreValue(
-      selectedJudgeId,
-      last.companyId,
-      last.categoryId,
-      last.previous === undefined ? "" : String(last.previous),
-      false,
-    );
+    for (const cell of last.cells) {
+      applyScoreValue(
+        selectedJudgeId,
+        cell.companyId,
+        cell.categoryId,
+        cell.previous === undefined ? "" : String(cell.previous),
+        false,
+      );
+    }
     scheduleAutosave();
   }
 
@@ -818,6 +835,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     canUndo: undoStack.length > 0,
     saveStatusLabel,
     updateScore,
+    resetCompanyScores,
     updateNote,
     undoLastScore,
     flushAutosave,

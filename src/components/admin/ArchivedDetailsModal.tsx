@@ -53,7 +53,7 @@ export function ArchivedDetailsModal({ details, onClose }: ArchivedDetailsModalP
             <ul className="mt-1 list-disc pl-5">
               {details.categories.map((category) => (
                 <li key={category.name}>
-                  {category.name} <span className="text-xs text-gray-500">({category.weight}%)</span>
+                  {category.name} <span className="text-xs text-muted">({category.weight}%)</span>
                 </li>
               ))}
             </ul>

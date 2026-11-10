@@ -1,13 +1,53 @@
 @import "tailwindcss";
 
+/*
+ * Theme tokens. New UI should use these (bg-background, bg-surface,
+ * text-foreground, text-muted, border-border) so dark mode applies on its own.
+ */
 :root {
   --background: #ffffff;
   --foreground: #111827;
+  --surface: #ffffff;
+  --muted: #4b5563;
+  --muted-bg: #f9fafb;
+  --hover: #e5e7eb;
+  --border: #111827;
+  --line: #d1d5db;
+  --danger: #b91c1c;
+  --danger-bg: #fee2e2;
+  --danger-border: #fecaca;
+  --success: #15803d;
+  color-scheme: light;
+}
+
+.dark {
+  --background: #2c3038;
+  --foreground: #c8ccd4;
+  --surface: #363b45;
+  --muted: #9aa1ab;
+  --muted-bg: #31363f;
+  --hover: #414754;
+  --border: #4d5462;
+  --line: #414754;
+  --danger: #e3b1b1;
+  --danger-bg: #4a3a3d;
+  --danger-border: #6d5155;
+  --success: #b7d4b2;
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-muted-bg: var(--muted-bg);
+  --color-hover: var(--hover);
+  --color-border: var(--border);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-border: var(--danger-border);
+  --color-success: var(--success);
   --font-sans: var(--font-open-sans);
 }
 
@@ -16,6 +56,21 @@ body {
   color: var(--foreground);
   font-family: var(--font-open-sans), "Open Sans", sans-serif;
   min-width: 0;
+}
+
+@layer base {
+  .dark *,
+  .dark *::before,
+  .dark *::after {
+    border-color: var(--border);
+  }
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]),
+textarea,
+select {
+  background-color: var(--surface);
+  color: var(--foreground);
 }
 
 .page-header,
@@ -34,7 +89,8 @@ body {
 }
 
 .company-results-table {
-  table-layout: auto;
+  table-layout: fixed;
+  width: 100%;
 }
 
 .styled-table tr > :last-child {
@@ -229,7 +285,7 @@ body {
 .archived-row-actions .graylivebutton,
 .archived-row-actions .grayviewbutton {
   display: block !important;
-  color: #6b7280;
+  color: var(--muted);
   opacity: 0 !important;
 }
 
@@ -271,7 +327,7 @@ button.closebutton {
 }
 
 .grayclosebutton {
-  color: #6b7280;
+  color: var(--muted);
   opacity: 0 !important;
 }
 
@@ -334,8 +390,23 @@ button.messagedelete:disabled {
   color: #ffffff;
 }
 
+.dark .dark-button:not(:disabled) {
+  background-color: #4e5664;
+  color: #d5d8de;
+}
+
+.dark .dark-button:not(:disabled):hover {
+  background-color: #5b6474;
+  color: #e6e8ec;
+}
+
+.white-button:not(:disabled) {
+  background-color: var(--surface);
+  color: var(--foreground);
+}
+
 .white-button:not(:disabled):hover {
-  background-color: #d3d3d3;
+  background-color: var(--hover);
 }
 
 .red-button:not(:disabled):hover {
@@ -353,7 +424,7 @@ button.messagedelete:disabled {
 
 .white-button:disabled,
 .white-button:disabled:hover {
-  background-color: #ffffff !important;
+  background-color: var(--surface) !important;
   pointer-events: none !important;
   opacity: 0.5;
   cursor: not-allowed;

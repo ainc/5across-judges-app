@@ -56,14 +56,14 @@ export function ArchivedCompetitionsPage() {
             </DashboardTextButton>
           </DashboardTextActions>
           {archived.length === 0 ? (
-            <p className="text-sm text-gray-600">No competitions in archive.</p>
+            <p className="text-sm text-muted">No competitions in archive.</p>
           ) : null}
         </section>
         {archived.map((item) => (
           <section key={item.id} className="overflow-hidden rounded border p-4 space-y-3">
             <div className="min-w-0">
               <h2 className="text-xl font-semibold">{item.name}</h2>
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="mt-1 text-sm text-muted">
                 {formatEventDate(item.eventDate)} · Winner: {item.winner ?? "TBD"} ·{" "}
                 {item.finalSubmissionCount} final submission
                 {item.finalSubmissionCount === 1 ? "" : "s"}

@@ -39,13 +39,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <img src="/images/5acrossbanner.png" alt="5 Across Banner" className="fiveacross-banner justify-self-center" />
         <header className="space-y-2">
           <h1 className="page-header">Sign In</h1>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted">
             Judges will be signed in by Awesome Inc prior to their arrival. Admin can access the dashboard and alter competitions and their details.
           </p>
         </header>
 
         {error ? (
-          <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          <p className="rounded border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger">
             Invalid username or password.
           </p>
         ) : null}

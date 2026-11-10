@@ -21,7 +21,7 @@ export default async function ResultsPage() {
         {data ? (
           <CurrentResults rankings={data.rankings} categories={data.categories} />
         ) : (
-          <p className="text-sm text-gray-600">No results yet.</p>
+          <p className="text-sm text-muted">No results yet.</p>
         )}
       </main>
     </>
