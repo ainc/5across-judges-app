@@ -75,7 +75,12 @@ export async function PUT(request: Request) {
   });
 
   if ("judges" in payload) {
-    const payloadJudges: Array<{ id?: string; name?: string; username?: string | null }> = payload.judges ?? [];
+    const payloadJudges: Array<{
+      id?: string;
+      name?: string;
+      username?: string | null;
+      reusedUsername?: string | null;
+    }> = payload.judges ?? [];
     await syncCompetitionJudges(competition.id, competition.judges, payloadJudges);
   }
 

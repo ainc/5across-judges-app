@@ -12,6 +12,7 @@ import {
   loadAdminData,
   loadArchivedCompetitionDetails,
   loadArchivedCompetitions,
+  loadReservedUsernames,
   loadResultsPreview,
   readJsonResponse,
   type AdminCompetitionResponse,
@@ -20,6 +21,7 @@ import {
 } from "@/lib/admin-api";
 import { DEFAULT_COMPANIES, DEFAULT_JUDGES } from "@/lib/competition-config";
 import { formatResultsSummary } from "@/lib/competition-results";
+import { takenUsernameMessage } from "@/lib/judge-usernames";
 
 type Toast = { id: number; message: string };
 
@@ -40,6 +42,7 @@ export function useAdminDashboard() {
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm>(null);
   const [pendingPrompt, setPendingPrompt] = useState<PendingPrompt>(null);
   const [openSection, setOpenSection] = useState<SectionModal>(null);
+  const [savedJudgeUsernames, setSavedJudgeUsernames] = useState<Record<string, string>>({});
   const [viewingArchived, setViewingArchived] = useState<ArchivedCompetitionDetails | null>(null);
   const [isLoadingArchivedDetails, setIsLoadingArchivedDetails] = useState(false);
   const nextToastId = useRef(0);
@@ -145,6 +148,9 @@ export function useAdminDashboard() {
         companies: data.companies.map((company) => ({ ...company })),
         categories: data.categories.map((category) => ({ ...category })),
       };
+      if (section === "judges") {
+        setSavedJudgeUsernames(Object.fromEntries(data.judges.map((judge) => [judge.id, judge.username])));
+      }
     }
     setOpenSection(section);
   }
@@ -201,6 +207,7 @@ export function useAdminDashboard() {
         name: entry.name.trim(),
         username,
         message: null,
+        reusedUsername: username,
       });
     }
     if (additions.length === 0) return;
@@ -414,6 +421,27 @@ export function useAdminDashboard() {
     const usernames = data.judges.map((judge) => judge.username.trim().toLowerCase());
     if (new Set(usernames).size !== usernames.length) {
       showToast("Usernames must be unique.");
+      return false;
+    }
+    const reservedUsernames = await loadReservedUsernames();
+    if (!reservedUsernames) {
+      showToast("Unable to check existing usernames.");
+      return false;
+    }
+    const savedById = new Map(
+      (sectionSnapshot.current?.judges ?? []).map((judge) => [judge.id, judge.username]),
+    );
+    const conflict = data.judges.find((judge) =>
+      takenUsernameMessage({
+        username: judge.username,
+        savedUsername: savedById.get(judge.id),
+        reusedUsername: judge.reusedUsername,
+        otherUsernames: data.judges.filter((other) => other.id !== judge.id).map((other) => other.username),
+        reservedUsernames,
+      }),
+    );
+    if (conflict) {
+      showToast(`Username "${conflict.username.trim()}" is already in use.`);
       return false;
     }
     return persistCompetition(
@@ -710,6 +738,7 @@ export function useAdminDashboard() {
     pendingConfirm,
     pendingPrompt,
     openSection,
+    savedJudgeUsernames,
     viewingArchived,
     isSaving,
     isSavingResults,

@@ -1,4 +1,11 @@
-export type Judge = { id: string; name: string; username: string; message: string | null };
+export type Judge = {
+  id: string;
+  name: string;
+  username: string;
+  message: string | null;
+  /** Username imported from Previous Judges. Saving may reuse that login. */
+  reusedUsername?: string;
+};
 export type Company = { id: string; name: string; presenter: string | null };
 export type Category = { id: string; name: string; description: string; weight: number; maxScore: number };
 

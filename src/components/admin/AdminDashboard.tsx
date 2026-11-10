@@ -23,6 +23,7 @@ export function AdminDashboard() {
     pendingConfirm,
     pendingPrompt,
     openSection,
+    savedJudgeUsernames,
     isSaving,
     isReady,
     isSavingResults,
@@ -220,6 +221,7 @@ export function AdminDashboard() {
             <JudgesModal
               open={openSection === "judges"}
               judges={data.judges}
+              savedUsernames={savedJudgeUsernames}
               messageStatus={individualJudgeMessageStatus}
               onClose={closeSectionModal}
               onAddJudge={addJudge}

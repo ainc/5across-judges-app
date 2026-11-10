@@ -17,18 +17,20 @@ type PreviousJudgesModalProps = {
   currentUsernames: string[];
   onClose: () => void;
   onAdd: (judges: Array<{ name: string; username: string }>) => void;
+  onRemoved?: (username: string) => void;
 };
 
 function usernameKey(username: string) {
   return username.trim().toLowerCase();
 }
 
-export function PreviousJudgesModal({ open, currentUsernames, onClose, onAdd }: PreviousJudgesModalProps) {
+export function PreviousJudgesModal({ open, currentUsernames, onClose, onAdd, onRemoved }: PreviousJudgesModalProps) {
   const [judges, setJudges] = useState<PreviousJudgeOption[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [pendingDelete, setPendingDelete] = useState<PreviousJudgeOption | null>(null);
+  const [blockedMessage, setBlockedMessage] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
@@ -78,6 +80,16 @@ export function PreviousJudgesModal({ open, currentUsernames, onClose, onAdd }: 
     onClose();
   }
 
+  function requestDelete(judge: PreviousJudgeOption) {
+    if (taken.has(usernameKey(judge.username))) {
+      setBlockedMessage(
+        `"${judge.name}" (${judge.username}) is still on the current competition. Remove them in Manage Judges and save before deleting them from previous judges.`,
+      );
+      return;
+    }
+    setPendingDelete(judge);
+  }
+
   async function confirmDelete() {
     if (!pendingDelete || isDeleting) return;
     setIsDeleting(true);
@@ -85,9 +97,15 @@ export function PreviousJudgesModal({ open, currentUsernames, onClose, onAdd }: 
     try {
       const response = await fetch(`/api/admin/previous-judges/${pendingDelete.id}`, { method: "DELETE" });
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (response.status === 409) {
+        setPendingDelete(null);
+        setBlockedMessage(payload?.error ?? "That judge is still on the current competition.");
+        return;
+      }
       if (!response.ok) {
         throw new Error(payload?.error ?? "Unable to remove that judge from the list.");
       }
+      onRemoved?.(pendingDelete.username);
       setJudges((prev) => prev.filter((judge) => judge.id !== pendingDelete.id));
       setSelectedIds((prev) => prev.filter((id) => id !== pendingDelete.id));
       setPendingDelete(null);
@@ -145,7 +163,7 @@ export function PreviousJudgesModal({ open, currentUsernames, onClose, onAdd }: 
                   </span>
                 </label>
                 <ModalDeleteButton
-                  onClick={() => setPendingDelete(judge)}
+                  onClick={() => requestDelete(judge)}
                   disabled={isDeleting}
                   aria-label={`Remove ${judge.name || judge.username} from previous judges`}
                 />
@@ -156,19 +174,32 @@ export function PreviousJudgesModal({ open, currentUsernames, onClose, onAdd }: 
       </FormDialog>
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="Remove from Previous Judges?"
+        title="Remove judge and login?"
         titleId="remove-previous-judge-title"
         layerClassName="z-[1300]"
+        variant="danger"
         message={
           pendingDelete
-            ? `Remove "${pendingDelete.name}" (${pendingDelete.username}) from the previous judges list?\n\nThis does not remove them from the current competition. They show up here again if you add that username as a new judge and save.`
+            ? `Remove "${pendingDelete.name}" (${pendingDelete.username}) from previous judges?\n\nThis deletes their username and login. They will not be able to sign in with it, and the username can be used again. Scores and notes already saved for this competition and archived competitions are kept.\n\nThis cannot be undone.`
             : ""
         }
         confirmLabel={isDeleting ? "Removing..." : "Remove"}
+        cancelLabel="Cancel"
         onConfirm={() => void confirmDelete()}
         onCancel={() => {
           if (!isDeleting) setPendingDelete(null);
         }}
+      />
+      <ConfirmDialog
+        open={blockedMessage !== ""}
+        title="Can't remove this judge"
+        titleId="blocked-previous-judge-title"
+        layerClassName="z-[1300]"
+        message={blockedMessage}
+        confirmLabel="OK"
+        showCancel={false}
+        onConfirm={() => setBlockedMessage("")}
+        onCancel={() => setBlockedMessage("")}
       />
     </>,
     document.body,

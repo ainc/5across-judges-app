@@ -74,6 +74,12 @@ export async function loadResultsPreview() {
   } satisfies ResultsPreview;
 }
 
+export async function loadReservedUsernames() {
+  const response = await fetch("/api/admin/taken-usernames", { cache: "no-store" });
+  const payload = await readOkJson<{ usernames: string[] }>(response);
+  return payload?.usernames ?? null;
+}
+
 export async function loadArchivedCompetitions() {
   const response = await fetch("/api/admin/competitions/archived", { cache: "no-store" });
   const payload = await readOkJson<{ competitions: ArchivedCompetition[] }>(response);

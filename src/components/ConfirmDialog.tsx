@@ -9,6 +9,7 @@ type ConfirmDialogProps = {
   variant?: "default" | "danger";
   onConfirm: () => void;
   onCancel: () => void;
+  showCancel?: boolean;
   layerClassName?: string;
   titleId?: string;
 };
@@ -22,6 +23,7 @@ export function ConfirmDialog({
   variant = "default",
   onConfirm,
   onCancel,
+  showCancel = true,
   layerClassName = "z-[1100]",
   titleId = "confirm-dialog-title",
 }: ConfirmDialogProps) {
@@ -50,13 +52,15 @@ export function ConfirmDialog({
         </h2>
         <p className="mt-3 whitespace-pre-wrap text-sm text-muted">{message}</p>
         <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="white-button rounded border border-border bg-surface px-4 py-2"
-          >
-            {cancelLabel}
-          </button>
+          {showCancel ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="white-button rounded border border-border bg-surface px-4 py-2"
+            >
+              {cancelLabel}
+            </button>
+          ) : null}
           <button type="button" onClick={onConfirm} className={confirmClassName}>
             {confirmLabel}
           </button>
