@@ -248,6 +248,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
   const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
   const unicornTimerRef = useRef<number | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
+  const [scoringGuideOpen, setScoringGuideOpen] = useState(false);
   const scoreTableRef = useRef<HTMLDivElement>(null);
 
   function onColumnTab(
@@ -399,7 +400,16 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                 ))}
               </AppSelect>
             ) : (
-              <span>{selectedJudge?.name}</span>
+              <span className="inline-flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setScoringGuideOpen(true)}
+                  className="dark-button h-8 rounded border border-border bg-gray-900 px-3 py-1 text-white"
+                >
+                  Scoring Guide
+                </button>
+                <span>{selectedJudge?.name}</span>
+              </span>
             )}
             <span className="text-xs text-muted">{saveStatusLabel}</span>
           </div>
@@ -510,7 +520,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
       </div>
 
       <section className="flex shrink-0 flex-wrap items-center gap-3">
-        <ScoreScaleGraphic />
+        {isAdmin ? <ScoreScaleGraphic /> : null}
         <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
@@ -553,6 +563,33 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         </div>
       </section>
 
+      {!isAdmin ? (
+        <FormDialog
+          open={scoringGuideOpen}
+          title="Scoring Guide"
+          titleId="scoring-guide-title"
+          onClose={() => setScoringGuideOpen(false)}
+          panelClassName="max-h-[90vh] max-w-2xl overflow-y-auto"
+        >
+          <ScoreScaleGraphic />
+          <ul className="space-y-3">
+            {data.categories.map((category) => (
+              <li key={category.id}>
+                <p className="font-medium">
+                  {category.name}{" "}
+                  <span className="text-sm font-medium text-muted">({category.weight}%)</span>
+                </p>
+                {category.description?.trim() ? (
+                  <p className="text-sm text-muted">{category.description}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <p className="pt-4 text-sm">
+            Score each category from 1 to 5. Whole numbers and half points are allowed (for example, 3 or 3.5).
+          </p>
+        </FormDialog>
+      ) : null}
       <FormDialog
         open={changeLogOpen}
         title="Change History Log"
