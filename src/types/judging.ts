@@ -26,6 +26,7 @@ export type JudgeScoresResponse = {
   updatedAt: string | null;
   entries: Array<{ companyId: string; categoryId: string; score: number }>;
   notes: JudgeNoteEntry[];
+  submittedCompanies?: Array<{ companyId: string; submittedAt: string | null }>;
 };
 
 export type PendingConfirm = { type: "submit-company"; companyId: string } | null;

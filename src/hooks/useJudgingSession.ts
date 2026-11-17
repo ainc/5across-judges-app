@@ -102,6 +102,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
   const [submissionStatus, setSubmissionStatus] = useState<SubmissionStatus | null>(null);
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [submissionUpdatedAt, setSubmissionUpdatedAt] = useState<string | null>(null);
+  const [submittedCompanyIds, setSubmittedCompanyIds] = useState<string[]>([]);
   const [missingCells, setMissingCells] = useState<Array<{ companyId: string; categoryId: string }>>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAutosaving, setIsAutosaving] = useState(false);
@@ -178,6 +179,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
           setSubmissionStatus(null);
           setSubmittedAt(null);
           setSubmissionUpdatedAt(null);
+          setSubmittedCompanyIds([]);
           setMissingCells([]);
           setChangeLog({});
           setUndoStack([]);
@@ -313,6 +315,9 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
         setSubmissionStatus(payload.status);
         setSubmittedAt(payload.submittedAt);
         setSubmissionUpdatedAt(payload.updatedAt);
+        if (!options?.signal?.aborted) {
+          setSubmittedCompanyIds((payload.submittedCompanies ?? []).map((company) => company.companyId));
+        }
         if (options?.successMessage) showToast(options.successMessage);
         return payload.entries.length > 0;
       } catch (error) {
@@ -333,8 +338,9 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     cancelScheduledAutosave();
     saveQueuedRef.current = false;
     setIsAutosaving(false);
+    setSubmittedCompanyIds([]);
     const controller = new AbortController();
-    loadSavedScores({ signal: controller.signal });
+    loadSavedScores({ signal: controller.signal, showErrorToast: true });
     return () => controller.abort();
   }, [cancelScheduledAutosave, data, selectedJudgeId, loadSavedScores]);
 
@@ -819,6 +825,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     submissionStatus,
     submittedAt,
     submissionUpdatedAt,
+    submittedCompanyIds,
     isSubmitting,
     isAutosaving,
     isLoadingScores,

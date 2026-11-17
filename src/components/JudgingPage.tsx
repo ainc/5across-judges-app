@@ -244,12 +244,24 @@ type JudgingPageProps = {
 export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPageProps) {
   const isAdmin = showAdminLink;
   const [overrideEnabled, setOverrideEnabled] = useState(false);
-  const [showUnicorn, setShowUnicorn] = useState(false);
   const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
-  const unicornTimerRef = useRef<number | null>(null);
+  const [flight, setFlight] = useState<{
+    companyId: string;
+    phase: "center" | "fly";
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    animate: boolean;
+  } | null>(null);
+  const [addedSubmittedIds, setAddedSubmittedIds] = useState<string[]>([]);
+  const flightTimers = useRef<number[]>([]);
+  const centerUnicornRef = useRef<HTMLImageElement>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const [scoringGuideOpen, setScoringGuideOpen] = useState(false);
   const scoreTableRef = useRef<HTMLDivElement>(null);
+  const submittedRowRef = useRef<HTMLDivElement>(null);
+  const slotRefs = useRef(new Map<string, HTMLDivElement>());
 
   function onColumnTab(
     event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -301,6 +313,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     submitCompanyScores,
     handleConfirmDialog,
     deleteIndividualJudgeMessage,
+    submittedCompanyIds,
   } = useJudgingSession({ lockedJudgeId });
 
   useEffect(() => {
@@ -311,20 +324,97 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     setRestoredCompetitionId(data.competition.id);
   }, [data, restoredCompetitionId]);
 
+  function clearFlightTimers() {
+    for (const id of flightTimers.current) window.clearTimeout(id);
+    flightTimers.current = [];
+  }
+
   useEffect(() => {
     return () => {
-      if (unicornTimerRef.current) window.clearTimeout(unicornTimerRef.current);
+      for (const id of flightTimers.current) window.clearTimeout(id);
     };
   }, []);
 
-  function flashUnicorn() {
+  useEffect(() => {
+    clearFlightTimers();
+    setFlight(null);
+    setConfetti([]);
+    setAddedSubmittedIds([]);
+  }, [selectedJudgeId]);
+
+  const submittedIds = [
+    ...submittedCompanyIds,
+    ...addedSubmittedIds.filter((companyId) => !submittedCompanyIds.includes(companyId)),
+  ];
+
+  useEffect(() => {
+    const row = submittedRowRef.current;
+    if (!row) return;
+    row.scrollLeft = row.scrollWidth;
+  }, [submittedIds.join("\0")]);
+
+  useEffect(() => {
+    if (!flight || flight.phase !== "fly" || flight.animate) return;
+    let frame = 0;
+    frame = window.requestAnimationFrame(() => {
+      frame = window.requestAnimationFrame(() => {
+        const slot = slotRefs.current.get(flight.companyId);
+        const rect = slot?.getBoundingClientRect();
+        if (!rect || rect.width === 0) {
+          setFlight(null);
+          setConfetti([]);
+          return;
+        }
+        setFlight({
+          companyId: flight.companyId,
+          phase: "fly",
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+          animate: true,
+        });
+        const landTimer = window.setTimeout(() => {
+          setFlight(null);
+          setConfetti([]);
+        }, 750);
+        flightTimers.current.push(landTimer);
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [flight]);
+
+  function celebrateSubmit(companyId: string) {
+    clearFlightTimers();
     setConfetti(makeConfetti());
-    setShowUnicorn(true);
-    if (unicornTimerRef.current) window.clearTimeout(unicornTimerRef.current);
-    unicornTimerRef.current = window.setTimeout(() => {
-      setShowUnicorn(false);
-      setConfetti([]);
-    }, 1600);
+    setFlight({
+      companyId,
+      phase: "center",
+      left: 0,
+      top: 0,
+      width: 0,
+      height: 0,
+      animate: false,
+    });
+    const moveTimer = window.setTimeout(() => {
+      const rect = centerUnicornRef.current?.getBoundingClientRect();
+      setAddedSubmittedIds((prev) => (prev.includes(companyId) ? prev : [...prev, companyId]));
+      if (!rect || rect.width === 0) {
+        setFlight(null);
+        setConfetti([]);
+        return;
+      }
+      setFlight({
+        companyId,
+        phase: "fly",
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+        animate: false,
+      });
+    }, 900);
+    flightTimers.current.push(moveTimer);
   }
 
   useEffect(() => {
@@ -371,16 +461,25 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           </div>
         </section>
       )}
-      <div className="space-y-2">
-        <section className="flex flex-wrap items-start gap-3">
+      <section className="flex items-center gap-3">
+        <div className="flex flex-wrap items-start gap-3">
           {isAdmin ? (
-            <button
-              type="button"
-              onClick={() => setOverrideEnabled((on) => !on)}
-              className="dark-button h-8 rounded border border-border bg-gray-900 px-3 py-1 text-white"
-            >
-              {overrideEnabled ? "Override On" : "Override"}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setOverrideEnabled((on) => !on)}
+                className="dark-button h-8 rounded border border-border bg-gray-900 px-3 py-1 text-white"
+              >
+                {overrideEnabled ? "Override On" : "Override"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setScoringGuideOpen(true)}
+                className="dark-button h-8 rounded border border-border bg-gray-900 px-3 py-1 text-white"
+              >
+                Scoring Guide
+              </button>
+            </>
           ) : null}
           <div className="flex flex-col items-start gap-0.5">
             {isAdmin ? (
@@ -413,8 +512,41 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
             )}
             <span className="text-xs text-muted">{saveStatusLabel}</span>
           </div>
-        </section>
-      </div>
+        </div>
+        <div ref={submittedRowRef} className="ml-auto flex min-w-0 max-w-[70%] items-center gap-3 overflow-x-auto">
+          <p className="shrink-0 text-sm font-medium">Submitted Scores:</p>
+          {submittedIds.length === 0 ? (
+            <p className="text-sm text-muted">None</p>
+          ) : (
+            submittedIds.map((companyId) => {
+              const company = data.companies.find((item) => item.id === companyId);
+              if (!company) return null;
+              const pitch = data.companies.findIndex((item) => item.id === companyId) + 1;
+              const isLanding = flight?.companyId === companyId;
+              return (
+                <div key={companyId} className="flex w-28 shrink-0 flex-col items-center gap-1">
+                  <p className="text-center text-xs leading-tight">
+                    Pitch {pitch} - {company.name}
+                  </p>
+                  <div
+                    ref={(node) => {
+                      if (node) slotRefs.current.set(companyId, node);
+                      else slotRefs.current.delete(companyId);
+                    }}
+                    className="flex h-12 w-12 items-end justify-center"
+                  >
+                    <img
+                      src="/images/unicorn.png"
+                      alt=""
+                      className={`h-12 w-12 object-contain ${isLanding ? "opacity-0" : ""}`}
+                    />
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
 
       <div className="min-h-0 flex-1" ref={scoreTableRef}>
       <StyledTable className="h-full" tableClassName="table-fixed">
@@ -520,7 +652,6 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
       </div>
 
       <section className="flex shrink-0 flex-wrap items-center gap-3">
-        {isAdmin ? <ScoreScaleGraphic /> : null}
         <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
@@ -563,33 +694,31 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         </div>
       </section>
 
-      {!isAdmin ? (
-        <FormDialog
-          open={scoringGuideOpen}
-          title="Scoring Guide"
-          titleId="scoring-guide-title"
-          onClose={() => setScoringGuideOpen(false)}
-          panelClassName="max-h-[90vh] max-w-2xl overflow-y-auto"
-        >
-          <ScoreScaleGraphic />
-          <ul className="space-y-3">
-            {data.categories.map((category) => (
-              <li key={category.id}>
-                <p className="font-medium">
-                  {category.name}{" "}
-                  <span className="text-sm font-medium text-muted">({category.weight}%)</span>
-                </p>
-                {category.description?.trim() ? (
-                  <p className="text-sm text-muted">{category.description}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-          <p className="pt-4 text-sm">
-            Score each category from 1 to 5. Whole numbers and half points are allowed (for example, 3 or 3.5).
-          </p>
-        </FormDialog>
-      ) : null}
+      <FormDialog
+        open={scoringGuideOpen}
+        title="Scoring Guide"
+        titleId="scoring-guide-title"
+        onClose={() => setScoringGuideOpen(false)}
+        panelClassName="max-h-[90vh] max-w-2xl overflow-y-auto"
+      >
+        <ScoreScaleGraphic />
+        <p className="pt-4 text-sm">
+          Score each category from 1 to 5. Whole numbers and half points are allowed (for example, 3 or 3.5). See the scoring categories, weights, and descriptions below.
+        </p>
+        <ul className="space-y-3">
+          {data.categories.map((category) => (
+            <li key={category.id}>
+              <p className="font-medium">
+                {category.name}{" "}
+                <span className="text-sm font-medium text-muted">({category.weight}%)</span>
+              </p>
+              {category.description?.trim() ? (
+                <p className="text-sm text-muted">{category.description}</p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </FormDialog>
       <FormDialog
         open={changeLogOpen}
         title="Change History Log"
@@ -649,7 +778,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         onConfirm={() => {
           void handleConfirmDialog().then((companyId) => {
             if (!companyId) return;
-            flashUnicorn();
+            celebrateSubmit(companyId);
             const index = data.companies.findIndex((company) => company.id === companyId);
             const next = data.companies[index + 1];
             if (next) setSelectedCompanyId(next.id);
@@ -657,17 +786,33 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         }}
         onCancel={() => setPendingConfirm(null)}
       />
-      {showUnicorn
+      {flight || confetti.length > 0
         ? createPortal(
             <div className="pointer-events-none fixed inset-0 z-[2000]">
-              <ConfettiBurst pieces={confetti} />
-              <div className="absolute inset-0 flex items-center justify-center">
+              {confetti.length > 0 ? <ConfettiBurst pieces={confetti} /> : null}
+              {flight?.phase === "center" ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <img
+                    ref={centerUnicornRef}
+                    src="/images/unicorn.png"
+                    alt=""
+                    className="unicorn-flash w-[min(22rem,70vw)] max-w-full"
+                  />
+                </div>
+              ) : null}
+              {flight?.phase === "fly" ? (
                 <img
                   src="/images/unicorn.png"
                   alt=""
-                  className="unicorn-flash w-[min(22rem,70vw)] max-w-full"
+                  className={`unicorn-flight ${flight.animate ? "is-moving" : ""}`}
+                  style={{
+                    left: flight.left,
+                    top: flight.top,
+                    width: flight.width,
+                    height: flight.height,
+                  }}
                 />
-              </div>
+              ) : null}
             </div>,
             document.body,
           )

@@ -125,6 +125,7 @@ export async function copyCompetitionToArchive(sourceId: string) {
           sessionId: newSessionId,
           score: score.score,
           publishedScore: score.publishedScore,
+          publishedAt: score.publishedAt,
         },
       ];
     });

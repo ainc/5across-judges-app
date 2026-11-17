@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Judge not found for competition." }, { status: 404 });
   }
 
-  const [session, scores, notes] = await Promise.all([
+  const [session, scores, notes, companies, submittedRows] = await Promise.all([
     prisma.submissionSession.findUnique({
       where: { competitionId_judgeId: { competitionId, judgeId } },
     }),
@@ -47,7 +47,33 @@ export async function GET(request: NextRequest) {
       where: { competitionId, judgeId },
       select: { companyId: true, categoryId: true, body: true },
     }),
+    prisma.company.findMany({
+      where: { competitionId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    }),
+    prisma.$queryRaw<Array<{ companyId: string; publishedAt: Date | null }>>`
+      SELECT "companyId", MIN("publishedAt") AS "publishedAt"
+      FROM "Score"
+      WHERE "competitionId" = ${competitionId}
+        AND "judgeId" = ${judgeId}
+        AND "publishedScore" IS NOT NULL
+      GROUP BY "companyId"
+    `,
   ]);
+
+  const companyOrder = new Map(companies.map((company, index) => [company.id, index]));
+  const submittedCompanies = [...submittedRows]
+    .sort((a, b) => {
+      const aTime = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+      const bTime = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+      if (aTime !== bTime) return aTime - bTime;
+      return (companyOrder.get(a.companyId) ?? 0) - (companyOrder.get(b.companyId) ?? 0);
+    })
+    .map((row) => ({
+      companyId: row.companyId,
+      submittedAt: row.publishedAt ? new Date(row.publishedAt).toISOString() : null,
+    }));
 
   return NextResponse.json({
     status: session?.status ?? null,
@@ -59,6 +85,7 @@ export async function GET(request: NextRequest) {
       score: entry.score,
     })),
     notes,
+    submittedCompanies,
   });
 }
 
@@ -268,6 +295,17 @@ export async function POST(request: Request) {
           ELSE "Score"."publishedScore"
         END,
         "updatedAt" = EXCLUDED."updatedAt"
+    `;
+  }
+
+  if (isFinal && companyId) {
+    await prisma.$executeRaw`
+      UPDATE "Score"
+      SET "publishedAt" = COALESCE("publishedAt", NOW())
+      WHERE "competitionId" = ${competitionId}
+        AND "judgeId" = ${judgeId}
+        AND "companyId" = ${companyId}
+        AND "publishedScore" IS NOT NULL
     `;
   }
 
