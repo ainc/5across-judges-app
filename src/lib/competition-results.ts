@@ -161,7 +161,7 @@ export function formatResultsSummary(
   const dateLabel = formatEventDate(eventDate);
   const lines = [
     dateLabel ? `${competitionName} — ${dateLabel}` : competitionName,
-    `Winner: ${winner ?? "TBD"}`,
+    `Highest Score: ${winner ?? "TBD"}`,
     `Final judge submissions: ${finalJudgeCount}`,
     "",
     "Rankings:",

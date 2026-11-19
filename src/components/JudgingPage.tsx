@@ -260,7 +260,6 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const [scoringGuideOpen, setScoringGuideOpen] = useState(false);
   const scoreTableRef = useRef<HTMLDivElement>(null);
-  const submittedRowRef = useRef<HTMLDivElement>(null);
   const slotRefs = useRef(new Map<string, HTMLDivElement>());
 
   function onColumnTab(
@@ -304,7 +303,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     missingCellKeys,
     hasChangeLog,
     canUndo,
-    saveStatusLabel,
+    saveStatusForCompany,
     updateScore,
     resetCompanyScores,
     updateNote,
@@ -346,12 +345,6 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     ...submittedCompanyIds,
     ...addedSubmittedIds.filter((companyId) => !submittedCompanyIds.includes(companyId)),
   ];
-
-  useEffect(() => {
-    const row = submittedRowRef.current;
-    if (!row) return;
-    row.scrollLeft = row.scrollWidth;
-  }, [submittedIds.join("\0")]);
 
   useEffect(() => {
     if (!flight || flight.phase !== "fly" || flight.animate) return;
@@ -435,10 +428,12 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
       ? selectedCompanyId
       : data.companies[0]?.id ?? "";
   const visibleCompanies = data.companies.filter((company) => company.id === selectedId);
+  const selectedCompany = data.companies.find((company) => company.id === selectedId);
+  const saveStatusLabel = saveStatusForCompany(selectedId);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <AppHeader showAdminLink={isAdmin} className="mb-6 shrink-0" />
+      <AppHeader showAdminLink={isAdmin} judgeName={selectedJudge?.name} className="mb-6 shrink-0" />
       <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-6 pb-3">
 
       {selectedJudge?.message && (
@@ -461,120 +456,69 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           </div>
         </section>
       )}
-      <section className="flex items-center gap-3">
-        <div className="flex flex-wrap items-start gap-3">
-          {isAdmin ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setOverrideEnabled((on) => !on)}
-                className="dark-button h-8 rounded border border-border bg-gray-900 px-3 py-1 text-white"
-              >
-                {overrideEnabled ? "Override On" : "Override"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setScoringGuideOpen(true)}
-                className="dark-button h-8 rounded border border-border bg-gray-900 px-3 py-1 text-white"
-              >
-                Scoring Guide
-              </button>
-            </>
-          ) : null}
-          <div className="flex flex-col items-start gap-0.5">
-            {isAdmin ? (
-              <AppSelect
-                aria-label="Judge"
-                className="h-8 rounded border px-2 py-1"
-                value={selectedJudgeId}
-                onChange={(event) => {
-                  setOverrideEnabled(false);
-                  selectJudge(event.target.value);
-                }}
-              >
-                {data.judges.map((judge) => (
-                  <option key={judge.id} value={judge.id}>
-                    {judge.name}
-                  </option>
-                ))}
-              </AppSelect>
-            ) : (
-              <span className="inline-flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setScoringGuideOpen(true)}
-                  className="dark-button h-8 rounded border border-border bg-gray-900 px-3 py-1 text-white"
-                >
-                  Scoring Guide
-                </button>
-                <span>{selectedJudge?.name}</span>
-              </span>
-            )}
-            <span className="text-xs text-muted">{saveStatusLabel}</span>
-          </div>
-        </div>
-        <div ref={submittedRowRef} className="ml-auto flex min-w-0 max-w-[70%] items-center gap-3 overflow-x-auto">
-          <p className="shrink-0 text-sm font-medium">Submitted Scores:</p>
-          {submittedIds.length === 0 ? (
-            <p className="text-sm text-muted">None</p>
-          ) : (
-            submittedIds.map((companyId) => {
-              const company = data.companies.find((item) => item.id === companyId);
-              if (!company) return null;
-              const pitch = data.companies.findIndex((item) => item.id === companyId) + 1;
-              const isLanding = flight?.companyId === companyId;
-              return (
-                <div key={companyId} className="flex w-28 shrink-0 flex-col items-center gap-1">
-                  <p className="text-center text-xs leading-tight">
-                    Pitch {pitch} - {company.name}
-                  </p>
-                  <div
-                    ref={(node) => {
-                      if (node) slotRefs.current.set(companyId, node);
-                      else slotRefs.current.delete(companyId);
-                    }}
-                    className="flex h-12 w-12 items-end justify-center"
-                  >
-                    <img
-                      src="/images/unicorn.png"
-                      alt=""
-                      className={`h-12 w-12 object-contain ${isLanding ? "opacity-0" : ""}`}
-                    />
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </section>
+      {isAdmin ? (
+        <section className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setOverrideEnabled((on) => !on)}
+            className="dark-button h-8 rounded border border-border bg-gray-900 px-3 py-1 text-white"
+          >
+            {overrideEnabled ? "Override On" : "Override"}
+          </button>
+          <AppSelect
+            aria-label="Judge"
+            className="h-8 rounded border px-2 py-1"
+            value={selectedJudgeId}
+            onChange={(event) => {
+              setOverrideEnabled(false);
+              selectJudge(event.target.value);
+            }}
+          >
+            {data.judges.map((judge) => (
+              <option key={judge.id} value={judge.id}>
+                {judge.name}
+              </option>
+            ))}
+          </AppSelect>
+        </section>
+      ) : null}
 
-      <div className="min-h-0 flex-1" ref={scoreTableRef}>
-      <StyledTable className="h-full" tableClassName="table-fixed">
+      {selectedCompany ? (
+        <h2 className="shrink-0 text-left text-4xl font-bold leading-tight text-[#4b5563]">{selectedCompany.name}</h2>
+      ) : null}
+
+      <div className="flex min-h-0 flex-1 items-start gap-6" ref={scoreTableRef}>
+      <StyledTable className="h-full min-w-0 flex-1" tableClassName="table-fixed">
           <colgroup>
-            <col className="w-[31%]" />
-            <col className="w-[38%]" />
-            <col className="w-[31%]" />
+            <col className="w-[46%]" />
+            <col className="w-[34%]" />
+            <col className="w-[20%]" />
           </colgroup>
           <thead className="sticky top-0 bg-background">
             <tr>
-              <th className={`${thClass} sticky left-0 w-[31%] bg-background`}>Category</th>
+              <th className={`${thClass} sticky left-0 w-[46%] bg-background`}>
+                <span className="flex items-baseline justify-between gap-2">
+                  <span>Category</span>
+                  <span className="flex items-baseline gap-3">
+                    {saveStatusLabel ? (
+                      <span className="text-xs font-normal text-muted">{saveStatusLabel}</span>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setScoringGuideOpen(true)}
+                      className="text-sm font-normal text-foreground underline"
+                    >
+                      Scoring Guide
+                    </button>
+                  </span>
+                </span>
+              </th>
               {visibleCompanies.map((company) => (
-                <th key={company.id} className="w-[38%] border-r border-b p-0 text-left">
-                  <AppSelect
-                    header
-                    aria-label="Company"
-                    value={selectedId}
-                    onChange={(event) => setSelectedCompanyId(event.target.value)}
-                  >
-                    {data.companies.map((option, index) => (
-                      <option key={option.id} value={option.id}>
-                        Pitch {index + 1} - {option.name}
-                      </option>
-                    ))}
-                  </AppSelect>
+                <th key={company.id} className={`${thClass} w-[34%] bg-background`}>
+                  Scores
                 </th>
               ))}
-              <th className={`${thClass} w-[31%] bg-background`}>Notes</th>
+              <th className={`${thClass} w-[20%] bg-background`}>Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -633,26 +577,29 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                 ))}
               </tr>
             ))}
-            <tr className="h-0 bg-muted-bg">
-              <td className={`${tdClass} sticky left-0 bg-muted-bg py-1 font-semibold`}>Weighted Total</td>
-              {visibleCompanies.map((company) => {
-                const hasScores = data.categories.some(
-                  (category) => typeof scores[`${company.id}:${category.id}`] === "number",
-                );
-                return (
-                  <td key={company.id} className={`${tdClass} py-1 text-center font-semibold`}>
-                    {hasScores ? formatWeightedTotal(totals[company.id] ?? 0) : ""}
-                  </td>
-                );
-              })}
-              <td className={`${tdClass} py-1`} />
-            </tr>
           </tbody>
       </StyledTable>
-      </div>
-
-      <section className="flex shrink-0 flex-wrap items-center gap-3">
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+      <aside className="flex max-h-full w-[calc((100%-1.5rem)/3)] shrink-0 flex-col items-start overflow-y-auto pt-3 text-left">
+        <p className="flex items-baseline whitespace-nowrap">
+          <span className="text-8xl font-bold leading-none text-[#4b5563] tabular-nums">
+            {formatWeightedTotal(totals[selectedId] ?? 0)}
+          </span>
+          <span className="ml-1 text-3xl font-bold text-[#9aa1ab]">/5</span>
+        </p>
+        <p className="mt-3 text-sm font-semibold">Weighted Total</p>
+        <button
+          type="button"
+          disabled={isSubmitting || isLoadingScores || !canEditScores}
+          onClick={() => submitCompanyScores(selectedId)}
+          className="mt-4 w-full rounded border-0 px-3 py-2 text-black disabled:opacity-50"
+          style={{ backgroundColor: "#EC3641", color: "#000000" }}
+        >
+          Submit Company Scores
+        </button>
+        <div className="mt-2 flex w-full items-baseline justify-between text-sm">
+          <button type="button" onClick={() => setChangeLogOpen(true)} className="text-foreground underline">
+            Change History
+          </button>
           <button
             type="button"
             disabled={
@@ -662,27 +609,55 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
               !data.categories.some((category) => typeof scores[`${selectedId}:${category.id}`] === "number")
             }
             onClick={() => resetCompanyScores(selectedId)}
-            className="dark-button rounded border border-border bg-gray-900 px-3 py-2 text-white disabled:opacity-50"
+            className="underline disabled:cursor-not-allowed disabled:opacity-50"
           >
             Reset Scores
           </button>
-          {isAdmin ? (
-            <button
-              type="button"
-              onClick={() => setChangeLogOpen(true)}
-              className="dark-button rounded border border-border bg-gray-900 px-3 py-2 text-white"
-            >
-              View Change History
-            </button>
-          ) : null}
-          <button
-            disabled={isSubmitting || isLoadingScores || !canEditScores}
-            onClick={() => submitCompanyScores(selectedId)}
-            className="rounded border border-border px-3 py-2 text-black disabled:opacity-50"
-            style={{ backgroundColor: "#DF666A", color: "#000000" }}
-          >
-            Submit Company Scores
-          </button>
+        </div>
+        <div className="mt-4 flex w-full items-stretch gap-2">
+          {data.companies.map((company, index) => {
+            const selected = company.id === selectedId;
+            const submitted = submittedIds.includes(company.id);
+            const isLanding = flight?.companyId === company.id;
+            return (
+              <button
+                key={company.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setSelectedCompanyId(company.id)}
+                className={`flex min-h-40 min-w-0 flex-1 flex-col items-center justify-start gap-1 rounded-lg px-1.5 py-3 text-center text-xs ${
+                  selected ? "bg-[#4b5563] text-white" : "bg-[#e5e7eb] text-[#111827]"
+                }`}
+              >
+                <span className="block font-semibold">Pitch {index + 1}</span>
+                <span className="block break-words">{company.name}</span>
+                <span className="mt-auto flex w-full flex-col items-center gap-1">
+                  <span
+                    ref={(node) => {
+                      if (node) slotRefs.current.set(company.id, node);
+                      else slotRefs.current.delete(company.id);
+                    }}
+                    className="flex h-12 w-full items-end justify-center"
+                  >
+                    {submitted ? (
+                      <img
+                        src="/images/unicorn.png"
+                        alt=""
+                        className={`h-12 w-12 max-w-full object-contain ${isLanding ? "opacity-0" : ""}`}
+                      />
+                    ) : null}
+                  </span>
+                  <span className="block leading-tight">{submitted ? "Submitted" : "Not submitted"}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </aside>
+      </div>
+
+      <section className="flex shrink-0 flex-wrap items-center gap-3">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
             disabled={isSubmitting || isLoadingScores || !canUndo || !canEditScores}

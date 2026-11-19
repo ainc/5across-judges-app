@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { pruneScoresForCompetition } from "@/lib/competition-config";
-import { formatSaveAge, formatScoreValue, formatTimestamp } from "@/lib/judging-format";
+import { formatSaveAge, formatSaveStatus, formatScoreValue, formatTimestamp } from "@/lib/judging-format";
 import { getMissingCells, normalizeScore, roundToHundredth } from "@/lib/scoring";
 import type {
   ActiveCompetitionResponse,
@@ -103,6 +103,9 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [submissionUpdatedAt, setSubmissionUpdatedAt] = useState<string | null>(null);
   const [submittedCompanyIds, setSubmittedCompanyIds] = useState<string[]>([]);
+  const [submittedAtByCompany, setSubmittedAtByCompany] = useState<Record<string, string | null>>({});
+  const [publishedScores, setPublishedScores] = useState<Record<string, number | null>>({});
+  const [submittedNotes, setSubmittedNotes] = useState<Record<string, string>>({});
   const [missingCells, setMissingCells] = useState<Array<{ companyId: string; categoryId: string }>>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAutosaving, setIsAutosaving] = useState(false);
@@ -315,8 +318,37 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
         setSubmissionStatus(payload.status);
         setSubmittedAt(payload.submittedAt);
         setSubmissionUpdatedAt(payload.updatedAt);
+        const nextPublished: Record<string, number | null> = {};
+        for (const entry of payload.entries) {
+          nextPublished[`${entry.companyId}:${entry.categoryId}`] = entry.publishedScore ?? null;
+        }
+        setPublishedScores(nextPublished);
+        const submittedIds = new Set((payload.submittedCompanies ?? []).map((company) => company.companyId));
+        const noteSnapshot: Record<string, string> = {};
+        if (data) {
+          for (const companyId of submittedIds) {
+            const inSync = data.categories.every((category) => {
+              const key = `${companyId}:${category.id}`;
+              const current = nextScores[key];
+              const published = nextPublished[key];
+              if (current === undefined && (published === undefined || published === null)) return true;
+              return current === published;
+            });
+            if (!inSync) continue;
+            for (const category of data.categories) {
+              const key = `${companyId}:${category.id}`;
+              if (nextNotes[key]) noteSnapshot[key] = nextNotes[key];
+            }
+          }
+        }
+        setSubmittedNotes(noteSnapshot);
         if (!options?.signal?.aborted) {
           setSubmittedCompanyIds((payload.submittedCompanies ?? []).map((company) => company.companyId));
+          setSubmittedAtByCompany(
+            Object.fromEntries(
+              (payload.submittedCompanies ?? []).map((company) => [company.companyId, company.submittedAt]),
+            ),
+          );
         }
         if (options?.successMessage) showToast(options.successMessage);
         return payload.entries.length > 0;
@@ -467,6 +499,30 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
           setSubmittedAt(payload.submittedAt ?? null);
           setSubmissionUpdatedAt(payload.updatedAt ?? null);
           if (saveOptions.isFinal && companyId) {
+            const submittedTime = payload.updatedAt ?? new Date().toISOString();
+            setSubmittedAtByCompany((prev) => ({ ...prev, [companyId]: submittedTime }));
+            setPublishedScores((prev) => {
+              const next = { ...prev };
+              for (const entry of entries) {
+                if (entry.companyId === companyId) {
+                  next[`${entry.companyId}:${entry.categoryId}`] = entry.score;
+                }
+              }
+              return next;
+            });
+            setSubmittedNotes((prev) => {
+              const next = { ...prev };
+              const prefix = `${companyId}:`;
+              for (const key of Object.keys(next)) {
+                if (key.startsWith(prefix)) delete next[key];
+              }
+              for (const note of noteEntries) {
+                if (note.companyId === companyId && note.body) {
+                  next[`${note.companyId}:${note.categoryId}`] = note.body;
+                }
+              }
+              return next;
+            });
             const savedScores = { ...(baselineByJudge.current[judgeId] ?? {}) };
             for (const entry of entries) {
               savedScores[`${entry.companyId}:${entry.categoryId}`] = entry.score;
@@ -626,6 +682,45 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     if (!submissionStatus) return "No saved scores";
     return formatSaveAge(submissionUpdatedAt, nowMs);
   }, [isAutosaving, nowMs, submissionStatus, submissionUpdatedAt]);
+
+  const saveStatusForCompany = useCallback(
+    (companyId: string) => {
+      if (isAutosaving) return "Saving...";
+      if (!data || !companyId) return "";
+
+      const hasUnsubmittedChange = data.categories.some((category) => {
+        const key = `${companyId}:${category.id}`;
+        const currentScore = scores[key];
+        const publishedScore = publishedScores[key];
+        const scoreChanged =
+          !(currentScore === undefined && (publishedScore === undefined || publishedScore === null)) &&
+          currentScore !== publishedScore;
+        const noteChanged = (notes[key] ?? "") !== (submittedNotes[key] ?? "");
+        return scoreChanged || noteChanged;
+      });
+      const hasSavedContent = data.categories.some((category) => {
+        const key = `${companyId}:${category.id}`;
+        return typeof scores[key] === "number" || (notes[key] ?? "") !== "";
+      });
+      const submittedTime = submittedAtByCompany[companyId] ?? null;
+      if (!hasSavedContent && !submittedTime) return "";
+      if (hasUnsubmittedChange || !submittedTime) {
+        return formatSaveStatus("draft", submissionUpdatedAt, nowMs);
+      }
+      return formatSaveStatus("submitted", submittedTime, nowMs);
+    },
+    [
+      data,
+      isAutosaving,
+      notes,
+      nowMs,
+      publishedScores,
+      scores,
+      submissionUpdatedAt,
+      submittedAtByCompany,
+      submittedNotes,
+    ],
+  );
 
   const syncChangeLog = useCallback((judgeId: string, companyId: string, categoryId: string, toValue: number | undefined) => {
     const key = `${companyId}:${categoryId}`;
@@ -841,6 +936,7 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
     hasChangeLog,
     canUndo: undoStack.length > 0,
     saveStatusLabel,
+    saveStatusForCompany,
     updateScore,
     resetCompanyScores,
     updateNote,

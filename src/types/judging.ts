@@ -24,7 +24,7 @@ export type JudgeScoresResponse = {
   status: SubmissionStatus | null;
   submittedAt: string | null;
   updatedAt: string | null;
-  entries: Array<{ companyId: string; categoryId: string; score: number }>;
+  entries: Array<{ companyId: string; categoryId: string; score: number; publishedScore?: number | null }>;
   notes: JudgeNoteEntry[];
   submittedCompanies?: Array<{ companyId: string; submittedAt: string | null }>;
 };

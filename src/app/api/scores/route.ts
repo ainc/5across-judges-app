@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }),
     prisma.score.findMany({
       where: { competitionId, judgeId },
-      select: { companyId: true, categoryId: true, score: true },
+      select: { companyId: true, categoryId: true, score: true, publishedScore: true },
     }),
     prisma.judgeNote.findMany({
       where: { competitionId, judgeId },
@@ -83,6 +83,7 @@ export async function GET(request: NextRequest) {
       companyId: entry.companyId,
       categoryId: entry.categoryId,
       score: entry.score,
+      publishedScore: entry.publishedScore,
     })),
     notes,
     submittedCompanies,

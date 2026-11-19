@@ -10,6 +10,7 @@
   --surface: #ffffff;
   --muted: #4b5563;
   --muted-bg: #f9fafb;
+  --results-header: #f3f4f6;
   --hover: #e5e7eb;
   --border: #111827;
   --line: #d1d5db;
@@ -26,6 +27,7 @@
   --surface: #363b45;
   --muted: #9aa1ab;
   --muted-bg: #31363f;
+  --results-header: #282c33;
   --hover: #414754;
   --border: #4d5462;
   --line: #414754;
@@ -66,11 +68,26 @@ body {
   }
 }
 
-input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]),
-textarea,
+input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not(.score-input),
+textarea:not(.note-input),
 select {
   background-color: var(--surface);
   color: var(--foreground);
+}
+
+.score-input,
+.note-input {
+  background-color: var(--surface);
+  color: var(--foreground);
+}
+
+.dark .score-input,
+.dark .note-input {
+  background-color: var(--background);
+}
+
+.score-input.bg-danger-bg {
+  background-color: var(--danger-bg);
 }
 
 .page-header,
@@ -88,9 +105,25 @@ select {
   width: min(400px, 45vw);
 }
 
+.brand-logo-dark {
+  display: none !important;
+}
+
+html.dark .brand-logo-light {
+  display: none !important;
+}
+
+html.dark .brand-logo-dark {
+  display: block !important;
+}
+
 .company-results-table {
   table-layout: fixed;
   width: 100%;
+}
+
+.results-header-fill {
+  background-color: var(--results-header);
 }
 
 .styled-table tr > :last-child {
@@ -168,10 +201,10 @@ select {
 
 @keyframes podium-bar-rise {
   from {
-    transform: translateY(100%);
+    transform: translateX(-100%);
   }
   to {
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }
 

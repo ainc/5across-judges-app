@@ -10,6 +10,7 @@ import { submitSignOut } from "@/components/submit-sign-out";
 
 type AppNavProps = {
   showAdminLink?: boolean;
+  judgeName?: string;
 };
 
 const pages = [
@@ -18,7 +19,7 @@ const pages = [
   { href: "/admin", label: "Admin Dashboard", admin: true },
 ];
 
-export function AppNav({ showAdminLink = false }: AppNavProps) {
+export function AppNav({ showAdminLink = false, judgeName }: AppNavProps) {
   const pathname = usePathname();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [canPortal, setCanPortal] = useState(false);
@@ -31,6 +32,7 @@ export function AppNav({ showAdminLink = false }: AppNavProps) {
 
   return (
     <nav className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-x-6 gap-y-1">
+      {judgeName ? <span className="text-sm font-bold">{judgeName}</span> : null}
       <DarkModeButton />
       {links.map((page) => {
         const active = pathname === page.href;

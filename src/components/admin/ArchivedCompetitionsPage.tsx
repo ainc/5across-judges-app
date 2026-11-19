@@ -64,7 +64,7 @@ export function ArchivedCompetitionsPage() {
             <div className="min-w-0">
               <h2 className="text-xl font-semibold">{item.name}</h2>
               <p className="mt-1 text-sm text-muted">
-                {formatEventDate(item.eventDate)} · Winner: {item.winner ?? "TBD"} ·{" "}
+                {formatEventDate(item.eventDate)} · Highest Score: {item.winner ?? "TBD"} ·{" "}
                 {item.finalSubmissionCount} final submission
                 {item.finalSubmissionCount === 1 ? "" : "s"}
               </p>
