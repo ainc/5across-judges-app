@@ -42,14 +42,20 @@ function averageCategoryScore(judges: JudgeScore[], categoryName: string) {
   return scores.reduce((sum, value) => sum + value, 0) / scores.length;
 }
 
+function judgeFor(company: CompanyRanking, judgeId: string) {
+  return company.byJudge.find((judge) => judge.judgeId === judgeId);
+}
+
 export function CompanyResultsTables({
   rankings,
   categories,
   selectedCompanyId,
+  judgeId,
 }: {
   rankings: CompanyRanking[];
   categories: CategoryRef[];
   selectedCompanyId: string;
+  judgeId?: string;
 }) {
   const companies = [...rankings].sort((a, b) => a.pitch - b.pitch);
   if (companies.length === 0) {
@@ -69,24 +75,21 @@ export function CompanyResultsTables({
         </colgroup>
         <thead>
           <tr>
-            <th className={`${thClass} font-normal`}>Category</th>
-            {companies.map((company) => {
-              const selected = company.companyId === selectedCompanyId;
-              return (
-                <th
-                  key={company.companyId}
-                  className={`border-r border-b p-2 break-words text-center ${selected ? "font-bold" : "font-normal"}`}
-                >
-                  Pitch {company.pitch} - {company.companyName}
-                </th>
-              );
-            })}
+            <th className={`${thClass} results-header-fill font-bold`}>Category</th>
+            {companies.map((company) => (
+              <th
+                key={company.companyId}
+                className="border-r border-b results-header-fill p-2 break-words text-center font-bold"
+              >
+                Pitch {company.pitch} - {company.companyName}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {categories.map((category) => (
             <tr key={category.name}>
-              <td className={tdClass}>
+              <td className={`${tdClass} results-header-fill font-bold`}>
                 <span className="inline-flex items-center gap-1">
                   {category.name}
                   {category.description?.trim() ? (
@@ -105,28 +108,27 @@ export function CompanyResultsTables({
               </td>
               {companies.map((company) => {
                 const selected = company.companyId === selectedCompanyId;
-                const average = averageCategoryScore(company.byJudge, category.name);
+                const score = judgeId
+                  ? (judgeFor(company, judgeId)?.categories[category.name] ?? null)
+                  : averageCategoryScore(company.byJudge, category.name);
                 return (
                   <td
                     key={company.companyId}
                     className={`${tdClass} text-center ${selected ? "font-bold" : ""}`}
                   >
-                    {average === null ? "" : formatWeightedTotal(average)}
+                    {score === null ? "" : formatWeightedTotal(score)}
                   </td>
                 );
               })}
             </tr>
           ))}
           <tr>
-            <td className={`${tdClass} font-semibold`}>{TOTAL_ROW_LABEL}</td>
+            <td className={`${tdClass} results-header-fill font-bold`}>{TOTAL_ROW_LABEL}</td>
             {companies.map((company) => {
-              const selected = company.companyId === selectedCompanyId;
+              const total = judgeId ? (judgeFor(company, judgeId)?.judgeTotal ?? null) : company.finalScore;
               return (
-                <td
-                  key={company.companyId}
-                  className={`${tdClass} text-center ${selected ? "font-bold" : "font-semibold"}`}
-                >
-                  {formatWeightedTotal(company.finalScore)}
+                <td key={company.companyId} className={`${tdClass} results-header-fill text-center font-bold`}>
+                  {total === null ? "" : formatWeightedTotal(total)}
                 </td>
               );
             })}

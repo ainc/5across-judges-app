@@ -36,7 +36,20 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <main className="flex min-h-full items-center justify-center p-6">
       <section className="w-full max-w-sm space-y-6 rounded border p-6">
-      <img src="/images/5acrossbanner.png" alt="5 Across Banner" className="fiveacross-banner justify-self-center" />
+      <img
+        src="/images/5-across.png"
+        alt="5 Across"
+        width={1381}
+        height={321}
+        className="brand-logo-light fiveacross-banner justify-self-center"
+      />
+      <img
+        src="/images/5-across-dark.png"
+        alt=""
+        width={1381}
+        height={321}
+        className="brand-logo-dark fiveacross-banner justify-self-center"
+      />
         <header className="space-y-2">
           <h1 className="page-header">Sign In</h1>
           <p className="text-sm text-muted">

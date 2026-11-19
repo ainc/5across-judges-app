@@ -11,26 +11,41 @@ type PodiumRow = {
   pitch: number;
 };
 
-const HEIGHT_PX: Record<number, number> = {
-  1: 248,
-  2: 192,
-  3: 152,
-  4: 116,
-  5: 96,
-};
+const MIN_BAR_PERCENT = 28;
 
-const FACE: Record<number, { background: string; color: string }> = {
-  1: { background: "#EC3641", color: "#ffffff" },
-  2: { background: "#EF5E66", color: "#ffffff" },
-  3: { background: "#F4868D", color: "#ffffff" },
-  4: { background: "#939597", color: "#ffffff" },
-  5: { background: "#D1D2D4", color: "#323232" },
-};
+function barWidth(score: number, topScore: number): string {
+  if (topScore <= 0) return `${MIN_BAR_PERCENT}%`;
+  const fraction = Math.min(1, Math.max(0, score / topScore));
+  return `${Math.max(MIN_BAR_PERCENT, Math.round(fraction * 100))}%`;
+}
+
+const LEADER_RED = "#EC3641";
+const PODIUM_GRAY = "#e5e7eb";
+const PODIUM_GRAY_DARK = "#5f6264";
+const PODIUM_GRAY_LIGHT = "#f3f4f6";
+const TEXT_ON_DARK = "#ffffff";
+const TEXT_ON_LIGHT = "#323232";
 
 function lighten(hex: string, amount: number): string {
   const value = Number.parseInt(hex.slice(1), 16);
   const mix = (channel: number) => Math.round(channel + (255 - channel) * amount);
   return `rgb(${mix((value >> 16) & 255)}, ${mix((value >> 8) & 255)}, ${mix(value & 255)})`;
+}
+
+function podiumFace(isLeader: boolean, selected: boolean, leaderSelected: boolean, hasSelection: boolean) {
+  if (isLeader && (!hasSelection || leaderSelected)) {
+    return { background: LEADER_RED, color: TEXT_ON_DARK };
+  }
+  if (selected) {
+    return { background: PODIUM_GRAY_DARK, color: TEXT_ON_DARK };
+  }
+  if (!hasSelection) {
+    return { background: PODIUM_GRAY, color: TEXT_ON_LIGHT };
+  }
+  if (isLeader) {
+    return { background: lighten(LEADER_RED, 0.55), color: TEXT_ON_LIGHT };
+  }
+  return { background: PODIUM_GRAY_LIGHT, color: TEXT_ON_LIGHT };
 }
 
 export function ResultsPodiums({
@@ -44,6 +59,7 @@ export function ResultsPodiums({
 }) {
   const [hoveredCompanyId, setHoveredCompanyId] = useState<string | null>(null);
   const ordered = [...rankings].sort((a, b) => a.pitch - b.pitch);
+  const topScore = Math.max(0, ...rankings.map((row) => row.finalScore));
 
   if (rankings.length === 0) {
     return <p className="text-sm text-muted">No results yet.</p>;
@@ -54,23 +70,23 @@ export function ResultsPodiums({
       aria-label="Competition podiums"
       style={{
         display: "flex",
-        alignItems: "flex-end",
+        flexDirection: "column",
+        justifyContent: "stretch",
         width: "100%",
-        gap: 8,
+        height: "100%",
+        gap: 20,
         overflow: "visible",
       }}
     >
       {ordered.map((row) => {
         const rank = Number(row.rank);
-        const face = FACE[rank] ?? FACE[5];
-
+        const isLeader = rank === 1;
         const hasSelection = selectedCompanyId !== "";
         const selected = hasSelection && row.companyId === selectedCompanyId;
-        const displayFace =
-          selected && rank === 3 ? FACE[2] : selected && rank === 5 ? FACE[4] : face;
+        const leaderSelected = hasSelection && ordered.some((item) => item.rank === 1 && item.companyId === selectedCompanyId);
+        const face = podiumFace(isLeader, selected, leaderSelected, hasSelection);
         const hovered = hoveredCompanyId === row.companyId;
         const enlarged = selected || hovered;
-        const dimmed = hasSelection && !enlarged;
 
         return (
           <button
@@ -85,9 +101,11 @@ export function ResultsPodiums({
             onBlur={() => setHoveredCompanyId((current) => (current === row.companyId ? null : current))}
             style={{
               display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
               flex: "1 1 0%",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              minHeight: 0,
               minWidth: 0,
               margin: 0,
               padding: 0,
@@ -98,59 +116,42 @@ export function ResultsPodiums({
               cursor: "pointer",
               position: "relative",
               zIndex: enlarged ? 1 : 0,
-              transform: enlarged ? "scale(1.06)" : "scale(1)",
-              transformOrigin: "bottom center",
+              transform: enlarged ? "scale(1.03)" : "scale(1)",
+              transformOrigin: "left center",
               transition: "transform 160ms ease",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "flex-end",
-                minHeight: 48,
-                marginBottom: 8,
-                textAlign: "center",
-                fontSize: 14,
-                fontWeight: 600,
-                width: "100%",
-              }}
-            >
-              <span style={{ width: "100%", overflow: "hidden", textOverflow: "ellipsis"}}>
-                {row.companyName}
-              </span>
-            </div>
-            <div
-              className="podium-bar-clip"
-              style={{
-                width: "100%",
-                height: HEIGHT_PX[rank] ?? 64,
-                borderTopLeftRadius: 6,
-                borderTopRightRadius: 6,
-              }}
-            >
+            <div style={{ display: "flex", flex: "1 1 auto", alignSelf: "stretch", minWidth: 0 }}>
+              <div
+                className="podium-bar-clip"
+                style={{
+                  width: barWidth(row.finalScore, topScore),
+                  minHeight: 36,
+                  borderRadius: 6,
+                }}
+              >
               <div
                 className="podium-bar"
                 style={{
                   display: "flex",
-                  flexDirection: "column",
                   alignItems: "center",
-                  justifyContent: "flex-end",
+                  justifyContent: "flex-start",
                   width: "100%",
                   height: "100%",
-                  paddingBottom: 10,
-                  background: dimmed ? lighten(face.background, 0.55) : displayFace.background,
-                  color: dimmed ? "#323232" : displayFace.color,
+                  paddingLeft: 10,
+                  paddingRight: 10,
+                  background: face.background,
+                  color: face.color,
                   transition: "background 180ms ease, color 180ms ease",
                   fontSize: 14,
                   fontWeight: 600,
+                  whiteSpace: "nowrap",
                 }}
               >
-                Pitch {row.pitch} 
-                <br />
-                Score: {formatWeightedTotal(row.finalScore)}
+                <span style={{ fontWeight: 800 }}>{row.companyName}</span>
+                {` · Pitch ${row.pitch} · ${formatWeightedTotal(row.finalScore)}`}
               </div>
+            </div>
             </div>
           </button>
         );

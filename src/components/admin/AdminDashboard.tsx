@@ -195,7 +195,7 @@ export function AdminDashboard() {
               {resultsPreview ? (
                 <>
                   <p className="text-sm">
-                    Winner: <span className="font-medium">{resultsPreview.winner ?? "TBD"}</span> ·{" "}
+                    Highest Score: <span className="font-medium">{resultsPreview.winner ?? "TBD"}</span> ·{" "}
                     {resultsPreview.finalJudgeCount} final judge submission
                     {resultsPreview.finalJudgeCount === 1 ? "" : "s"}
                   </p>
