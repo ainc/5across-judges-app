@@ -18,7 +18,7 @@ export default async function ResultsPage() {
 
   return (
     <>
-      <AppHeader showAdminLink={isAdmin} judgeName={judgeName ?? undefined} className="mb-4" />
+      <AppHeader showAdminLink={isAdmin} judgeName={judgeName ?? undefined} className="mb-12" />
       <main className="min-w-0 space-y-4 px-6 pb-6">
         {data ? (
           <CurrentResults

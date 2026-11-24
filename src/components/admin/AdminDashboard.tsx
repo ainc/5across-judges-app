@@ -63,11 +63,11 @@ export function AdminDashboard() {
   if (!isReady) return null;
 
   return (
-    <>
-      <AppHeader showAdminLink={true} />
-      <main className="space-y-10 px-6 pb-6">
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
+      <AppHeader showAdminLink={true} className="mb-12 shrink-0" />
+      <main className="min-h-0 flex-1 overflow-hidden px-6 pb-6">
         <div
-          className={leader ? "grid items-stretch gap-y-10" : "contents"}
+          className={leader ? "grid items-stretch gap-y-4" : "flex flex-col gap-4"}
           style={leader ? { gridTemplateColumns: alignedColumns } : undefined}
         >
         {data ? (
@@ -364,6 +364,6 @@ export function AdminDashboard() {
           ))}
         </div>
       </main>
-    </>
+    </div>
   );
 }

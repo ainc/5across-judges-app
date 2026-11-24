@@ -594,8 +594,8 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
             ))}
           </tbody>
       </StyledTable>
-      <aside className="flex max-h-full min-w-0 flex-col items-start overflow-y-auto pt-3 text-left">
-        <p className="flex items-baseline whitespace-nowrap">
+      <aside className="flex max-h-full min-w-0 flex-col items-start overflow-visible text-left">
+        <p className="-mt-[0.22em] flex items-baseline whitespace-nowrap">
           <span className="text-8xl font-bold leading-none text-muted tabular-nums">
             {formatWeightedTotal(totals[selectedId] ?? 0)}
           </span>
