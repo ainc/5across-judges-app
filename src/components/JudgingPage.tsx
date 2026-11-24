@@ -632,7 +632,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                 <span className="block font-semibold">Pitch {index + 1}</span>
                 <span className="block break-words">{company.name}</span>
                 <span className="mt-auto flex w-full flex-col items-center gap-1">
-                  <span
+                  <div
                     ref={(node) => {
                       if (node) slotRefs.current.set(company.id, node);
                       else slotRefs.current.delete(company.id);
@@ -646,7 +646,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                         className={`h-12 w-12 max-w-full object-contain ${isLanding ? "opacity-0" : ""}`}
                       />
                     ) : null}
-                  </span>
+                  </div>
                   <span className="block leading-tight">{submitted ? "Submitted" : "Not submitted"}</span>
                 </span>
               </button>
