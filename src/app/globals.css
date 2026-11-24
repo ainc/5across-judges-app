@@ -53,6 +53,7 @@
   --font-sans: var(--font-open-sans);
 }
 
+html,
 body {
   background: var(--background);
   color: var(--foreground);
@@ -83,6 +84,10 @@ select {
 
 .dark .score-input,
 .dark .note-input {
+  background-color: var(--background);
+}
+
+.dark input.section-field:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not(.score-input) {
   background-color: var(--background);
 }
 

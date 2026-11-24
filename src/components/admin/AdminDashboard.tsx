@@ -56,6 +56,9 @@ export function AdminDashboard() {
   } = useAdminDashboard();
 
   const leader = resultsPreview?.rankings.find((row) => row.rank === 1);
+  const dashboardColumns = "minmax(0, 1fr) 20rem";
+  const alignedColumns =
+    "max-content minmax(1.25rem, 0.5fr) 1rem minmax(1.25rem, 0.5fr) max-content";
 
   if (!isReady) return null;
 
@@ -63,66 +66,59 @@ export function AdminDashboard() {
     <>
       <AppHeader showAdminLink={true} />
       <main className="space-y-10 px-6 pb-6">
+        <div
+          className={leader ? "grid items-stretch gap-y-10" : "contents"}
+          style={leader ? { gridTemplateColumns: alignedColumns } : undefined}
+        >
         {data ? (
-          <div className="space-y-3">
-          <h2 className="text-left text-2xl font-bold leading-tight text-[#111827]">Submitted Scores</h2>
-          <div className="flex items-stretch gap-4">
-            <section className="min-w-0 flex-1 overflow-hidden rounded border p-4">
+          <section
+            className={`grid items-stretch overflow-hidden rounded-xl bg-[#e5e7eb] ${leader ? "col-span-full grid-cols-subgrid" : ""}`}
+            style={leader ? undefined : { gridTemplateColumns: "minmax(0, 1fr)" }}
+          >
+            <div className="col-start-1 min-w-0 py-4 pl-4">
+              <h2 className="mb-3 text-left text-2xl font-bold leading-tight text-[#111827]">Submitted Scores</h2>
               <SubmissionStatusTable
                 judges={data.judges}
                 companies={data.companies}
                 submissions={data.submissions ?? []}
+                footer={
+                  <button
+                    type="button"
+                    onClick={() => setMessageOpen(true)}
+                    disabled={data.judges.length === 0}
+                    className="text-sm text-[#EC3641] underline disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Message Judge
+                  </button>
+                }
               />
-            </section>
+            </div>
+            {leader ? <div className="relative col-start-3" aria-hidden="true"><div className="absolute top-4 bottom-4 left-1/2 w-px -translate-x-1/2 bg-[#9ca3af]" /></div> : null}
             {leader ? (
-              <aside className="flex w-80 shrink-0 flex-col justify-between self-stretch rounded-lg bg-[#e5e7eb] px-4 py-3 text-[#111827]">
+              <aside className="col-start-5 flex w-80 max-w-full flex-col justify-between py-4 pr-4 text-[#111827]">
                 <div>
                   <p className="text-sm">Highest Score</p>
                   <p className="break-words text-2xl font-bold leading-tight">{leader.companyName}</p>
                   <p className="text-sm font-semibold leading-tight">Pitch {leader.pitch}</p>
                 </div>
-                <p className="text-6xl font-bold leading-none text-[#EC3641]">
+                <p className="text-8xl font-bold leading-none text-[#EC3641]">
                   {formatWeightedTotal(leader.finalScore)}
-                  <span className="text-2xl text-[#111827]">/5</span>
+                  <span className="text-4xl text-[#111827]">/5</span>
                 </p>
               </aside>
             ) : null}
-          </div>
-          </div>
+          </section>
         ) : null}
-        <div className="flex items-start gap-10">
-          <div className="flex min-w-0 flex-1 flex-col gap-10">
-            <div className="space-y-3">
-            <h2 className="text-left text-2xl font-bold leading-tight text-[#111827]">Competition Actions</h2>
-            <section className="overflow-hidden rounded border p-4 space-y-3">
-              <DashboardTextActions>
-              <DashboardTextButton onClick={() => router.push("/admin/archived")}>
-                  Open Archived Competitions
-                </DashboardTextButton>
-                <DashboardTextButton
-                  onClick={() => setMessageOpen(true)}
-                  disabled={!data || data.judges.length === 0}
-                >
-                  Message Judge
-                </DashboardTextButton>
-                <DashboardTextButton
-                  onClick={endCurrentCompetition}
-                  disabled={isArchiving || !data}
-                >
-                  End Competition
-                </DashboardTextButton>
-                <DashboardTextButton
-                  onClick={startNewCompetition}
-                  disabled={isStarting || !!data}
-                >
-                  Start New Competition
-                </DashboardTextButton>
-              </DashboardTextActions>
-            </section>
-            </div>
-            <div className="space-y-3">
-            <h2 className="text-left text-2xl font-bold leading-tight text-[#111827]">Settings</h2>
-            <section className="overflow-hidden rounded border p-4 space-y-3">
+        <div
+          className={leader ? "col-span-full grid grid-cols-subgrid items-stretch" : "grid items-stretch"}
+          style={leader ? undefined : { gridTemplateColumns: dashboardColumns }}
+        >
+          <div
+            className={`order-2 flex min-w-0 flex-col ${leader ? "col-span-2 col-start-4" : ""}`}
+            style={leader ? { width: 0, minWidth: "100%" } : undefined}
+          >
+            <section className="flex flex-1 flex-col overflow-hidden rounded-xl border bg-transparent p-4">
+              <h2 className="mb-3 text-left text-2xl font-bold leading-tight text-foreground">Settings</h2>
               <DashboardTextActions>
                 <DashboardTextButton
                   onClick={() => openSectionModal("judges")}
@@ -142,57 +138,61 @@ export function AdminDashboard() {
                 >
                   Manage Scoring Criteria
                 </DashboardTextButton>
-                <DashboardTextButton
+              </DashboardTextActions>
+              <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-3">
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={endCurrentCompetition}
+                    disabled={isArchiving || !data}
+                    className="rounded border-0 px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{ backgroundColor: "#EC3641", color: "#000000" }}
+                  >
+                    End Competition
+                  </button>
+                  <button
+                    type="button"
+                    onClick={startNewCompetition}
+                    disabled={isStarting || !!data}
+                    className="dark-button rounded border-0 px-3 py-2"
+                  >
+                    Start New Competition
+                  </button>
+                </div>
+                <button
+                  type="button"
                   onClick={() => setPendingPrompt({ type: "reset" })}
                   disabled={!data}
+                  className="text-sm text-muted underline disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Reset Settings
-                </DashboardTextButton>
-              </DashboardTextActions>
+                </button>
+              </div>
             </section>
-            </div>
           </div>
 
-          <div className="flex min-w-0 flex-1 flex-col gap-10">
-            <div className="space-y-3">
-            <h2 className="text-left text-2xl font-bold leading-tight text-[#111827]">Competition Details</h2>
-            <section className="overflow-hidden rounded border p-4 space-y-3">
-              <DashboardTextActions>
-                <DashboardTextButton
-                  onClick={() => setPendingConfirm({ type: "save-results" })}
-                  disabled={isSavingResults || !data}
-                >
-                  Copy Competition into Archive
-                </DashboardTextButton>
-                <DashboardTextButton
-                  onClick={() => {
-                    if (!data || !parseEventDate(data.competition.eventDate)) {
-                      setEventDateError("Enter a valid date as MM/DD/YYYY.");
-                      return;
-                    }
-                    setEventDateError("");
-                    setPendingConfirm({ type: "save-details" });
-                  }}
-                  disabled={isSaving || !data}
-                >
-                  {isSaving ? "Saving..." : "Save Competition Details"}
-                </DashboardTextButton>
-              </DashboardTextActions>
+          <div
+            className={`order-1 flex min-w-0 flex-col ${leader ? "col-span-2" : ""}`}
+            style={leader ? { width: 0, minWidth: "100%" } : undefined}
+          >
+            <section className="flex flex-1 flex-col gap-3 overflow-hidden rounded-xl border bg-transparent p-4">
+              <h2 className="text-left text-2xl font-bold leading-tight text-foreground">Competition Details</h2>
               {data ? (
                 <>
-                  <label className="block text-sm">
-                    Competition Name
-                    <input
-                      className="mt-1 w-full rounded border p-2"
-                      value={data.competition.name}
-                      onChange={(event) => updateCompetitionField("name", event.target.value)}
-                    />
-                  </label>
-                  <label className="block text-sm" htmlFor="competition-date">
+                  <div className="grid grid-cols-3 gap-3">
+                    <label className="col-span-2 block min-w-0 text-sm">
+                      Competition Name
+                      <input
+                        className="section-field mt-1 w-full rounded border p-2"
+                        value={data.competition.name}
+                        onChange={(event) => updateCompetitionField("name", event.target.value)}
+                      />
+                    </label>
+                    <label className="col-span-1 block min-w-0 text-sm" htmlFor="competition-date">
                     Competition Date
                     <input
                       id="competition-date"
-                      className={`mt-1 w-full rounded border p-2 ${eventDateError ? "border-danger" : ""}`}
+                      className={`section-field mt-1 w-full rounded border p-2 ${eventDateError ? "border-danger" : ""}`}
                       type="text"
                       autoComplete="off"
                       spellCheck={false}
@@ -225,7 +225,8 @@ export function AdminDashboard() {
                         {eventDateError}
                       </p>
                     ) : null}
-                  </label>
+                    </label>
+                  </div>
                 </>
               ) : null}
               {resultsPreview ? (
@@ -238,7 +239,7 @@ export function AdminDashboard() {
                   <ol className="list-decimal pl-5 text-sm space-y-1">
                     {resultsPreview.rankings.map((row) => (
                       <li key={row.rank}>
-                        {row.companyName} — <strong>{row.finalScore.toFixed(2)}</strong>
+                        {row.companyName} — {row.finalScore.toFixed(2)}
                       </li>
                     ))}
                   </ol>
@@ -248,9 +249,43 @@ export function AdminDashboard() {
                   {data ? "No final submissions yet." : "No live competition. Start a new competition to begin scoring."}
                 </p>
               )}
+              <div className="mt-auto flex items-center justify-between gap-3">
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setPendingConfirm({ type: "save-results" })}
+                    disabled={isSavingResults || !data}
+                    className="text-sm text-muted underline disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Copy into Archive
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!data || !parseEventDate(data.competition.eventDate)) {
+                        setEventDateError("Enter a valid date as MM/DD/YYYY.");
+                        return;
+                      }
+                      setEventDateError("");
+                      setPendingConfirm({ type: "save-details" });
+                    }}
+                    disabled={isSaving || !data}
+                    className="text-sm text-muted underline disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSaving ? "Saving..." : "Save Details"}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push("/admin/archived")}
+                  className="text-sm text-muted underline"
+                >
+                  Open Archived Competitions
+                </button>
+              </div>
             </section>
-            </div>
           </div>
+        </div>
         </div>
 
         {data ? (
