@@ -18,6 +18,15 @@ export async function resolveJudgeIdForUsername(username: string) {
   return judge?.id ?? null;
 }
 
+export async function judgeDisplayName(judgeId: string | null | undefined) {
+  if (!judgeId) return null;
+  const judge = await prisma.judge.findUnique({
+    where: { id: judgeId },
+    select: { name: true },
+  });
+  return judge?.name ?? null;
+}
+
 export async function getUserFromDb(
   username: string,
   password: string,

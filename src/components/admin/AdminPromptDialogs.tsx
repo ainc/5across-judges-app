@@ -21,16 +21,6 @@ export function AdminPromptDialogs({ pendingPrompt, onSubmit, onCancel }: AdminP
         onCancel={onCancel}
       />
       <PromptDialog
-        open={pendingPrompt?.type === "start-next"}
-        title="Name New Competition"
-        message="Choose a name for the new live competition."
-        label="Competition Name:"
-        defaultValue={pendingPrompt?.type === "start-next" ? pendingPrompt.defaultValue : ""}
-        confirmLabel="Start New Competition"
-        onSubmit={onSubmit}
-        onCancel={onCancel}
-      />
-      <PromptDialog
         open={pendingPrompt?.type === "reset"}
         title="Reset Settings?"
         message={`Overwrite current judges and company names with default values?\n\nValues will only update in the Admin Dashboard. Open Manage Judges and Manage Companies and click Save to apply them.`}

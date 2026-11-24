@@ -11,6 +11,7 @@ export type AdminCompetitionResponse = {
   judges: Judge[];
   companies: Array<{ id: string; name: string; presenter: string | null }>;
   categories: Array<{ id: string; name: string; description: string; weight: number; maxScore: number }>;
+  submissions: Array<{ judgeId: string; companyId: string }>;
 };
 
 export type ResultsPreview = {
@@ -19,6 +20,7 @@ export type ResultsPreview = {
   rankings: Array<{
     rank: number;
     companyName: string;
+    pitch: number;
     finalScore: number;
     judgeCount: number;
   }>;
@@ -68,6 +70,7 @@ export async function loadResultsPreview() {
     rankings: payload.rankings.map((row) => ({
       rank: row.rank as number,
       companyName: row.companyName as string,
+      pitch: row.pitch as number,
       finalScore: row.finalScore as number,
       judgeCount: row.judgeCount as number,
     })),

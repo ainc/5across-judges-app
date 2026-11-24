@@ -32,11 +32,11 @@ export function AdminConfirmDialogs({ pendingConfirm, onConfirm, onCancel }: Adm
       />
       <ConfirmDialog
         open={pendingConfirm?.type === "end-current"}
-        title="End Current Competition?"
+        title="End and Start New Competition?"
         message={
-          "Compute this competition's results and move it to the archive?\n\nThis does not start a new live competition. Use Start New Competition after ending."
+          "Compute this competition's results and move it to the archive?\n\nA new live competition starts immediately with the same name, date one week later, and the same scoring criteria. Judges start as Judge A, B, and C, companies start as Company A through E, and score cells are empty."
         }
-        confirmLabel="End and Archive"
+        confirmLabel="End and Start New"
         onConfirm={onConfirm}
         onCancel={onCancel}
       />

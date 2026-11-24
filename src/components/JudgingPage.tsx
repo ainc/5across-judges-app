@@ -433,11 +433,11 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <AppHeader showAdminLink={isAdmin} judgeName={selectedJudge?.name} className="mb-6 shrink-0" />
+      <AppHeader showAdminLink={isAdmin} judgeName={isAdmin ? undefined : selectedJudge?.name} className="mb-6 shrink-0" />
       <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-6 pb-3">
 
       {selectedJudge?.message && (
-        <section className="rounded border border-[#DF666A] bg-[#DF666A] p-4">
+        <section className="rounded border border-[#DF666A] bg-[#DF666A] p-4 text-[#111827] dark:border-danger-border dark:bg-danger-bg dark:text-danger">
           <div className="flex justify-between">
             <div>
               <p className="text-sm font-semibold">Message for {selectedJudge.name}</p>
@@ -461,7 +461,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           <button
             type="button"
             onClick={() => setOverrideEnabled((on) => !on)}
-            className="dark-button h-8 rounded border border-border bg-gray-900 px-3 py-1 text-white"
+            className="dark-button h-8 rounded border-0 bg-gray-900 px-3 py-1 text-white"
           >
             {overrideEnabled ? "Override On" : "Override"}
           </button>
@@ -483,12 +483,17 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         </section>
       ) : null}
 
-      {selectedCompany ? (
-        <h2 className="shrink-0 text-left text-4xl font-bold leading-tight text-[#4b5563]">{selectedCompany.name}</h2>
-      ) : null}
-
-      <div className="flex min-h-0 flex-1 items-start gap-6" ref={scoreTableRef}>
-      <StyledTable className="h-full min-w-0 flex-1" tableClassName="table-fixed">
+      <div
+        className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_calc((100%-1.5rem)/3)] grid-rows-[auto_minmax(0,1fr)] items-start gap-x-6 gap-y-3"
+        ref={scoreTableRef}
+      >
+      <div>
+        {selectedCompany ? (
+          <h2 className="min-w-0 text-left text-4xl font-bold leading-tight text-muted">{selectedCompany.name}</h2>
+        ) : null}
+      </div>
+      <div />
+      <StyledTable className="h-full min-h-0 min-w-0" tableClassName="table-fixed">
           <colgroup>
             <col className="w-[46%]" />
             <col className="w-[34%]" />
@@ -515,7 +520,17 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
               </th>
               {visibleCompanies.map((company) => (
                 <th key={company.id} className={`${thClass} w-[34%] bg-background`}>
-                  Scores
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span>Scores</span>
+                    <button
+                      type="button"
+                      disabled={isSubmitting || isLoadingScores || !canUndo || !canEditScores}
+                      onClick={undoLastScore}
+                      className="text-sm font-normal text-foreground underline disabled:cursor-not-allowed disabled:text-foreground"
+                    >
+                      Undo
+                    </button>
+                  </span>
                 </th>
               ))}
               <th className={`${thClass} w-[20%] bg-background`}>Notes</th>
@@ -579,12 +594,12 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
             ))}
           </tbody>
       </StyledTable>
-      <aside className="flex max-h-full w-[calc((100%-1.5rem)/3)] shrink-0 flex-col items-start overflow-y-auto pt-3 text-left">
-        <p className="flex items-baseline whitespace-nowrap">
-          <span className="text-8xl font-bold leading-none text-[#4b5563] tabular-nums">
+      <aside className="flex max-h-full min-w-0 flex-col items-start overflow-visible text-left">
+        <p className="-mt-[0.22em] flex items-baseline whitespace-nowrap">
+          <span className="text-8xl font-bold leading-none text-muted tabular-nums">
             {formatWeightedTotal(totals[selectedId] ?? 0)}
           </span>
-          <span className="ml-1 text-3xl font-bold text-[#9aa1ab]">/5</span>
+          <span className="ml-1 text-3xl font-bold text-[#9aa1ab] dark:text-[#7b8290]">/5</span>
         </p>
         <p className="mt-3 text-sm font-semibold">Weighted Total</p>
         <button
@@ -626,7 +641,9 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                 aria-pressed={selected}
                 onClick={() => setSelectedCompanyId(company.id)}
                 className={`flex min-h-40 min-w-0 flex-1 flex-col items-center justify-start gap-1 rounded-lg px-1.5 py-3 text-center text-xs ${
-                  selected ? "bg-[#4b5563] text-white" : "bg-[#e5e7eb] text-[#111827]"
+                  selected
+                    ? "bg-muted text-white dark:text-[#2c3038]"
+                    : "bg-hover text-foreground"
                 }`}
               >
                 <span className="block font-semibold">Pitch {index + 1}</span>
@@ -655,19 +672,6 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         </div>
       </aside>
       </div>
-
-      <section className="flex shrink-0 flex-wrap items-center gap-3">
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
-          <button
-            type="button"
-            disabled={isSubmitting || isLoadingScores || !canUndo || !canEditScores}
-            onClick={undoLastScore}
-            className="white-button rounded border border-border bg-surface px-3 py-2 text-foreground disabled:opacity-50"
-          >
-            Undo
-          </button>
-        </div>
-      </section>
 
       <FormDialog
         open={scoringGuideOpen}

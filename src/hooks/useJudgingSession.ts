@@ -125,10 +125,18 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
   const selectedJudgeIdRef = useRef(selectedJudgeId);
   const isLoadingScoresRef = useRef(isLoadingScores);
   const saveTimerRef = useRef<number | null>(null);
+  const missingClearTimersRef = useRef<Record<string, number>>({});
   const saveQueuedRef = useRef(false);
   const saveInFlightRef = useRef(false);
   const submitWaitRef = useRef<{ companyId: string; resolve: (submitted: boolean) => void } | null>(null);
   const persistScoresRef = useRef<(options: PersistOptions) => Promise<boolean>>(async () => false);
+
+  useEffect(() => {
+    const timers = missingClearTimersRef.current;
+    return () => {
+      for (const id of Object.values(timers)) window.clearTimeout(id);
+    };
+  }, []);
 
   const showToast = useCallback((message: string) => {
     const id = nextToastId.current++;
@@ -212,12 +220,13 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
       }
 
       setSelectedJudgeId((prev) => {
-        if (lockedJudgeId) {
-          const lockedValid = payload.judges.some((judge) => judge.id === lockedJudgeId);
-          return lockedValid ? lockedJudgeId : prev;
-        }
-        const stillValid = payload.judges.some((judge) => judge.id === prev);
-        return stillValid ? prev : (payload.judges[0]?.id ?? "");
+        const previousId = lockedJudgeId ?? prev;
+        if (payload.judges.some((judge) => judge.id === previousId)) return previousId;
+        const previousUsername = dataRef.current?.judges.find((judge) => judge.id === previousId)?.username;
+        const matched = previousUsername
+          ? payload.judges.find((judge) => judge.username === previousUsername)
+          : undefined;
+        return matched?.id ?? payload.judges[0]?.id ?? "";
       });
     },
     [cancelScheduledAutosave, lockedJudgeId],
@@ -470,6 +479,13 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
             return false;
           }
           if (response.status === 400 && Array.isArray(payload.missingCells)) {
+            if (companyId) {
+              for (const [key, id] of Object.entries(missingClearTimersRef.current)) {
+                if (!key.startsWith(`${companyId}:`)) continue;
+                window.clearTimeout(id);
+                delete missingClearTimersRef.current[key];
+              }
+            }
             setMissingCells((prev) => mergeMissingCells(prev, payload.missingCells ?? [], companyId));
             showToast("All cells must be filled before submitting company scores.");
             return false;
@@ -481,6 +497,13 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
               entries.filter((entry) => entry.companyId === saveOptions.companyId),
             );
             if (apiMissing.length > 0) {
+              if (companyId) {
+                for (const [key, id] of Object.entries(missingClearTimersRef.current)) {
+                  if (!key.startsWith(`${companyId}:`)) continue;
+                  window.clearTimeout(id);
+                  delete missingClearTimersRef.current[key];
+                }
+              }
               setMissingCells((prev) => mergeMissingCells(prev, apiMissing, companyId));
               showToast("All cells must be filled before submitting company scores.");
               return false;
@@ -774,6 +797,16 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
             }
             return [...prev, { companyId, categoryId }];
           });
+          if (recordUndo) {
+            const existing = missingClearTimersRef.current[key];
+            if (existing) window.clearTimeout(existing);
+            missingClearTimersRef.current[key] = window.setTimeout(() => {
+              delete missingClearTimersRef.current[key];
+              setMissingCells((prev) =>
+                prev.filter((cell) => !(cell.companyId === companyId && cell.categoryId === categoryId)),
+              );
+            }, 3000);
+          }
         }
         return true;
       }
@@ -789,6 +822,11 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
       scoresRef.current = next;
       setScores(next);
       syncChangeLog(judgeId, companyId, categoryId, normalized);
+      const pendingClear = missingClearTimersRef.current[key];
+      if (pendingClear) {
+        window.clearTimeout(pendingClear);
+        delete missingClearTimersRef.current[key];
+      }
       setMissingCells((prev) =>
         prev.filter((cell) => !(cell.companyId === companyId && cell.categoryId === categoryId)),
       );
