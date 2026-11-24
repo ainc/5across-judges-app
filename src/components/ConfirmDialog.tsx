@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { DialogLogo } from "@/components/DialogLogo";
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -46,7 +47,7 @@ export function ConfirmDialog({
         aria-labelledby={titleId}
         className="relative w-full max-w-md rounded border bg-surface p-6 shadow-lg"
       >
-        <img src="/images/5acrossbanner.png" alt="5 Across Banner" className="fiveacross-banner mx-auto mb-4 h-20 w-20 object-contain" />
+        <DialogLogo />
         <h2 id={titleId} className="text-lg font-semibold">
           {title}
         </h2>

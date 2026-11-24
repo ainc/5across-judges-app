@@ -50,6 +50,14 @@ export function formatSaveAge(updatedAt: string | null, nowMs = Date.now()) {
   return `Saved ${formatAgeSuffix(minutes)}`;
 }
 
+export function formatSaveStatus(kind: "draft" | "submitted", at: string | null, nowMs = Date.now()) {
+  const prefix = kind === "draft" ? "Draft saved" : "Submitted";
+  if (!at) return prefix;
+  const minutes = minutesSince(at, nowMs);
+  if (minutes < 1) return `${prefix} just now`;
+  return `${prefix} ${formatAgeSuffix(minutes)}`;
+}
+
 export function formatFinalSubmitAge(submittedAt: string | null, nowMs = Date.now()) {
   if (!submittedAt) return "Final scores submitted";
   const minutes = minutesSince(submittedAt, nowMs);

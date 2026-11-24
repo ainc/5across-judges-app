@@ -244,11 +244,23 @@ type JudgingPageProps = {
 export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPageProps) {
   const isAdmin = showAdminLink;
   const [overrideEnabled, setOverrideEnabled] = useState(false);
-  const [showUnicorn, setShowUnicorn] = useState(false);
   const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
-  const unicornTimerRef = useRef<number | null>(null);
+  const [flight, setFlight] = useState<{
+    companyId: string;
+    phase: "center" | "fly";
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    animate: boolean;
+  } | null>(null);
+  const [addedSubmittedIds, setAddedSubmittedIds] = useState<string[]>([]);
+  const flightTimers = useRef<number[]>([]);
+  const centerUnicornRef = useRef<HTMLImageElement>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
+  const [scoringGuideOpen, setScoringGuideOpen] = useState(false);
   const scoreTableRef = useRef<HTMLDivElement>(null);
+  const slotRefs = useRef(new Map<string, HTMLDivElement>());
 
   function onColumnTab(
     event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -291,7 +303,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     missingCellKeys,
     hasChangeLog,
     canUndo,
-    saveStatusLabel,
+    saveStatusForCompany,
     updateScore,
     resetCompanyScores,
     updateNote,
@@ -300,6 +312,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     submitCompanyScores,
     handleConfirmDialog,
     deleteIndividualJudgeMessage,
+    submittedCompanyIds,
   } = useJudgingSession({ lockedJudgeId });
 
   useEffect(() => {
@@ -310,20 +323,91 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
     setRestoredCompetitionId(data.competition.id);
   }, [data, restoredCompetitionId]);
 
+  function clearFlightTimers() {
+    for (const id of flightTimers.current) window.clearTimeout(id);
+    flightTimers.current = [];
+  }
+
   useEffect(() => {
     return () => {
-      if (unicornTimerRef.current) window.clearTimeout(unicornTimerRef.current);
+      for (const id of flightTimers.current) window.clearTimeout(id);
     };
   }, []);
 
-  function flashUnicorn() {
+  useEffect(() => {
+    clearFlightTimers();
+    setFlight(null);
+    setConfetti([]);
+    setAddedSubmittedIds([]);
+  }, [selectedJudgeId]);
+
+  const submittedIds = [
+    ...submittedCompanyIds,
+    ...addedSubmittedIds.filter((companyId) => !submittedCompanyIds.includes(companyId)),
+  ];
+
+  useEffect(() => {
+    if (!flight || flight.phase !== "fly" || flight.animate) return;
+    let frame = 0;
+    frame = window.requestAnimationFrame(() => {
+      frame = window.requestAnimationFrame(() => {
+        const slot = slotRefs.current.get(flight.companyId);
+        const rect = slot?.getBoundingClientRect();
+        if (!rect || rect.width === 0) {
+          setFlight(null);
+          setConfetti([]);
+          return;
+        }
+        setFlight({
+          companyId: flight.companyId,
+          phase: "fly",
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+          animate: true,
+        });
+        const landTimer = window.setTimeout(() => {
+          setFlight(null);
+          setConfetti([]);
+        }, 750);
+        flightTimers.current.push(landTimer);
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [flight]);
+
+  function celebrateSubmit(companyId: string) {
+    clearFlightTimers();
     setConfetti(makeConfetti());
-    setShowUnicorn(true);
-    if (unicornTimerRef.current) window.clearTimeout(unicornTimerRef.current);
-    unicornTimerRef.current = window.setTimeout(() => {
-      setShowUnicorn(false);
-      setConfetti([]);
-    }, 1600);
+    setFlight({
+      companyId,
+      phase: "center",
+      left: 0,
+      top: 0,
+      width: 0,
+      height: 0,
+      animate: false,
+    });
+    const moveTimer = window.setTimeout(() => {
+      const rect = centerUnicornRef.current?.getBoundingClientRect();
+      setAddedSubmittedIds((prev) => (prev.includes(companyId) ? prev : [...prev, companyId]));
+      if (!rect || rect.width === 0) {
+        setFlight(null);
+        setConfetti([]);
+        return;
+      }
+      setFlight({
+        companyId,
+        phase: "fly",
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+        animate: false,
+      });
+    }, 900);
+    flightTimers.current.push(moveTimer);
   }
 
   useEffect(() => {
@@ -344,10 +428,12 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
       ? selectedCompanyId
       : data.companies[0]?.id ?? "";
   const visibleCompanies = data.companies.filter((company) => company.id === selectedId);
+  const selectedCompany = data.companies.find((company) => company.id === selectedId);
+  const saveStatusLabel = saveStatusForCompany(selectedId);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <AppHeader showAdminLink={isAdmin} className="mb-6 shrink-0" />
+      <AppHeader showAdminLink={isAdmin} judgeName={selectedJudge?.name} className="mb-6 shrink-0" />
       <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-6 pb-3">
 
       {selectedJudge?.message && (
@@ -370,69 +456,69 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
           </div>
         </section>
       )}
-      <div className="space-y-2">
-        <section className="flex flex-wrap items-start gap-3">
-          {isAdmin ? (
-            <button
-              type="button"
-              onClick={() => setOverrideEnabled((on) => !on)}
-              className="dark-button h-8 rounded border border-border bg-gray-900 px-3 py-1 text-white"
-            >
-              {overrideEnabled ? "Override On" : "Override"}
-            </button>
-          ) : null}
-          <div className="flex flex-col items-start gap-0.5">
-            {isAdmin ? (
-              <AppSelect
-                aria-label="Judge"
-                className="h-8 rounded border px-2 py-1"
-                value={selectedJudgeId}
-                onChange={(event) => {
-                  setOverrideEnabled(false);
-                  selectJudge(event.target.value);
-                }}
-              >
-                {data.judges.map((judge) => (
-                  <option key={judge.id} value={judge.id}>
-                    {judge.name}
-                  </option>
-                ))}
-              </AppSelect>
-            ) : (
-              <span>{selectedJudge?.name}</span>
-            )}
-            <span className="text-xs text-muted">{saveStatusLabel}</span>
-          </div>
+      {isAdmin ? (
+        <section className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setOverrideEnabled((on) => !on)}
+            className="dark-button h-8 rounded border border-border bg-gray-900 px-3 py-1 text-white"
+          >
+            {overrideEnabled ? "Override On" : "Override"}
+          </button>
+          <AppSelect
+            aria-label="Judge"
+            className="h-8 rounded border px-2 py-1"
+            value={selectedJudgeId}
+            onChange={(event) => {
+              setOverrideEnabled(false);
+              selectJudge(event.target.value);
+            }}
+          >
+            {data.judges.map((judge) => (
+              <option key={judge.id} value={judge.id}>
+                {judge.name}
+              </option>
+            ))}
+          </AppSelect>
         </section>
-      </div>
+      ) : null}
 
-      <div className="min-h-0 flex-1" ref={scoreTableRef}>
-      <StyledTable className="h-full" tableClassName="table-fixed">
+      {selectedCompany ? (
+        <h2 className="shrink-0 text-left text-4xl font-bold leading-tight text-[#4b5563]">{selectedCompany.name}</h2>
+      ) : null}
+
+      <div className="flex min-h-0 flex-1 items-start gap-6" ref={scoreTableRef}>
+      <StyledTable className="h-full min-w-0 flex-1" tableClassName="table-fixed">
           <colgroup>
-            <col className="w-[31%]" />
-            <col className="w-[38%]" />
-            <col className="w-[31%]" />
+            <col className="w-[46%]" />
+            <col className="w-[34%]" />
+            <col className="w-[20%]" />
           </colgroup>
           <thead className="sticky top-0 bg-background">
             <tr>
-              <th className={`${thClass} sticky left-0 w-[31%] bg-background`}>Category</th>
+              <th className={`${thClass} sticky left-0 w-[46%] bg-background`}>
+                <span className="flex items-baseline justify-between gap-2">
+                  <span>Category</span>
+                  <span className="flex items-baseline gap-3">
+                    {saveStatusLabel ? (
+                      <span className="text-xs font-normal text-muted">{saveStatusLabel}</span>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setScoringGuideOpen(true)}
+                      className="text-sm font-normal text-foreground underline"
+                    >
+                      Scoring Guide
+                    </button>
+                  </span>
+                </span>
+              </th>
               {visibleCompanies.map((company) => (
-                <th key={company.id} className="w-[38%] border-r border-b p-0 text-left">
-                  <AppSelect
-                    header
-                    aria-label="Company"
-                    value={selectedId}
-                    onChange={(event) => setSelectedCompanyId(event.target.value)}
-                  >
-                    {data.companies.map((option, index) => (
-                      <option key={option.id} value={option.id}>
-                        Pitch {index + 1} - {option.name}
-                      </option>
-                    ))}
-                  </AppSelect>
+                <th key={company.id} className={`${thClass} w-[34%] bg-background`}>
+                  Scores
                 </th>
               ))}
-              <th className={`${thClass} w-[31%] bg-background`}>Notes</th>
+              <th className={`${thClass} w-[20%] bg-background`}>Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -491,27 +577,29 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
                 ))}
               </tr>
             ))}
-            <tr className="h-0 bg-muted-bg">
-              <td className={`${tdClass} sticky left-0 bg-muted-bg py-1 font-semibold`}>Weighted Total</td>
-              {visibleCompanies.map((company) => {
-                const hasScores = data.categories.some(
-                  (category) => typeof scores[`${company.id}:${category.id}`] === "number",
-                );
-                return (
-                  <td key={company.id} className={`${tdClass} py-1 text-center font-semibold`}>
-                    {hasScores ? formatWeightedTotal(totals[company.id] ?? 0) : ""}
-                  </td>
-                );
-              })}
-              <td className={`${tdClass} py-1`} />
-            </tr>
           </tbody>
       </StyledTable>
-      </div>
-
-      <section className="flex shrink-0 flex-wrap items-center gap-3">
-        <ScoreScaleGraphic />
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+      <aside className="flex max-h-full w-[calc((100%-1.5rem)/3)] shrink-0 flex-col items-start overflow-y-auto pt-3 text-left">
+        <p className="flex items-baseline whitespace-nowrap">
+          <span className="text-8xl font-bold leading-none text-[#4b5563] tabular-nums">
+            {formatWeightedTotal(totals[selectedId] ?? 0)}
+          </span>
+          <span className="ml-1 text-3xl font-bold text-[#9aa1ab]">/5</span>
+        </p>
+        <p className="mt-3 text-sm font-semibold">Weighted Total</p>
+        <button
+          type="button"
+          disabled={isSubmitting || isLoadingScores || !canEditScores}
+          onClick={() => submitCompanyScores(selectedId)}
+          className="mt-4 w-full rounded border-0 px-3 py-2 text-black disabled:opacity-50"
+          style={{ backgroundColor: "#EC3641", color: "#000000" }}
+        >
+          Submit Company Scores
+        </button>
+        <div className="mt-2 flex w-full items-baseline justify-between text-sm">
+          <button type="button" onClick={() => setChangeLogOpen(true)} className="text-foreground underline">
+            Change History
+          </button>
           <button
             type="button"
             disabled={
@@ -521,27 +609,55 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
               !data.categories.some((category) => typeof scores[`${selectedId}:${category.id}`] === "number")
             }
             onClick={() => resetCompanyScores(selectedId)}
-            className="dark-button rounded border border-border bg-gray-900 px-3 py-2 text-white disabled:opacity-50"
+            className="underline disabled:cursor-not-allowed disabled:opacity-50"
           >
             Reset Scores
           </button>
-          {isAdmin ? (
-            <button
-              type="button"
-              onClick={() => setChangeLogOpen(true)}
-              className="dark-button rounded border border-border bg-gray-900 px-3 py-2 text-white"
-            >
-              View Change History
-            </button>
-          ) : null}
-          <button
-            disabled={isSubmitting || isLoadingScores || !canEditScores}
-            onClick={() => submitCompanyScores(selectedId)}
-            className="rounded border border-border px-3 py-2 text-black disabled:opacity-50"
-            style={{ backgroundColor: "#DF666A", color: "#000000" }}
-          >
-            Submit Company Scores
-          </button>
+        </div>
+        <div className="mt-4 flex w-full items-stretch gap-2">
+          {data.companies.map((company, index) => {
+            const selected = company.id === selectedId;
+            const submitted = submittedIds.includes(company.id);
+            const isLanding = flight?.companyId === company.id;
+            return (
+              <button
+                key={company.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setSelectedCompanyId(company.id)}
+                className={`flex min-h-40 min-w-0 flex-1 flex-col items-center justify-start gap-1 rounded-lg px-1.5 py-3 text-center text-xs ${
+                  selected ? "bg-[#4b5563] text-white" : "bg-[#e5e7eb] text-[#111827]"
+                }`}
+              >
+                <span className="block font-semibold">Pitch {index + 1}</span>
+                <span className="block break-words">{company.name}</span>
+                <span className="mt-auto flex w-full flex-col items-center gap-1">
+                  <div
+                    ref={(node) => {
+                      if (node) slotRefs.current.set(company.id, node);
+                      else slotRefs.current.delete(company.id);
+                    }}
+                    className="flex h-12 w-full items-end justify-center"
+                  >
+                    {submitted ? (
+                      <img
+                        src="/images/unicorn.png"
+                        alt=""
+                        className={`h-12 w-12 max-w-full object-contain ${isLanding ? "opacity-0" : ""}`}
+                      />
+                    ) : null}
+                  </div>
+                  <span className="block leading-tight">{submitted ? "Submitted" : "Not submitted"}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </aside>
+      </div>
+
+      <section className="flex shrink-0 flex-wrap items-center gap-3">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
             disabled={isSubmitting || isLoadingScores || !canUndo || !canEditScores}
@@ -553,6 +669,31 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         </div>
       </section>
 
+      <FormDialog
+        open={scoringGuideOpen}
+        title="Scoring Guide"
+        titleId="scoring-guide-title"
+        onClose={() => setScoringGuideOpen(false)}
+        panelClassName="max-h-[90vh] max-w-2xl overflow-y-auto"
+      >
+        <ScoreScaleGraphic />
+        <p className="pt-4 text-sm">
+          Score each category from 1 to 5. Whole numbers and half points are allowed (for example, 3 or 3.5). See the scoring categories, weights, and descriptions below.
+        </p>
+        <ul className="space-y-3">
+          {data.categories.map((category) => (
+            <li key={category.id}>
+              <p className="font-medium">
+                {category.name}{" "}
+                <span className="text-sm font-medium text-muted">({category.weight}%)</span>
+              </p>
+              {category.description?.trim() ? (
+                <p className="text-sm text-muted">{category.description}</p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </FormDialog>
       <FormDialog
         open={changeLogOpen}
         title="Change History Log"
@@ -612,7 +753,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         onConfirm={() => {
           void handleConfirmDialog().then((companyId) => {
             if (!companyId) return;
-            flashUnicorn();
+            celebrateSubmit(companyId);
             const index = data.companies.findIndex((company) => company.id === companyId);
             const next = data.companies[index + 1];
             if (next) setSelectedCompanyId(next.id);
@@ -620,17 +761,33 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
         }}
         onCancel={() => setPendingConfirm(null)}
       />
-      {showUnicorn
+      {flight || confetti.length > 0
         ? createPortal(
             <div className="pointer-events-none fixed inset-0 z-[2000]">
-              <ConfettiBurst pieces={confetti} />
-              <div className="absolute inset-0 flex items-center justify-center">
+              {confetti.length > 0 ? <ConfettiBurst pieces={confetti} /> : null}
+              {flight?.phase === "center" ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <img
+                    ref={centerUnicornRef}
+                    src="/images/unicorn.png"
+                    alt=""
+                    className="unicorn-flash w-[min(22rem,70vw)] max-w-full"
+                  />
+                </div>
+              ) : null}
+              {flight?.phase === "fly" ? (
                 <img
                   src="/images/unicorn.png"
                   alt=""
-                  className="unicorn-flash w-[min(22rem,70vw)] max-w-full"
+                  className={`unicorn-flight ${flight.animate ? "is-moving" : ""}`}
+                  style={{
+                    left: flight.left,
+                    top: flight.top,
+                    width: flight.width,
+                    height: flight.height,
+                  }}
                 />
-              </div>
+              ) : null}
             </div>,
             document.body,
           )

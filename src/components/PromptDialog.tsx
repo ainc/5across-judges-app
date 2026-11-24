@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { DialogLogo } from "@/components/DialogLogo";
 
 type PromptDialogProps = {
   open: boolean;
@@ -53,7 +54,7 @@ export function PromptDialog({
         aria-labelledby="prompt-dialog-title"
         className="relative w-full max-w-md rounded border bg-surface p-6 shadow-lg"
       >
-        <img src="/images/5acrossbanner.png" alt="5 Across Banner" className="fiveacross-banner mx-auto mb-4 h-20 w-20 object-contain" />
+        <DialogLogo />
         <h2 id="prompt-dialog-title" className="text-lg font-semibold">
           {title}
         </h2>
