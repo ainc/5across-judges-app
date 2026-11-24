@@ -25,12 +25,18 @@ export async function GET() {
   }
 
   const judges = sortJudgesByUsername(competition.judges);
+  const submissions = await prisma.score.findMany({
+    where: { competitionId: competition.id, publishedScore: { not: null } },
+    select: { judgeId: true, companyId: true },
+    distinct: ["judgeId", "companyId"],
+  });
 
   return NextResponse.json({
     competition,
     judges,
     companies: competition.companies,
     categories: competition.categories,
+    submissions,
   });
 }
 

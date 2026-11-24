@@ -13,14 +13,26 @@ type CategoryRef = { name: string; description?: string | null; weight: number }
 // type GraphicView = "podiums" | "circles" | "scores";
 type TableView = "yours" | "cumulative";
 
-function toGraphicRow(row: RankingRow) {
-  return {
+function podiumRows(rankings: RankingRow[], judgeId: string | null, tableView: TableView) {
+  const personal = Boolean(judgeId && tableView === "yours");
+  const withScore = rankings.map((row) => ({
     companyId: row.companyId,
     companyName: row.companyName,
-    finalScore: row.finalScore,
-    rank: row.rank,
     pitch: row.pitch,
-  };
+    finalScore: personal
+      ? (row.byJudge.find((judge) => judge.judgeId === judgeId)?.judgeTotal ?? null)
+      : row.finalScore,
+  }));
+  const ranked = [...withScore].sort((a, b) => {
+    if (a.finalScore == null && b.finalScore == null) return a.pitch - b.pitch;
+    if (a.finalScore == null) return 1;
+    if (b.finalScore == null) return -1;
+    return b.finalScore - a.finalScore || a.pitch - b.pitch;
+  });
+  return ranked.map((row, index) => ({
+    ...row,
+    rank: row.finalScore == null ? ranked.length + 1 : index + 1,
+  }));
 }
 
 const TABLE_OPTIONS: Array<{ value: TableView; label: string }> = [
@@ -64,7 +76,8 @@ export function CurrentResults({
     </div>
   ) : null;
 
-  const leader = rankings.find((row) => row.rank === 1);
+  const graphicRows = podiumRows(rankings, judgeId, tableView);
+  const leader = graphicRows.find((row) => row.rank === 1);
 
   return (
     <div className="space-y-4">
@@ -94,14 +107,14 @@ export function CurrentResults({
               <p className="text-sm font-semibold leading-tight">Pitch {leader.pitch}</p>
             </div>
             <p className="text-6xl font-bold leading-none text-[#EC3641]">
-              {formatWeightedTotal(leader.finalScore)}
+              {leader.finalScore == null ? "" : formatWeightedTotal(leader.finalScore)}
               <span className="text-2xl text-[#111827]">/5</span>
             </p>
           </aside>
         ) : null}
         <div className="flex min-w-0 flex-1 self-stretch">
           <ResultsPodiums
-            rankings={rankings.map(toGraphicRow)}
+            rankings={graphicRows}
             selectedCompanyId={selectedCompanyId}
             onSelectCompany={selectCompany}
           />

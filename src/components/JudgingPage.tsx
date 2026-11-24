@@ -433,7 +433,7 @@ export function JudgingPage({ lockedJudgeId, showAdminLink = false }: JudgingPag
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <AppHeader showAdminLink={isAdmin} judgeName={selectedJudge?.name} className="mb-6 shrink-0" />
+      <AppHeader showAdminLink={isAdmin} judgeName={isAdmin ? undefined : selectedJudge?.name} className="mb-6 shrink-0" />
       <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-6 pb-3">
 
       {selectedJudge?.message && (

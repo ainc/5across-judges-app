@@ -9,8 +9,10 @@ import { CompaniesModal } from "@/components/admin/CompaniesModal";
 import { DashboardTextActions, DashboardTextButton } from "@/components/admin/DashboardTextButton";
 import { JudgesModal } from "@/components/admin/JudgesModal";
 import { SendJudgeMessageModal } from "@/components/admin/SendJudgeMessageModal";
+import { SubmissionStatusTable } from "@/components/admin/SubmissionStatusTable";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { formatEventDateInput, normalizeEventDate, parseEventDate } from "@/lib/competition-results";
+import { formatWeightedTotal } from "@/lib/judging-format";
 import { AppHeader } from "./AppHeader";
 
 export function AdminDashboard() {
@@ -53,16 +55,46 @@ export function AdminDashboard() {
     handlePromptSubmit,
   } = useAdminDashboard();
 
+  const leader = resultsPreview?.rankings.find((row) => row.rank === 1);
+
   if (!isReady) return null;
 
   return (
     <>
       <AppHeader showAdminLink={true} />
-      <main className="px-6 pb-6">
+      <main className="space-y-10 px-6 pb-6">
+        {data ? (
+          <div className="space-y-3">
+          <h2 className="text-left text-2xl font-bold leading-tight text-[#111827]">Submitted Scores</h2>
+          <div className="flex items-stretch gap-4">
+            <section className="min-w-0 flex-1 overflow-hidden rounded border p-4">
+              <SubmissionStatusTable
+                judges={data.judges}
+                companies={data.companies}
+                submissions={data.submissions ?? []}
+              />
+            </section>
+            {leader ? (
+              <aside className="flex w-80 shrink-0 flex-col justify-between self-stretch rounded-lg bg-[#e5e7eb] px-4 py-3 text-[#111827]">
+                <div>
+                  <p className="text-sm">Highest Score</p>
+                  <p className="break-words text-2xl font-bold leading-tight">{leader.companyName}</p>
+                  <p className="text-sm font-semibold leading-tight">Pitch {leader.pitch}</p>
+                </div>
+                <p className="text-6xl font-bold leading-none text-[#EC3641]">
+                  {formatWeightedTotal(leader.finalScore)}
+                  <span className="text-2xl text-[#111827]">/5</span>
+                </p>
+              </aside>
+            ) : null}
+          </div>
+          </div>
+        ) : null}
         <div className="flex items-start gap-10">
           <div className="flex min-w-0 flex-1 flex-col gap-10">
+            <div className="space-y-3">
+            <h2 className="text-left text-2xl font-bold leading-tight text-[#111827]">Competition Actions</h2>
             <section className="overflow-hidden rounded border p-4 space-y-3">
-              <h2 className="text-xl font-semibold">Competition Actions</h2>
               <DashboardTextActions>
               <DashboardTextButton onClick={() => router.push("/admin/archived")}>
                   Open Archived Competitions
@@ -87,8 +119,10 @@ export function AdminDashboard() {
                 </DashboardTextButton>
               </DashboardTextActions>
             </section>
+            </div>
+            <div className="space-y-3">
+            <h2 className="text-left text-2xl font-bold leading-tight text-[#111827]">Settings</h2>
             <section className="overflow-hidden rounded border p-4 space-y-3">
-              <h2 className="text-xl font-semibold">Settings</h2>
               <DashboardTextActions>
                 <DashboardTextButton
                   onClick={() => openSectionModal("judges")}
@@ -116,11 +150,13 @@ export function AdminDashboard() {
                 </DashboardTextButton>
               </DashboardTextActions>
             </section>
+            </div>
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col gap-10">
+            <div className="space-y-3">
+            <h2 className="text-left text-2xl font-bold leading-tight text-[#111827]">Competition Details</h2>
             <section className="overflow-hidden rounded border p-4 space-y-3">
-              <h2 className="text-xl font-semibold">Competition Details</h2>
               <DashboardTextActions>
                 <DashboardTextButton
                   onClick={() => setPendingConfirm({ type: "save-results" })}
@@ -213,6 +249,7 @@ export function AdminDashboard() {
                 </p>
               )}
             </section>
+            </div>
           </div>
         </div>
 

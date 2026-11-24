@@ -210,6 +210,7 @@ html.dark .brand-logo-dark {
 
 .podium-bar-clip {
   overflow: hidden;
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .podium-bar {
@@ -219,6 +220,10 @@ html.dark .brand-logo-dark {
 @media (prefers-reduced-motion: reduce) {
   .podium-bar {
     animation: none;
+  }
+
+  .podium-bar-clip {
+    transition: none;
   }
 }
 

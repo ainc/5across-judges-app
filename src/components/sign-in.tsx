@@ -27,7 +27,8 @@ export function SignIn({ action }: SignInProps) {
       </label>
       <button
         type="submit"
-        className="dark-button w-full rounded border border-border bg-gray-900 px-4 py-2 text-white"
+        className="w-full rounded border-0 px-4 py-2 text-black"
+        style={{ backgroundColor: "#EC3641", color: "#000000" }}
       >
         Sign In
       </button>

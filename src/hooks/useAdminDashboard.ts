@@ -78,6 +78,10 @@ export function useAdminDashboard() {
   useEffect(() => {
     const interval = setInterval(() => {
       void loadResultsPreview().then(setResultsPreview);
+      void loadAdminData().then((next) => {
+        if (!next) return;
+        setData((prev) => (prev ? { ...prev, submissions: next.submissions } : prev));
+      });
     }, 15000);
     return () => clearInterval(interval);
   }, []);
