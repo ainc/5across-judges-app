@@ -220,12 +220,13 @@ export function useJudgingSession(options?: UseJudgingSessionOptions) {
       }
 
       setSelectedJudgeId((prev) => {
-        if (lockedJudgeId) {
-          const lockedValid = payload.judges.some((judge) => judge.id === lockedJudgeId);
-          return lockedValid ? lockedJudgeId : prev;
-        }
-        const stillValid = payload.judges.some((judge) => judge.id === prev);
-        return stillValid ? prev : (payload.judges[0]?.id ?? "");
+        const previousId = lockedJudgeId ?? prev;
+        if (payload.judges.some((judge) => judge.id === previousId)) return previousId;
+        const previousUsername = dataRef.current?.judges.find((judge) => judge.id === previousId)?.username;
+        const matched = previousUsername
+          ? payload.judges.find((judge) => judge.username === previousUsername)
+          : undefined;
+        return matched?.id ?? payload.judges[0]?.id ?? "";
       });
     },
     [cancelScheduledAutosave, lockedJudgeId],

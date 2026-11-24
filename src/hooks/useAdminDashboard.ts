@@ -33,7 +33,6 @@ export function useAdminDashboard() {
   const [isSavingResults, setIsSavingResults] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
-  const [isStarting, setIsStarting] = useState(false);
   const [isDeletingArchived, setIsDeletingArchived] = useState<string | null>(null);
   const [isActivatingArchived, setIsActivatingArchived] = useState<string | null>(null);
   const [isCreatingArchived, setIsCreatingArchived] = useState<string | null>(null);
@@ -558,41 +557,9 @@ export function useAdminDashboard() {
     }
 
     await refresh();
-    showToast(`"${oldName}" results have been computed and the competition is archived.`);
+    const newName = (payload.nextCompetitionName as string | undefined) ?? oldName;
+    showToast(`"${oldName}" was archived. "${newName}" is now the live competition.`);
     setIsArchiving(false);
-  }
-
-  function startNewCompetition() {
-    if (data) {
-      showToast("End the current competition before starting a new one.");
-      return;
-    }
-    setPendingPrompt({
-      type: "start-next",
-      defaultValue: archived[0]?.name ?? "5 Across",
-    });
-  }
-
-  async function executeStartNewCompetition(nextName: string) {
-    setIsStarting(true);
-
-    const response = await fetch("/api/admin/competition/next", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nextName }),
-    });
-
-    const payload = await readJsonResponse(response);
-    if (!response.ok) {
-      showToast((payload.error as string | undefined) ?? "Unable to start new competition.");
-      setIsStarting(false);
-      return;
-    }
-
-    const newName = (payload.nextCompetitionName as string | undefined) ?? nextName;
-    await refresh();
-    showToast(`"${newName}" is now the live competition.`);
-    setIsStarting(false);
   }
 
   function createArchivedCompetition(templateId: string, templateName: string) {
@@ -724,8 +691,6 @@ export function useAdminDashboard() {
 
     if (pendingPrompt.type === "create-archived") {
       void executeCreateArchivedCompetition(pendingPrompt.templateId, name);
-    } else if (pendingPrompt.type === "start-next") {
-      void executeStartNewCompetition(name);
     } else if (pendingPrompt.type === "reset") {
       resetSettingsToDefaults();
     }
@@ -747,7 +712,6 @@ export function useAdminDashboard() {
     isSaving,
     isSavingResults,
     isArchiving,
-    isStarting,
     isDeletingArchived,
     isActivatingArchived,
     isCreatingArchived,
@@ -774,7 +738,6 @@ export function useAdminDashboard() {
     requestDeleteJudgeMessage,
     saveCompetitionDetails,
     endCurrentCompetition,
-    startNewCompetition,
     createArchivedCompetition,
     makeArchivedCompetitionLive,
     deletePastCompetition,

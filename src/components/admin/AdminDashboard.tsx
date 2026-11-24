@@ -31,7 +31,6 @@ export function AdminDashboard() {
     isSavingResults,
     toasts,
     isArchiving,
-    isStarting,
     individualJudgeMessageStatus,
     criteriaWeightTotal,
     setPendingConfirm,
@@ -50,7 +49,6 @@ export function AdminDashboard() {
     sendIndividualJudgeMessage,
     requestDeleteJudgeMessage,
     endCurrentCompetition,
-    startNewCompetition,
     handleConfirmDialog,
     handlePromptSubmit,
   } = useAdminDashboard();
@@ -148,15 +146,7 @@ export function AdminDashboard() {
                     className="rounded border-0 px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                     style={{ backgroundColor: "#EC3641", color: "#000000" }}
                   >
-                    End Competition
-                  </button>
-                  <button
-                    type="button"
-                    onClick={startNewCompetition}
-                    disabled={isStarting || !!data}
-                    className="dark-button rounded border-0 px-3 py-2"
-                  >
-                    Start New Competition
+                    {isArchiving ? "Ending..." : "End and Start New Competition"}
                   </button>
                 </div>
                 <button

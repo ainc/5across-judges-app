@@ -27,10 +27,6 @@ export type PendingPrompt =
       templateName: string;
       defaultValue: string;
     }
-  | {
-      type: "start-next";
-      defaultValue: string;
-    }
   | { type: "reset" }
   | null;
 
